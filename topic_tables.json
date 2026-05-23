@@ -1,0 +1,256 @@
+[
+  [
+    [
+      "Scenario",
+      "Scenario ID",
+      "Procedure",
+      "Adult RRL",
+      "Peds RRL",
+      "Appropriateness Category"
+    ],
+    [
+      "Breast cancer screening, pregnant, average risk",
+      "3199322",
+      "Digital breast tomosynthesis screening",
+      "",
+      "Digital breast tomosynthesis screening",
+      "0.1-1mSv \u2622\u2622",
+      "",
+      "Usually appropriate"
+    ],
+    [
+      "",
+      "Digital breast tomosynthesis screening"
+    ],
+    [
+      "Mammography screening",
+      "",
+      "Mammography screening",
+      "0.1-1mSv \u2622\u2622",
+      "",
+      "Usually appropriate"
+    ],
+    [
+      "",
+      "Mammography screening"
+    ],
+    [
+      "US breast",
+      "",
+      "US breast",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "May be appropriate"
+    ],
+    [
+      "",
+      "US breast"
+    ],
+    [
+      "Mammography with IV contrast",
+      "",
+      "Mammography with IV contrast",
+      "0.1-1mSv \u2622\u2622",
+      "",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "Mammography with IV contrast"
+    ],
+    [
+      "MRI breast without and with IV contrast",
+      "",
+      "MRI breast without and with IV contrast",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without and with IV contrast"
+    ],
+    [
+      "MRI breast without and with IV contrast abbreviated",
+      "",
+      "MRI breast without and with IV contrast abbreviated",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without and with IV contrast abbreviated"
+    ],
+    [
+      "MRI breast without IV contrast",
+      "",
+      "MRI breast without IV contrast",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without IV contrast"
+    ],
+    [
+      "MRI breast without IV contrast abbreviated",
+      "",
+      "MRI breast without IV contrast abbreviated",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without IV contrast abbreviated"
+    ],
+    [
+      "Sestamibi MBI",
+      "",
+      "Sestamibi MBI",
+      "1-10 mSv \u2622\u2622\u2622",
+      "",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "Sestamibi MBI"
+    ],
+    [
+      "Breast cancer screening, pregnant, intermediate risk",
+      "3199323",
+      "Digital breast tomosynthesis screening",
+      "",
+      "Digital breast tomosynthesis screening",
+      "0.1-1mSv \u2622\u2622",
+      "",
+      "Usually appropriate"
+    ],
+    [
+      "",
+      "Digital breast tomosynthesis screening"
+    ],
+    [
+      "Mammography screening",
+      "",
+      "Mammography screening",
+      "0.1-1mSv \u2622\u2622",
+      "",
+      "Usually appropriate"
+    ],
+    [
+      "",
+      "Mammography screening"
+    ],
+    [
+      "US breast",
+      "",
+      "US breast",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "May be appropriate"
+    ],
+    [
+      "",
+      "US breast"
+    ],
+    [
+      "Mammography with IV contrast",
+      "",
+      "Mammography with IV contrast",
+      "0.1-1mSv \u2622\u2622",
+      "",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "Mammography with IV contrast"
+    ],
+    [
+      "MRI breast without and with IV contrast",
+      "",
+      "MRI breast without and with IV contrast",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without and with IV contrast"
+    ],
+    [
+      "MRI breast without and with IV contrast abbreviated",
+      "",
+      "MRI breast without and with IV contrast abbreviated",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without and with IV contrast abbreviated"
+    ],
+    [
+      "MRI breast without IV contrast",
+      "",
+      "MRI breast without IV contrast",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without IV contrast"
+    ],
+    [
+      "MRI breast without IV contrast abbreviated",
+      "",
+      "MRI breast without IV contrast abbreviated",
+      "0 mSv O",
+      "0 mSv [ped] O",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "MRI breast without IV contrast abbreviated"
+    ],
+    [
+      "Sestamibi MBI",
+      "",
+      "Sestamibi MBI",
+      "1-10 mSv \u2622\u2622\u2622",
+      "",
+      "Usually not appropriate"
+    ],
+    [
+      "",
+      "Sestamibi MBI"
+    ]
+  ],
+  [
+    [
+      "",
+      "Digital breast tomosynthesis screening"
+    ]
+  ],
+  [
+    [
+      "",
+      "Mammography screening"
+    ]
+  ],
+  [
+    [
+      "",
+      "US breast"
+    ]
+  ],
+  [
+    [
+      "",
+      "Mammography with IV contrast"
+    ]
+  ]
+]

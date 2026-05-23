@@ -1,0 +1,1328 @@
+[
+  {
+    "topicId": 141,
+    "topicName": "Low Back Pain",
+    "variantData": [
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, acute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194291",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194293",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, no red flags, no prior management, initial imaging",
+        "Scenario ID": "3194294",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194297",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+        "Scenario ID": "3194296",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, cauda equina syndrome suspected, initial imaging",
+        "Scenario ID": "3194299",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+        "Scenario ID": "3194301",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, hx of prior lumbar surgery, new symptoms, initial imaging",
+        "Scenario ID": "3194302",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, low velocity trauma, initial imaging",
+        "Scenario ID": "3194307",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, elderly, initial imaging",
+        "Scenario ID": "3194305",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, osteoporosis, initial imaging",
+        "Scenario ID": "3194306",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low back pain, chronic steroid use, initial imaging",
+        "Scenario ID": "3194304",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "May be appropriate (Disagreement)"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, immunosuppression, initial imaging",
+        "Scenario ID": "3194309",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "May be appropriate (Disagreement)"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, spinal mets suspected, initial imaging",
+        "Scenario ID": "3194311",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "MRI lumbar spine without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "MRI lumbar spine without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "Radiography lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "May be appropriate (Disagreement)"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "CT lumbar spine with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "CT lumbar spine without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "CT myelography lumbar spine",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "MRI lumbar spine with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "Bone scan whole body with SPECT or SPECT/CT complete spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "Discography and post-discography CT lumbar spine",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "CT lumbar spine without and with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Low pack pain, infection suspected, initial imaging",
+        "Scenario ID": "3194310",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      }
+    ]
+  }
+]

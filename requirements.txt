@@ -1,0 +1,13 @@
+fastapi==0.136.1
+uvicorn==0.46.0
+pydantic==2.13.4
+pydantic-settings==2.14.1
+langchain-core==1.4.0
+langchain-chroma==1.1.0
+langchain-google-genai==4.2.2
+google-genai==1.75.0
+python-dotenv==1.2.2
+fhir.resources==8.2.0
+requests==2.34.0
+pypdf==6.11.0
+chromadb==1.5.9

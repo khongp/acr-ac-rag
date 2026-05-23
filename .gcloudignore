@@ -1,0 +1,36 @@
+# Exclude local python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# Exclude git directories
+.git/
+.gitignore
+
+# Exclude secrets
+.env
+
+# Exclude heavy raw documents (already ingested)
+data/pdf_narratives/
+
+# Exclude old local database and dev files
+chroma_db_local/
+chroma_db_gemini/
+chroma_db/
+data/*.db
+data/query_cache.db
+data/acr_procedures.db
+*.log
+out.txt
+
+# Exclude scratch scripts and test suites
+scratch/
+test_*.py
+verify_*.py
+check_*.py
+diagnose_*.py
+fix_*.py
+seed_db.py
+dump_tables.py
+extract_acr_tables.py
+download_acr_pdfs.py

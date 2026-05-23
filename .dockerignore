@@ -1,0 +1,38 @@
+# Virtual environments and python artifacts
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git configurations
+.git/
+.gitignore
+
+# Environment secrets
+.env
+
+# Raw PDF source files (already ingested)
+data/pdf_narratives/
+
+# Development vector stores and logs
+chroma_db_local/
+chroma_db_gemini/
+chroma_db/
+data/*.db
+data/query_cache.db
+data/acr_procedures.db
+*.log
+out.txt
+
+# Scratch and test files
+scratch/
+test_*.py
+verify_*.py
+check_*.py
+diagnose_*.py
+fix_*.py
+seed_db.py
+dump_tables.py
+extract_acr_tables.py
+download_acr_pdfs.py

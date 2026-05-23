@@ -1,0 +1,92 @@
+[
+  [
+    [
+      "Scenario",
+      "Scenario ID",
+      "Procedure",
+      "Adult RRL",
+      "Peds RRL",
+      "Appropriateness Category"
+    ],
+    [
+      "Breast mass, palpable, initial imaging",
+      "3196055",
+      "US breast",
+      "",
+      "US breast",
+      "0 mSvO",
+      "0 mSv [ped]O",
+      "Usually appropriate"
+    ],
+    [
+      "",
+      "US breast"
+    ]
+  ],
+  [
+    [
+      "",
+      "US breast"
+    ]
+  ],
+  [
+    [
+      "",
+      "Digital breast tomosynthesis diagnostic"
+    ]
+  ],
+  [
+    [
+      "",
+      "Digital breast tomosynthesis screening"
+    ]
+  ],
+  [
+    [
+      "",
+      "Mammography diagnostic"
+    ]
+  ],
+  [
+    [
+      "",
+      "Mammography screening"
+    ]
+  ],
+  [
+    [
+      "",
+      "Image-guided core biopsy breast"
+    ]
+  ],
+  [
+    [
+      "",
+      "Image-guided fine needle aspiration breast"
+    ]
+  ],
+  [
+    [
+      "",
+      "MRI breast without and with IV contrast"
+    ]
+  ],
+  [
+    [
+      "",
+      "MRI breast without IV contrast"
+    ]
+  ],
+  [
+    [
+      "",
+      "FDG-PET breast dedicated"
+    ]
+  ],
+  [
+    [
+      "",
+      "Sestamibi MBI"
+    ]
+  ]
+]

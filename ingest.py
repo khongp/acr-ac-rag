@@ -1,0 +1,322 @@
+"""
+ACR-AC-RAG Ingestion Pipeline (v3)
+===================================
+Optimized for Google Cloud API embeddings (models/gemini-embedding-2)
+and persistent SQLite caching. Runs CPU-only.
+"""
+
+import os
+import re
+import json
+import time
+import hashlib
+import sqlite3
+from typing import List, Optional
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+from langchain_core.embeddings import Embeddings
+from langchain_chroma import Chroma
+from langchain_core.documents import Document
+
+load_dotenv()
+
+RAW_DIR = "data/pdf_narratives"
+JSON_PATH = "data/acr_variant_tables.json"
+
+EMBEDDING_MODE = os.getenv("EMBEDDING_MODE", "local").strip().lower()
+
+if EMBEDDING_MODE == "gemini":
+    CHROMA_PATH = "chroma_db_gemini"
+    EMBEDDING_MODEL = "models/gemini-embedding-2"
+    EMBEDDING_CACHE_PATH = "data/embedding_cache_gemini_embedding_2.db"
+    print(f"[INIT] Using Gemini Cloud API Embeddings. Database path: {CHROMA_PATH}")
+else:
+    CHROMA_PATH = "chroma_db_local"
+    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+    EMBEDDING_CACHE_PATH = None
+    print(f"[INIT] Using Local Sentence-Transformers Embeddings (all-MiniLM-L6-v2). Database path: {CHROMA_PATH}")
+
+
+class CachedGoogleGenerativeAIEmbeddings(Embeddings):
+    """
+    Wrapper around google-genai Client that caches generated embeddings
+    in a local SQLite database to prevent redundant API queries, speed up ingestion,
+    and save API costs.
+    """
+    def __init__(self, model: str = EMBEDDING_MODEL, cache_path: str = EMBEDDING_CACHE_PATH):
+        self.model = model
+        self.cache_path = cache_path
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        self.client = genai.Client(api_key=api_key)
+        self._init_cache()
+
+    def _init_cache(self):
+        os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
+        conn = sqlite3.connect(self.cache_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS embeddings (
+                text_hash TEXT PRIMARY KEY,
+                text_content TEXT,
+                embedding TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+
+    def _get_hash(self, text: str) -> str:
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+    def _get_cached_embedding(self, text: str) -> Optional[List[float]]:
+        h = self._get_hash(text)
+        try:
+            conn = sqlite3.connect(self.cache_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT embedding FROM embeddings WHERE text_hash = ?", (h,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                return json.loads(row[0])
+        except Exception as e:
+            print(f"Cache read error: {e}")
+        return None
+
+    def _set_cached_embedding(self, text: str, embedding: List[float]):
+        h = self._get_hash(text)
+        try:
+            conn = sqlite3.connect(self.cache_path)
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT OR REPLACE INTO embeddings (text_hash, text_content, embedding) VALUES (?, ?, ?)",
+                (h, text, json.dumps(embedding))
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Cache write error: {e}")
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        results = [None] * len(texts)
+        missing_indices = []
+        missing_texts = []
+        
+        for idx, text in enumerate(texts):
+            cached = self._get_cached_embedding(text)
+            if cached is not None:
+                results[idx] = cached
+            else:
+                missing_indices.append(idx)
+                missing_texts.append(text)
+        
+        if missing_texts:
+            print(f"  [Embed Cache] Generating {len(missing_texts)} embeddings via Gemini API...")
+            batch_size = 100
+            
+            for i in range(0, len(missing_texts), batch_size):
+                batch = missing_texts[i:i+batch_size]
+                batch_indices = missing_indices[i:i+batch_size]
+                attempt = 0
+                max_retries = 7
+                delay = 5.0
+                batch_embs = None
+                while attempt < max_retries:
+                    try:
+                        wrapped_contents = [types.Content(parts=[types.Part.from_text(text=t)]) for t in batch]
+                        response = self.client.models.embed_content(
+                            model=self.model,
+                            contents=wrapped_contents,
+                        )
+                        batch_embs = [emb.values for emb in response.embeddings]
+                        break
+                    except Exception as e:
+                        print(f"    API Error on batch (attempt {attempt + 1}/{max_retries}): {e}")
+                        if "429" in str(e) or "resourceexhausted" in str(e).lower() or "quota" in str(e).lower():
+                            print(f"    Rate limit hit. Sleeping {delay}s...")
+                            time.sleep(delay)
+                            delay *= 2
+                            attempt += 1
+                        else:
+                            raise e
+                
+                if batch_embs is None:
+                    raise Exception("Failed to embed documents due to persistent errors.")
+                
+                # Cache immediately to save progress if subsequent batches fail
+                for idx, text, emb in zip(batch_indices, batch, batch_embs):
+                    self._set_cached_embedding(text, emb)
+                    results[idx] = emb
+                
+                completed = len(texts) - len(missing_texts) + i + len(batch)
+                print(f"    Processed {completed}/{len(texts)} chunks...")
+                
+                # Sleep to maintain safety under RPM limit.
+                time.sleep(2.0)
+                
+        return results
+
+    def embed_query(self, text: str) -> List[float]:
+        cached = self._get_cached_embedding(text)
+        if cached is not None:
+            return cached
+        wrapped = [types.Content(parts=[types.Part.from_text(text=text)])]
+        response = self.client.models.embed_content(
+            model=self.model,
+            contents=wrapped
+        )
+        emb = response.embeddings[0].values
+        self._set_cached_embedding(text, emb)
+        return emb
+
+
+def load_variants_from_json(json_path):
+    """Load structured ACR variant table data as unique topic-scenario documents.
+    This avoids massive redundancy of embedding the same scenario for each procedure row."""
+    docs = []
+    if not os.path.exists(json_path):
+        print(f"JSON file {json_path} not found. Skipping table ingestion.")
+        return docs
+        
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    seen_pairs = set()
+    for topic in data:
+        topic_name = topic.get("topicName", "")
+        for variant in topic.get("variantData", []):
+            scenario = variant.get("Scenario", "")
+            if not scenario:
+                continue
+            pair_key = (topic_name.strip(), scenario.strip())
+            if pair_key in seen_pairs:
+                continue
+            seen_pairs.add(pair_key)
+            
+            content = f"ACR Appropriateness Table Data:\n"
+            content += f"Topic: {topic_name}\n"
+            content += f"Clinical Scenario (Variant): {scenario}"
+            
+            docs.append(Document(
+                page_content=content,
+                metadata={
+                    "source": "acr_variant_tables.json",
+                    "type": "variant_table",
+                    "topic": topic_name,
+                }
+            ))
+            
+    return docs
+
+
+def chunk_pdf_documents(documents: list) -> list:
+    """
+    Direct page-based chunking with RecursiveCharacterTextSplitter.
+    We avoid section-based splitting because terms like 'Relative Radiation Level'
+    or 'Appropriateness Category' appear repeatedly on almost every page/row,
+    causing excessive fragmentation.
+    """
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=4000,
+        chunk_overlap=400,
+        length_function=len,
+        separators=["\n\n", "\n", ". ", " ", ""],
+    )
+    final_chunks = splitter.split_documents(documents)
+    print(f"  Split {len(documents)} pages -> {len(final_chunks)} final chunks")
+    return final_chunks
+
+
+def ingest_documents():
+    """Main ingestion pipeline."""
+    from langchain_community.document_loaders import PyPDFLoader
+    print("=" * 60)
+    print("  ACR-AC-RAG Ingestion Pipeline v3 (Google Embeddings + SQLite Cache)")
+    print("=" * 60)
+    
+    documents = []
+    boundary_pattern = re.compile(
+        r"^\s*(References|Literature Search|Evidence Table|Appendix)\b|\n\s*(References|Literature Search|Evidence Table|Appendix)\b",
+        re.IGNORECASE
+    )
+    
+    # ── Load PDFs (excluding References/Evidence Tables/Appendix) ──
+    if not os.path.exists(RAW_DIR):
+        print(f"Directory {RAW_DIR} not found. Please create it and add PDFs.")
+    else:
+        for filename in sorted(os.listdir(RAW_DIR)):
+            if filename.endswith(".pdf"):
+                file_path = os.path.join(RAW_DIR, filename)
+                try:
+                    loader = PyPDFLoader(file_path)
+                    docs = loader.load()
+                    
+                    filtered_docs = []
+                    for idx, doc in enumerate(docs):
+                        text = doc.page_content
+                        # Stop loading when we reach references page or appendix
+                        if boundary_pattern.search(text):
+                            break
+                        doc.metadata["source"] = filename
+                        doc.metadata["type"] = "narrative"
+                        filtered_docs.append(doc)
+                    print(f"  Loaded {filename}: {len(filtered_docs)} pages (skipped {len(docs) - len(filtered_docs)} appendix pages)")
+                    documents.extend(filtered_docs)
+                except Exception as e:
+                    print(f"  ERROR loading {filename}: {e}")
+
+    print(f"\nTotal loaded narrative pages: {len(documents)}")
+
+    # ── Split narrative pages into coherent chunks ──
+    print("\nChunking narrative documents...")
+    chunks = chunk_pdf_documents(documents)
+
+    # ── Load structured JSON variants (no chunking needed) ──
+    print("\nLoading structured JSON variants...")
+    variant_docs = load_variants_from_json(JSON_PATH)
+    print(f"  Loaded {len(variant_docs)} variant table records")
+    
+    chunks.extend(variant_docs)
+    print(f"\nTotal chunks to ingest: {len(chunks)}")
+
+    # ── Initialize Embeddings ──
+    if EMBEDDING_MODE == "gemini":
+        print(f"\nInitializing Cached Google Embedding model: {EMBEDDING_MODEL}")
+        embeddings = CachedGoogleGenerativeAIEmbeddings()
+        vector_dims = 3072
+    else:
+        print(f"\nInitializing Local HuggingFace Embedding model: {EMBEDDING_MODEL}")
+        from langchain_huggingface import HuggingFaceEmbeddings
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        vector_dims = 384
+
+    # ── Store in ChromaDB ──
+    print(f"\nStoring chunks in ChromaDB at {CHROMA_PATH}...")
+    
+    if os.path.exists(CHROMA_PATH):
+        import shutil
+        shutil.rmtree(CHROMA_PATH)
+        print("  Cleared existing ChromaDB")
+        
+    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
+    
+    # Ingest in batches of 500
+    batch_size = 500
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i:i + batch_size]
+        print(f"  Ingesting batch {i // batch_size + 1}/{(len(chunks) - 1) // batch_size + 1} ({len(batch)} chunks)...")
+        db.add_documents(batch)
+    
+    # Verify
+    count = db._collection.count()
+    print(f"\n{'=' * 60}")
+    print(f"  Ingestion complete!")
+    print(f"  Embedding model: {EMBEDDING_MODEL}")
+    print(f"  Total vectors:   {count}")
+    print(f"  Vector dims:     {vector_dims} ({EMBEDDING_MODEL})")
+    print(f"  ChromaDB path:   {CHROMA_PATH}")
+    print(f"{'=' * 60}")
+
+
+if __name__ == "__main__":
+    ingest_documents()

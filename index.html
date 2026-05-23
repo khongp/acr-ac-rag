@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACR Appropriateness Criteria - Clinical Decision Support Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-card: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --border-color: #cbd5e1;
+            
+            --color-primary: #0f172a;
+            --color-primary-hover: #1e293b;
+            
+            --color-success: #059669;
+            --color-warning: #d97706;
+            --color-danger: #dc2626;
+            --color-info: #0284c7;
+            
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-inverse: #ffffff;
+            
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            
+            --transition-smooth: all 0.2s ease-in-out;
+            --radius-lg: 8px;
+            --radius-md: 6px;
+            --shadow-premium: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            padding-bottom: 40px;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .logo-section h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-section p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #ecfdf5;
+            border: 1px solid #d1fae5;
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            color: var(--color-success);
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            background-color: var(--color-success);
+            border-radius: 50%;
+        }
+
+        .app-container {
+            max-width: 1440px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* CDS Info Banner */
+        .info-banner {
+            grid-column: 1 / -1;
+            background: #f0f9ff;
+            border: 1px solid #e0f2fe;
+            border-left: 4px solid #0284c7;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            color: #0369a1;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .info-banner-icon {
+            font-size: 20px;
+            color: var(--color-primary);
+            margin-top: 2px;
+        }
+
+        /* Control Sidebar Panel */
+        .sidebar {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-premium);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: fit-content;
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Presets Grid */
+        .presets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .preset-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 10px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: left;
+            transition: var(--transition-smooth);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .preset-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-main);
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+
+        .preset-title {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Form Controls */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        textarea.form-control {
+            height: 120px;
+            resize: none;
+        }
+
+        .form-control {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            padding: 12px;
+            font-family: var(--font-main);
+            font-size: 14px;
+            transition: var(--transition-smooth);
+            width: 100%;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-submit {
+            background-color: var(--color-primary);
+            border: none;
+            color: var(--text-inverse);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--color-primary-hover);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* Main Workspace Display */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Tabs Interface */
+        .tab-bar {
+            display: flex;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 6px;
+            gap: 5px;
+            box-shadow: var(--shadow-premium);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        .tab-btn.active {
+            background-color: var(--color-primary);
+            color: var(--text-inverse);
+            border: 1px solid var(--color-primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Content Panel Containers */
+        .panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            box-shadow: var(--shadow-premium);
+            min-height: 500px;
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ACR Guidelines & Ratings View */
+        .acr-guidelines-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .acr-rec-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .pea-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .pea-header {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+        }
+
+        /* Procedures Rating Cards */
+        .procedures-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .procedure-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr 140px 100px;
+            align-items: center;
+            gap: 20px;
+            transition: var(--transition-smooth);
+        }
+
+        .procedure-card:hover {
+            border-color: var(--bg-hover);
+            background-color: var(--bg-hover);
+            transform: translateX(4px);
+        }
+
+        .procedure-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .procedure-rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rating-number {
+            font-size: 15px;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: right;
+        }
+
+        .rating-bar-container {
+            flex: 1;
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .rating-bar {
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .rating-bar.high { background-color: var(--color-success); }
+        .rating-bar.med { background-color: var(--color-warning); }
+        .rating-bar.low { background-color: var(--color-danger); }
+        
+        .rating-number.high { color: var(--color-success); }
+        .rating-number.med { color: var(--color-warning); }
+        .rating-number.low { color: var(--color-danger); }
+
+        .procedure-dose {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: right;
+            font-weight: 500;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Safety & Contraindications Alerts */
+        .safety-summary-box {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .safety-summary-box.clear {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--color-success);
+        }
+
+        .safety-summary-box.warnings {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: var(--color-warning);
+        }
+
+        .safety-summary-box.hard_stop {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--color-danger);
+        }
+
+        .safety-summary-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: currentColor;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .safety-alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .safety-alert-card {
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .safety-alert-card.info {
+            background-color: rgba(6, 182, 212, 0.05);
+            border: 1px solid rgba(6, 182, 212, 0.15);
+            border-left: 4px solid var(--color-info);
+        }
+
+        .safety-alert-card.warning {
+            background-color: rgba(245, 158, 11, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            border-left: 4px solid var(--color-warning);
+        }
+
+        .safety-alert-card.hard_stop {
+            background-color: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-left: 4px solid var(--color-danger);
+        }
+
+        .alert-badge {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+        
+        .alert-badge.info { background: rgba(6, 182, 212, 0.15); color: var(--color-info); }
+        .alert-badge.warning { background: rgba(245, 158, 11, 0.15); color: var(--color-warning); }
+        .alert-badge.hard_stop { background: rgba(239, 68, 68, 0.15); color: var(--color-danger); }
+
+        .alert-content h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .alert-content p {
+            font-size: 13.5px;
+            color: var(--text-muted);
+        }
+
+        /* Draft Protocol Recipe View */
+        .protocol-metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metadata-tile {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .metadata-tile-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .metadata-tile-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .recipe-details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .recipe-details-table th, .recipe-details-table td {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .recipe-details-table th {
+            background-color: var(--bg-card);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .recipe-details-table td {
+            font-size: 14px;
+        }
+
+        .recipe-details-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Sequence Steps (MRI) List */
+        .sequence-steps-list {
+            margin-top: 25px;
+        }
+
+        .sequence-step-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 20px;
+            margin-bottom: 10px;
+        }
+
+        .sequence-step-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .sequence-number {
+            font-weight: 700;
+            color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .sequence-name {
+            font-weight: 600;
+            font-size: 14.5px;
+        }
+
+        .sequence-timing {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* JSON Inspector */
+        pre.json-inspector {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: #0f172a;
+        }
+
+        /* Copy Button */
+        .btn-action-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-action {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-action:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--color-primary);
+            color: var(--text-inverse);
+        }
+
+        /* Loading Overlay overlay */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            height: 400px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s infinite linear;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .placeholder-state {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 0 40px;
+        }
+
+        .placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-section">
+            <h1>ACR-AC RAG Clinical Hub</h1>
+            <p>Appropriateness Criteria &amp; Intelligent Radiology Protocoling</p>
+        </div>
+        <div class="status-badge">
+            <span class="status-indicator"></span>
+            <span>FHIR Connected</span>
+        </div>
+    </header>
+
+    <div class="app-container">
+        
+        <div class="info-banner">
+            <div>
+                <strong>Non-Device Clinical Decision Support (CDS) System:</strong> Provided as guidelines under FDA policy. This application retrieves literature to aid healthcare professionals but does not replace professional clinical judgment.
+            </div>
+        </div>
+
+        <!-- Sidebar Inputs -->
+        <div class="sidebar">
+            
+            <div class="sidebar-section">
+                <div class="section-title">Presets</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" onclick="applyPreset(1)">
+                        <span class="preset-title">Low Back Pain</span>
+                        <span>Cauda Equina, 69F</span>
+                    </button>
+                    <button class="preset-btn" onclick="applyPreset(2)">
+                        <span class="preset-title">RLQ Pain</span>
+                        <span>Appendicitis, 28F</span>
+                    </button>
+                    <button class="preset-btn" onclick="applyPreset(3)">
+                        <span class="preset-title">Stroke Protocol</span>
+                        <span>eGFR 28, 72M</span>
+                    </button>
+                    <button class="preset-btn" onclick="applyPreset(4)">
+                        <span class="preset-title">Dyspnea / PE</span>
+                        <span>Knee Post-op, 45M</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">Clinical Scenario</div>
+                <div class="form-group">
+                    <textarea id="scenario-input" class="form-control" placeholder="Enter clinical presentation (e.g., '69 yo female low back pain with suspected cauda equina syndrome...')"></textarea>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">Patient Context Simulator</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="patient-age">Age</label>
+                        <input type="number" id="patient-age" class="form-control" value="69">
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-gender">Gender</label>
+                        <select id="patient-gender" class="form-control">
+                            <option value="female">Female</option>
+                            <option value="male">Male</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="patient-egfr">eGFR Lab Value (mL/min/1.73m²)</label>
+                    <input type="number" id="patient-egfr" class="form-control" value="62">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="patient-allergy">Allergies</label>
+                        <select id="patient-allergy" class="form-control">
+                            <option value="none">No Contrast Allergies</option>
+                            <option value="Omnipaque">Omnipaque (Hives)</option>
+                            <option value="Visipaque">Visipaque (Severe)</option>
+                            <option value="Gadolinium">Gadolinium Agent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-meds">Anticoagulants</label>
+                        <select id="patient-meds" class="form-control">
+                            <option value="none">None</option>
+                            <option value="Eliquis">Eliquis</option>
+                            <option value="Warfarin">Warfarin</option>
+                            <option value="Heparin">Heparin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="patient-preg">Pregnancy Risk</label>
+                    <select id="patient-preg" class="form-control">
+                        <option value="no">Not Pregnant / N/A</option>
+                        <option value="yes">Confirmed Pregnant</option>
+                        <option value="pending">Pregnancy Test Pending</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 10px;">
+                    <input type="checkbox" id="override-patient-data" style="width: 16px; height: 16px; cursor: pointer;">
+                    <label for="override-patient-data" style="cursor: pointer; margin-bottom: 0; font-size: 13px; font-weight: 500; color: var(--text-muted);">Override patient parameters (Manual Simulator)</label>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="form-group">
+                    <label for="institution">Hospital Protocol Library</label>
+                    <select id="institution" class="form-control">
+                        <option value="skyridge">Skyridge Medical Center</option>
+                    </select>
+                </div>
+                
+                <button class="btn-submit" onclick="submitAnalysis()">
+                    <span>Run CDS Engine</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Main Display Panel Area -->
+        <div class="workspace">
+            
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('guidelines')">ACR Guidelines</button>
+                <button class="tab-btn" onclick="switchTab('safety')">Safety Alerts</button>
+                <button class="tab-btn" onclick="switchTab('protocol')">Draft Protocol</button>
+                <button class="tab-btn" onclick="switchTab('fhir')">FHIR Bundle</button>
+            </div>
+
+            <!-- Placeholder State -->
+            <div id="placeholder" class="panel active">
+                <div class="placeholder-state">
+                    <div style="font-size: 28px; font-weight: 300; margin-bottom: 15px; color: var(--border-color); letter-spacing: 2px;">ACR-AC</div>
+                    <h2>Awaiting Clinical Inquiry</h2>
+                    <p style="max-width: 450px; margin-top: 10px;">Select a clinical preset or type a scenario in the left panel, configure patient parameters, and run the CDS engine to query ACR criteria.</p>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="panel">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <h2>Querying RAG &amp; Rule Engine...</h2>
+                    <p style="color: var(--text-muted);">Parsing scenario into FHIR, running semantic database lookup, and evaluating safety constraints.</p>
+                </div>
+            </div>
+
+            <!-- Panel 1: ACR Guidelines -->
+            <div id="panel-guidelines" class="panel">
+                <div class="acr-guidelines-header">
+                    <h2 class="acr-rec-title">ACR Guidelines Recommendation Summary</h2>
+                    <p style="color: var(--text-muted); font-size: 14.5px;" id="extracted-scenario-label"></p>
+                </div>
+                
+                <div class="pea-block">
+                    <div class="pea-header">RAG Clinical Summary (PEA Format)</div>
+                    <div id="recommendation-text" style="white-space: pre-wrap; font-size: 15px;"></div>
+                </div>
+
+                <h3 style="font-size: 16px; margin: 25px 0 15px 0; font-weight: 600;">Modality Appropriateness Ratings (Matched Table Data)</h3>
+                <div class="procedures-list" id="procedures-container">
+                    <!-- Cards will be populated here -->
+                </div>
+                
+                <div class="btn-action-container">
+                    <button class="btn-action" onclick="copyText('recommendation-text')">Copy Summary</button>
+                </div>
+            </div>
+
+            <!-- Panel 2: Safety & Contraindications Alerts -->
+            <div id="panel-safety" class="panel">
+                <div id="safety-summary-box" class="safety-summary-box clear">
+                    <span id="safety-summary-icon" class="safety-summary-dot"></span>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 18px;" id="safety-summary-title">PATIENT CLEAR FOR STANDARD PROTOCOLS</span>
+                        <span style="font-size: 13px; font-weight: 400; color: inherit; opacity: 0.9;" id="safety-summary-subtitle">No contraindications or hard stops triggered.</span>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 16px; margin-bottom: 15px; font-weight: 600;">Rule Engine Evaluation Log</h3>
+                <div class="safety-alerts-list" id="safety-alerts-container">
+                    <!-- Alerts populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Panel 3: Draft Protocol Recipe -->
+            <div id="panel-protocol" class="panel">
+                <div class="acr-guidelines-header">
+                    <h2 class="acr-rec-title" id="protocol-title">Pre-Populated Draft Radiology Protocol</h2>
+                    <p style="color: var(--text-muted); font-size: 14.5px;">Customized scan configuration based on local hospital rules.</p>
+                </div>
+
+                <div class="protocol-metadata-grid">
+                    <div class="metadata-tile">
+                        <div class="metadata-tile-label">Matched Protocol</div>
+                        <div class="metadata-tile-value" id="protocol-name-val">None</div>
+                    </div>
+                    <div class="metadata-tile">
+                        <div class="metadata-tile-label">Mapping Method</div>
+                        <div class="metadata-tile-value" id="protocol-method-val">N/A</div>
+                    </div>
+                    <div class="metadata-tile">
+                        <div class="metadata-tile-label">Match Confidence</div>
+                        <div class="metadata-tile-value" id="protocol-conf-val">0%</div>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 16px; margin-bottom: 12px; font-weight: 600;">Acquisition Settings</h3>
+                <table class="recipe-details-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="protocol-table-body">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+
+                <div id="mri-sequences-section" style="display: none; margin-top: 25px;">
+                    <h3 style="font-size: 16px; margin-bottom: 12px; font-weight: 600;">Ordered Sequence Protocol (MRI)</h3>
+                    <div class="sequence-steps-list" id="mri-sequences-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                
+                <div class="btn-action-container">
+                    <button class="btn-action" onclick="copyProtocol()">Copy Technical Protocol</button>
+                </div>
+            </div>
+
+            <!-- Panel 4: FHIR Bundle Inspector -->
+            <div id="panel-fhir" class="panel">
+                <div class="acr-guidelines-header">
+                    <h2 class="acr-rec-title">EHR FHIR Interoperability Bundle</h2>
+                    <p style="color: var(--text-muted); font-size: 14.5px;">Standardized R4 Bundle containing Patient, ServiceRequest, and Observation resources.</p>
+                </div>
+                
+                <pre class="json-inspector"><code id="fhir-json-block">No bundle generated yet.</code></pre>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const PRESETS = {
+            1: {
+                scenario: "69 year old female presenting with acute worsening low back pain and saddle anesthesia. Suspected cauda equina syndrome.",
+                age: 69,
+                gender: "female",
+                egfr: 62,
+                allergy: "none",
+                meds: "none",
+                preg: "no"
+            },
+            2: {
+                scenario: "28 year old female presenting with right lower quadrant abdominal pain, nausea, and low-grade fever. Allergy to Omnipaque (hives). Taking Eliquis 5mg BID. Pregnancy test pending.",
+                age: 28,
+                gender: "female",
+                egfr: 62,
+                allergy: "Omnipaque",
+                meds: "Eliquis",
+                preg: "pending"
+            },
+            3: {
+                scenario: "72 year old male with sudden onset slurred speech and right hemiplegia. eGFR 28. On Warfarin therapy.",
+                age: 72,
+                gender: "male",
+                egfr: 28,
+                allergy: "none",
+                meds: "Warfarin",
+                preg: "no"
+            },
+            4: {
+                scenario: "45 year old male status-post right knee arthroplasty, presenting with sudden-onset chest pain and dyspnea. D-dimer elevated.",
+                age: 45,
+                gender: "male",
+                egfr: 95,
+                allergy: "none",
+                meds: "none",
+                preg: "no"
+            }
+        };
+
+        let currentActiveTab = 'guidelines';
+        let latestCDSResult = null;
+        let isLoading = false;
+
+        function applyPreset(num) {
+            const data = PRESETS[num];
+            document.getElementById('scenario-input').value = data.scenario;
+            document.getElementById('patient-age').value = data.age;
+            document.getElementById('patient-gender').value = data.gender;
+            document.getElementById('patient-egfr').value = data.egfr;
+            document.getElementById('patient-allergy').value = data.allergy;
+            document.getElementById('patient-meds').value = data.meds;
+            document.getElementById('patient-preg').value = data.preg;
+            
+            // Auto check override since presets depend on sidebar values
+            document.getElementById('override-patient-data').checked = true;
+        }
+
+        function switchTab(tabId) {
+            if (isLoading) return;
+            currentActiveTab = tabId;
+            
+            // Toggle active classes on tab buttons
+            document.querySelectorAll('.tab-bar .tab-btn').forEach(btn => {
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tabId}'`)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Hide all panels
+            document.querySelectorAll('.panel').forEach(p => {
+                p.classList.remove('active');
+            });
+
+            // Show selected panel
+            const panel = document.getElementById(`panel-${tabId}`);
+            if (panel && latestCDSResult) {
+                panel.classList.add('active');
+            } else if (!latestCDSResult) {
+                document.getElementById('placeholder').classList.add('active');
+            }
+        }
+
+        function updateSidebarFromFHIR(bundle) {
+            if (!bundle || !bundle.entry) return;
+            
+            let age = 30; // default adult fallback
+            let gender = "male";
+            let egfr = "";
+            let allergy = "none";
+            let meds = "none";
+            let preg = "no";
+            
+            bundle.entry.forEach(entry => {
+                const res = entry.resource;
+                if (!res) return;
+                
+                if (res.resourceType === "Patient") {
+                    if (res.gender) gender = res.gender;
+                    if (res.birthDate) {
+                        const birthYear = new Date(res.birthDate).getFullYear();
+                        age = new Date().getFullYear() - birthYear;
+                    }
+                } else if (res.resourceType === "Observation") {
+                    const codeText = res.code && res.code.text ? res.code.text.toLowerCase() : "";
+                    const loincCode = res.code && res.code.coding && res.code.coding[0] ? res.code.coding[0].code : "";
+                    
+                    if (codeText.includes("egfr") || loincCode === "33914-3" || loincCode === "69405-9") {
+                        if (res.valueQuantity) egfr = res.valueQuantity.value;
+                    } else if (codeText.includes("pregnancy") || loincCode === "11477-7") {
+                        const val = res.valueCodeableConcept && res.valueCodeableConcept.text ? res.valueCodeableConcept.text.toLowerCase() : "";
+                        if (val.includes("positive")) preg = "yes";
+                        else if (val.includes("pending")) preg = "pending";
+                    }
+                } else if (res.resourceType === "AllergyIntolerance") {
+                    const substance = res.code && res.code.text ? res.code.text : "";
+                    if (substance) {
+                        const lSub = substance.toLowerCase();
+                        if (lSub.includes("omnipaque")) allergy = "Omnipaque";
+                        else if (lSub.includes("visipaque")) allergy = "Visipaque";
+                        else if (lSub.includes("gadolinium")) allergy = "Gadolinium";
+                    }
+                } else if (res.resourceType === "MedicationStatement") {
+                    let medName = "";
+                    if (res.medication && res.medication.concept && res.medication.concept.text) {
+                        medName = res.medication.concept.text;
+                    } else if (res.medicationCodeableConcept && res.medicationCodeableConcept.text) {
+                        medName = res.medicationCodeableConcept.text;
+                    }
+                    
+                    if (medName) {
+                        const lMed = medName.toLowerCase();
+                        if (lMed.includes("eliquis")) meds = "Eliquis";
+                        else if (lMed.includes("warfarin")) meds = "Warfarin";
+                        else if (lMed.includes("heparin")) meds = "Heparin";
+                    }
+                }
+            });
+            
+            // Update UI elements
+            document.getElementById('patient-age').value = age;
+            document.getElementById('patient-gender').value = gender;
+            document.getElementById('patient-egfr').value = egfr;
+            document.getElementById('patient-allergy').value = allergy;
+            document.getElementById('patient-meds').value = meds;
+            document.getElementById('patient-preg').value = preg;
+        }
+
+        async function submitAnalysis() {
+            const scenario = document.getElementById('scenario-input').value.trim();
+            if (!scenario) {
+                alert("Please enter a clinical scenario or select a preset!");
+                return;
+            }
+
+            // Hide placeholder, show loading
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('loading').classList.add('active');
+            
+            // Set loading state
+            isLoading = true;
+            const submitBtn = document.querySelector('.btn-submit');
+            submitBtn.disabled = true;
+            submitBtn.querySelector('span').innerText = "Querying...";
+            
+            const overrideParam = document.getElementById('override-patient-data').checked;
+            const institution = document.getElementById('institution').value;
+
+            let requestBody = {};
+            if (overrideParam) {
+                // Build patient parameters to match what FHIR parser extracts or simulation overrides
+                const age = document.getElementById('patient-age').value;
+                const gender = document.getElementById('patient-gender').value;
+                const egfr = document.getElementById('patient-egfr').value;
+                const allergy = document.getElementById('patient-allergy').value;
+                const meds = document.getElementById('patient-meds').value;
+                const preg = document.getElementById('patient-preg').value;
+
+                // Generate a synthetic FHIR bundle mock matching fhir_converter.py conventions
+                const bundle = {
+                    "resourceType": "Bundle",
+                    "type": "collection",
+                    "entry": [
+                        {
+                            "resource": {
+                                "resourceType": "Patient",
+                                "id": "patient-simulated",
+                                "gender": gender,
+                                "birthDate": new Date(new Date().getFullYear() - age, 0, 1).toISOString().split('T')[0]
+                            }
+                        },
+                        {
+                            "resource": {
+                                "resourceType": "Condition",
+                                "id": "condition-simulated",
+                                "code": { "text": scenario },
+                                "clinicalStatus": {
+                                    "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }]
+                                }
+                            }
+                        }
+                    ]
+                };
+
+                // Add eGFR observation
+                if (egfr) {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "Observation",
+                            "id": "obs-egfr",
+                            "status": "final",
+                            "code": {
+                                "coding": [{ "system": "http://loinc.org", "code": "33914-3", "display": "eGFR" }]
+                            },
+                            "valueQuantity": {
+                                "value": parseFloat(egfr),
+                                "unit": "mL/min/1.73m²"
+                            },
+                            "effectiveDateTime": new Date().toISOString()
+                        }
+                    });
+                }
+
+                // Add Allergy if specified
+                if (allergy !== "none") {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "AllergyIntolerance",
+                            "id": "allergy-contrast",
+                            "clinicalStatus": { "coding": [{ "code": "active" }] },
+                            "code": {
+                                "coding": [{ "display": allergy }],
+                                "text": allergy
+                            }
+                        }
+                    });
+                }
+
+                // Add Med if specified
+                if (meds !== "none") {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "MedicationStatement",
+                            "id": "med-anticoag",
+                            "status": "active",
+                            "medicationCodeableConcept": {
+                                "coding": [{ "display": meds }],
+                                "text": meds
+                            }
+                        }
+                    });
+                }
+
+                // Add Pregnancy Observation if positive or pending
+                if (preg === "yes" || preg === "pending") {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "Observation",
+                            "id": "obs-preg",
+                            "status": "final",
+                            "code": {
+                                "coding": [{ "system": "http://loinc.org", "code": "11477-7", "display": "Urine Pregnancy Test" }]
+                            },
+                            "valueCodeableConcept": {
+                                "text": preg === "yes" ? "Positive" : "Pending"
+                            },
+                            "effectiveDateTime": new Date().toISOString()
+                        }
+                    });
+                }
+
+                requestBody = {
+                    bundle: bundle,
+                    institution_id: institution
+                };
+            } else {
+                requestBody = {
+                    text: scenario,
+                    institution_id: institution
+                };
+            }
+
+            try {
+                const response = await fetch("/v1/protocol", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API returned HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                latestCDSResult = data;
+                
+                // If not overriding, update sidebar fields dynamically from returned FHIR bundle
+                if (!overrideParam && data.fhir_bundle) {
+                    updateSidebarFromFHIR(data.fhir_bundle);
+                }
+                
+                // Populate Panels
+                renderGuidelinesPanel(data);
+                renderSafetyPanel(data);
+                renderProtocolPanel(data);
+                renderFHIRPanel(data);
+
+                // Switch to active tab panel
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById(`panel-${currentActiveTab}`).classList.add('active');
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('placeholder').classList.add('active');
+                alert(`Error calling clinical backend: ${err.message}. Please check if the FastAPI server is running.`);
+            } finally {
+                isLoading = false;
+                submitBtn.disabled = false;
+                submitBtn.querySelector('span').innerText = "Run CDS Engine";
+            }
+        }
+
+        function formatDoseCleanly(doseText) {
+            if (!doseText) return "None (0 mSv)";
+            
+            // Strip radiation symbols, [ped] marker, and trailing 'O' OCR artifacts, preserving digits and dose text
+            let clean = doseText.replace(/[☢]/g, '').replace(/\[ped\]/gi, '').replace(/\s+O$/i, '').trim().toLowerCase();
+            
+            if (!clean || clean === "0" || clean === "0 msv" || clean === "none") {
+                return "None (0 mSv)";
+            }
+            if (clean.includes("<0.1") || clean.includes("< 0.1")) {
+                return "Minimal (< 0.1 mSv)";
+            }
+            if (clean.includes("0.1-1") || clean.includes("0.1 - 1")) {
+                return "Low (0.1 - 1 mSv)";
+            }
+            // Check 10-30 before 1-10 to avoid false match
+            if (clean.includes("10-30") || clean.includes("10 - 30")) {
+                return "Significant (10 - 30 mSv)";
+            }
+            if (clean.includes("1-10") || clean.includes("1 - 10")) {
+                return "Moderate (1 - 10 mSv)";
+            }
+            if (clean.includes("3-10") || clean.includes("3 - 10")) {
+                return "Moderate (3 - 10 mSv)";
+            }
+            if (clean.includes("30-100") || clean.includes("30 - 100")) {
+                return "High (30 - 100 mSv)";
+            }
+            
+            // Fallback: return the cleaned text
+            return doseText.replace(/[☢]/g, '').replace(/\[ped\]/gi, '').replace(/\s+O$/i, '').trim();
+        }
+
+        function parseMarkdown(text) {
+            if (!text) return "";
+            
+            // Strip carriage returns globally
+            text = text.replace(/\r/g, "");
+            
+            // Escape HTML characters to prevent XSS
+            let html = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+            
+            // Horizontal Rules (e.g., *** or --- or ___)
+            html = html.replace(/^\s*(\*\*\*|---|___)\s*$/gm, '<hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">');
+            
+            // Headers: process most-specific first (### before ## before #)
+            html = html.replace(/^\s*###\s+(.+)$/gm, '<h3 style="font-size: 13.5px; font-weight: 600; margin-top: 12px; margin-bottom: 6px;">$1</h3>');
+            html = html.replace(/^\s*##\s+(.+)$/gm, '<h2 style="font-size: 15px; font-weight: 700; margin-top: 15px; margin-bottom: 8px; color: var(--color-primary);">$1</h2>');
+            html = html.replace(/^\s*#\s+(.+)$/gm, '<h1 style="font-size: 17px; font-weight: 700; margin-top: 20px; margin-bottom: 10px; color: var(--color-primary);">$1</h1>');
+            
+            // Bold-italic: ***text*** -> <strong><em>text</em></strong>
+            html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            
+            // Bold: **text** -> <strong>text</strong>
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic: *text* -> <em>text</em>
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Bullet lists: - item or * item -> <li>item</li> (needs wrapping in ul)
+            html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li style="margin-left: 20px; margin-bottom: 4px; font-size: 14.5px;">$1</li>');
+            
+            // Group consecutive <li> items into <ul>
+            html = html.replace(/((?:<li[^>]*>.*?<\/li>\s*)+)/g, '<ul style="margin-bottom: 12px; list-style-type: disc;">$1</ul>');
+            
+            // Numbered lists: 1. item -> <li>item</li>
+            html = html.replace(/^\s*\d+\.\s+(.+)$/gm, '<li class="ol-item" style="margin-left: 20px; margin-bottom: 4px; font-size: 14.5px;">$1</li>');
+            
+            // Group consecutive numbered <li> items into <ol>
+            html = html.replace(/((?:<li class="ol-item"[^>]*>.*?<\/li>\s*)+)/g, '<ol style="margin-bottom: 12px;">$1</ol>');
+            
+            // Paragraphs: double line breaks into paragraphs
+            let lines = html.split(/\n\n+/);
+            html = lines.map(line => {
+                line = line.trim();
+                if (!line) return "";
+                if (line.startsWith("<h") || line.startsWith("<ul") || line.startsWith("<ol") || line.startsWith("<li") || line.startsWith("<hr")) {
+                    return line;
+                }
+                return `<p style="margin-bottom: 12px; line-height: 1.6; font-size: 14.5px;">${line}</p>`;
+            }).join("");
+            
+            // Single newlines within non-list blocks can be converted to <br> or spaces
+            html = html.replace(/(?<!<\/h\d>|<\/ul>|<\/li>|<\/p>|<\/hr>)\n/g, '<br>');
+            
+            return html;
+        }
+
+        function renderGuidelinesPanel(data) {
+            // Extracted scenario label
+            document.getElementById('extracted-scenario-label').innerText = `Matched Clinical Context: "${data.extracted_scenario}"`;
+            
+            // Render markdown using custom parser
+            let rec = data.acr_recommendation || "";
+            document.getElementById('recommendation-text').innerHTML = parseMarkdown(rec);
+
+            const container = document.getElementById('procedures-container');
+            container.innerHTML = "";
+
+            // Parse individual procedure ratings out of ACR sources
+            const matchedRows = [];
+            const seenProcs = new Set();
+            const age = parseInt(document.getElementById('patient-age').value) || 30; // default to adult
+            
+            (data.acr_sources || []).forEach(src => {
+                if (src.metadata.type === "variant_table") {
+                    // Strip carriage returns from content to prevent regex mismatch
+                    const content = (src.content || "").replace(/\r/g, "");
+                    const procMatch = content.match(/Procedure:\s*(.+)/i);
+                    const ratingMatch = content.match(/Appropriateness Category:\s*(.+)/i);
+                    
+                    // Match dose based on patient age
+                    let doseMatch = null;
+                    if (age < 18) {
+                        doseMatch = content.match(/Pediatric Radiation Dose \(RRL\):\s*(.+)/i);
+                    } else {
+                        doseMatch = content.match(/Adult Radiation Dose \(RRL\):\s*(.+)/i);
+                    }
+                    if (!doseMatch) {
+                        doseMatch = content.match(/(?:Adult|Pediatric|Relative)?\s*Radiation\s*(?:Dose|Level)?\s*\(?RRL\)?:\s*(.+)/i);
+                    }
+                    
+                    if (procMatch && ratingMatch) {
+                        const procName = procMatch[1].trim();
+                        const ratingText = ratingMatch[1].trim();
+                        const doseText = doseMatch ? doseMatch[1].trim() : "0 mSv";
+                        
+                        if (!seenProcs.has(procName)) {
+                            seenProcs.add(procName);
+                            
+                            // Map rating text to a score out of 9
+                            let ratingScore = 5; // default moderate
+                            let colorClass = "med";
+                            
+                            if (ratingText.toLowerCase().includes("usually appropriate")) {
+                                ratingScore = 9;
+                                colorClass = "high";
+                            } else if (ratingText.toLowerCase().includes("may be appropriate")) {
+                                ratingScore = 5;
+                                colorClass = "med";
+                            } else if (ratingText.toLowerCase().includes("usually not appropriate")) {
+                                ratingScore = 2;
+                                colorClass = "low";
+                            }
+                            
+                            matchedRows.push({
+                                name: procName,
+                                category: ratingText,
+                                score: ratingScore,
+                                colorClass: colorClass,
+                                dose: formatDoseCleanly(doseText)
+                            });
+                        }
+                    }
+                }
+            });
+
+            // Sort matched rows by rating score desc
+            matchedRows.sort((a,b) => b.score - a.score);
+
+            if (matchedRows.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+                        No structured procedure tables matched. Read the Clinical Rationale above for guidelines.
+                    </div>`;
+            } else {
+                matchedRows.forEach(row => {
+                    const pct = (row.score / 9) * 100;
+                    container.innerHTML += `
+                        <div class="procedure-card">
+                            <div class="procedure-name">${row.name}</div>
+                            <div class="procedure-rating">
+                                <span class="rating-number ${row.colorClass}">${row.category.replace('Appropriateness', '').trim()}</span>
+                                <div class="rating-bar-container">
+                                    <div class="rating-bar ${row.colorClass}" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                            <div class="procedure-dose">${row.dose}</div>
+                        </div>`;
+                });
+            }
+        }
+
+        function renderSafetyPanel(data) {
+            const sBox = document.getElementById('safety-summary-box');
+            const sIcon = document.getElementById('safety-summary-icon');
+            const sTitle = document.getElementById('safety-summary-title');
+            const sSubtitle = document.getElementById('safety-summary-subtitle');
+            const container = document.getElementById('safety-alerts-container');
+            container.innerHTML = "";
+
+            const safety = data.draft_protocol ? data.draft_protocol.safety_profile : null;
+            if (!safety) {
+                sBox.className = "safety-summary-box clear";
+                sIcon.className = "safety-summary-dot";
+                sIcon.innerText = "";
+                sTitle.innerText = "NO SAFETY PROFILE GENERATED";
+                sSubtitle.innerText = "Rule evaluations skipped.";
+                return;
+            }
+
+            const overall = safety.overall_status || "clear";
+            sBox.className = `safety-summary-box ${overall}`;
+            sIcon.className = "safety-summary-dot";
+            sIcon.innerText = "";
+            
+            if (overall === "clear") {
+                sTitle.innerText = "PATIENT CLEAR FOR STANDARD PROTOCOLS";
+                sSubtitle.innerText = "All safety criteria met successfully.";
+            } else if (overall === "warnings") {
+                sTitle.innerText = "CLINICAL WARNINGS DETECTED";
+                sSubtitle.innerText = "Requires active review and medication adjustments.";
+            } else {
+                sTitle.innerText = "HARD CONTRAINDICATION STOP";
+                sSubtitle.innerText = "Severe risk detected. Modify order immediately.";
+            }
+
+            const flags = safety.safety_flags || [];
+            const holds = safety.med_holds || [];
+            const labs = safety.lab_checks || [];
+
+            let triggerCount = 0;
+
+            // Render custom flags
+            flags.forEach(flag => {
+                if (flag.triggered) {
+                    triggerCount++;
+                    container.innerHTML += `
+                        <div class="safety-alert-card ${flag.severity}">
+                            <span class="alert-badge ${flag.severity}">${flag.severity}</span>
+                            <div class="alert-content">
+                                <h4>Trigger: ${flag.rule_type.replace('_', ' ').toUpperCase()}</h4>
+                                <p>${flag.message}</p>
+                                ${flag.action ? `<p style="margin-top: 6px; font-weight: 600; color: var(--text-main);">Clinical Action: ${flag.action.replace('_', ' ').toUpperCase()}</p>` : ''}
+                            </div>
+                        </div>`;
+                }
+            });
+
+            // Render anticoagulant holds
+            holds.forEach(hold => {
+                if (hold.patient_is_taking) {
+                    triggerCount++;
+                    container.innerHTML += `
+                        <div class="safety-alert-card warning">
+                            <span class="alert-badge warning">Medication Hold</span>
+                            <div class="alert-content">
+                                <h4>Hold Required: ${hold.medication_name}</h4>
+                                <p>Anticoagulant medication detected in history. <strong>Hold: ${hold.hold_hours_before} hours before</strong> the procedure. <strong>Resume: ${hold.resume_hours_after || 24} hours after</strong> post-hemostasis validation.</p>
+                                ${hold.sir_reference ? `<p style="margin-top:4px; font-size:12px; color:var(--text-muted);">Source: ${hold.sir_reference}</p>` : ''}
+                            </div>
+                        </div>`;
+                }
+            });
+
+            // Render lab threshold checks (IR)
+            labs.forEach(lab => {
+                if (!lab.is_met) {
+                    triggerCount++;
+                    container.innerHTML += `
+                        <div class="safety-alert-card hard_stop">
+                            <span class="alert-badge hard_stop">Lab Contraindication</span>
+                            <div class="alert-content">
+                                <h4>Inadequate Lab Value: ${lab.lab_name}</h4>
+                                <p>Required threshold is <strong>${lab.required_operator} ${lab.required_value}</strong>. Patient value was <strong>${lab.patient_value || 'None Found'}</strong>.</p>
+                                ${lab.correction_guidance ? `<p style="margin-top:6px; font-weight:600; color:var(--text-main);">Correction Protocol: ${lab.correction_guidance}</p>` : ''}
+                            </div>
+                        </div>`;
+                }
+            });
+
+            if (triggerCount === 0) {
+                container.innerHTML = `
+                    <div style="padding: 30px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+                        All rules successfully evaluated. No safety flags or medication holds were triggered.
+                    </div>`;
+            }
+        }
+
+        function renderProtocolPanel(data) {
+            const draft = data.draft_protocol;
+            
+            const protocolNameVal = document.getElementById('protocol-name-val');
+            const protocolMethodVal = document.getElementById('protocol-method-val');
+            const protocolConfVal = document.getElementById('protocol-conf-val');
+            const tableBody = document.getElementById('protocol-table-body');
+            const mriSection = document.getElementById('mri-sequences-section');
+            const mriContainer = document.getElementById('mri-sequences-container');
+            
+            tableBody.innerHTML = "";
+            mriContainer.innerHTML = "";
+            mriSection.style.display = "none";
+
+            if (!draft || draft.status === "no_match") {
+                protocolNameVal.innerText = "No Matching Protocol Found";
+                protocolMethodVal.innerText = "N/A";
+                protocolConfVal.innerText = "0%";
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="2" style="text-align: center; color: var(--text-muted); font-style: italic;">
+                            Could not find an exact mapping in the local institutional library. Draft manually.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            protocolNameVal.innerText = draft.protocol_name || "Protocol Mapped";
+            protocolMethodVal.innerText = (draft.mapping_method || "fuzzy").toUpperCase();
+            protocolConfVal.innerText = `${Math.round(draft.confidence_score * 100)}%`;
+
+            const details = draft.protocol_details || {};
+            const params = [
+                { name: "Contrast Type", val: details.contrast_type ? details.contrast_type.toUpperCase() : "NONE" },
+                { name: "Contrast Agent", val: details.contrast_agent || "N/A" },
+                { name: "Contrast Volume / Rate", val: details.contrast_volume_ml ? `${details.contrast_volume_ml} mL @ ${details.contrast_rate_ml_s} mL/s` : "N/A" },
+                { name: "Phases", val: Array.isArray(details.phases) ? details.phases.join(", ") : details.phases || "N/A" },
+                { name: "Oral Prep", val: details.oral_prep || "None" },
+                { name: "Slice Thickness", val: details.slice_thickness_mm ? `${details.slice_thickness_mm} mm` : "N/A" },
+                { name: "Reconstructions", val: Array.isArray(details.reconstruction) ? details.reconstruction.join(", ") : details.reconstruction || "N/A" },
+                { name: "Special Instructions", val: details.special_instructions || "None" }
+            ];
+
+            params.forEach(p => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td style="font-weight: 600; width: 30%; color: var(--text-muted);">${p.name}</td>
+                        <td>${p.val}</td>
+                    </tr>`;
+            });
+
+            // Display sequence steps (useful for MRI)
+            const steps = draft.protocol_steps || [];
+            if (steps.length > 0) {
+                mriSection.style.display = "block";
+                steps.forEach(step => {
+                    mriContainer.innerHTML += `
+                        <div class="sequence-step-row">
+                            <div class="sequence-step-info">
+                                <span class="sequence-number">${step.step_order}</span>
+                                <span class="sequence-name">${step.sequence_name}</span>
+                            </div>
+                            <span class="sequence-timing">${step.timing_description || ''}</span>
+                        </div>`;
+                });
+            }
+        }
+
+        function renderFHIRPanel(data) {
+            const fhirJson = data.fhir_bundle || data.mock_bundle_used;
+            document.getElementById('fhir-json-block').textContent = JSON.stringify(fhirJson, null, 4);
+        }
+
+        function copyText(elementId) {
+            const el = document.getElementById(elementId);
+            navigator.clipboard.writeText(el.innerText || el.textContent);
+            alert("Clinical summary copied to clipboard!");
+        }
+
+        function copyProtocol() {
+            if (!latestCDSResult || !latestCDSResult.draft_protocol) return;
+            const draft = latestCDSResult.draft_protocol;
+            const details = draft.protocol_details || {};
+            
+            let text = `RADIOLOGY DRAFT PROTOCOL RECIPE\n`;
+            text += `=================================\n`;
+            text += `Protocol Name: ${draft.protocol_name}\n`;
+            text += `Modality:      ${draft.protocol_type ? draft.protocol_type.toUpperCase() : 'CT/MRI'}\n`;
+            text += `Contrast:      ${details.contrast_type ? details.contrast_type.toUpperCase() : 'NONE'} (${details.contrast_agent || 'N/A'})\n`;
+            if (details.contrast_volume_ml) {
+                text += `Volume/Rate:   ${details.contrast_volume_ml}mL @ ${details.contrast_rate_ml_s}mL/s\n`;
+            }
+            text += `Oral Prep:     ${details.oral_prep || 'None'}\n`;
+            text += `Slices:        ${details.slice_thickness_mm || 'N/A'}mm\n`;
+            if (details.special_instructions) {
+                text += `Instructions:  ${details.special_instructions}\n`;
+            }
+            
+            if (draft.protocol_steps && draft.protocol_steps.length > 0) {
+                text += `\nSEQUENCE STEPS:\n`;
+                draft.protocol_steps.forEach(s => {
+                    text += `  ${s.step_order}. ${s.sequence_name} (${s.timing_description || 'standard'})\n`;
+                });
+            }
+
+            navigator.clipboard.writeText(text);
+            alert("Draft scan recipe copied for EMR copy-paste!");
+        }
+    </script>
+</body>
+</html>

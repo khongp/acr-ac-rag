@@ -1,0 +1,426 @@
+[
+  {
+    "topicId": 1,
+    "topicName": "Chronic Chest Pain-Noncardiac Etiology Unlikely: Low to Intermediate Probability of Coronary Artery Disease",
+    "variantData": [
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "US echocardiography transthoracic stress",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "MRI heart with function and vasodilator stress perfusion without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "CTA coronary arteries with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "SPECT or SPECT/CT MPI stress only",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "Rb-82 PET/CT MPI rest and stress",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "SPECT or SPECT/CT MPI rest and stress",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "10-30 mSv [ped] ☢☢☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "US echocardiography transthoracic resting",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "MRA coronary arteries without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "MRI heart function and morphology without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "MRI heart with function and inotropic stress without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "MRI heart with function and inotropic stress without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "CT chest with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "CT coronary calcium",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "Arteriography coronary",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "CT chest without and with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "CT chest without IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Chest pain, chronic, low-mod prob of CAD",
+        "Scenario ID": "3073531",
+        "Procedure": "SPECT or SPECT/CT MPI rest only",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      }
+    ]
+  },
+  {
+    "topicId": 2,
+    "topicName": "Sudden Onset of Cold, Painful Leg",
+    "variantData": [
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "Arteriography lower extremity",
+        "Adult RRL": "0.1-1mSv ☢☢",
+        "Peds RRL": "0.3-3 mSv [ped] ☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "MRA abdomen and pelvis with bilateral lower extremity runoff with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "CTA lower extremity with IV contrast",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "CTA abdomen and pelvis with bilateral lower extremity runoff with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "US duplex Doppler lower extremity",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "MRA abdomen and pelvis with bilateral lower extremity runoff without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "MRA lower extremity without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "MRA lower extremity without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "US duplex Doppler aorta abdomen",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Cold painful leg, sudden onset, vascular compromise suspected, initial imaging",
+        "Scenario ID": "3073532",
+        "Procedure": "US intravascular aorta and iliofemoral system",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      }
+    ]
+  },
+  {
+    "topicId": 4,
+    "topicName": "Suspected Osteomyelitis of the Foot in Patients with Diabetes Mellitus",
+    "variantData": [
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "Radiography foot",
+        "Adult RRL": "<0.1 mSv ☢",
+        "Peds RRL": "<0.03 mSv [ped] ☢",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "US foot",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "MRI foot without and with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "MRI foot without IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "CT foot with IV contrast",
+        "Adult RRL": "<0.1 mSv ☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "CT foot without and with IV contrast",
+        "Adult RRL": "<0.1 mSv ☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "CT foot without IV contrast",
+        "Adult RRL": "<0.1 mSv ☢",
+        "Peds RRL": "0.03-0.3 mSv [ped] ☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "3-phase bone scan foot",
+        "Adult RRL": "1-10 mSv ☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "3-phase bone scan and WBC scan and sulfur colloid scan foot",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "3-phase bone scan and WBC scan foot",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "3-phase bone scan and WBC scan with SPECT or SPECT/CT foot",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "FDG-PET/CT whole body",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "3-10 mSv [ped] ☢☢☢☢",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "WBC scan and sulfur colloid scan foot",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Osteomyelitis suspected, foot, diabetic, initial imaging",
+        "Scenario ID": "3155930",
+        "Procedure": "WBC scan foot",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      }
+    ]
+  },
+  {
+    "topicId": 5,
+    "topicName": "Management of Iliac Artery Occlusive Disease",
+    "variantData": [
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "Best medical management including supervised exercise program only",
+        "Adult RRL": "",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "Risk factor analysis and lipid profile and ABIs",
+        "Adult RRL": "",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "Antiplatelet adjunctive therapy",
+        "Adult RRL": "",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "US duplex Doppler lower extremity",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "Usually appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "CTA abdomen and pelvis with bilateral lower extremity runoff with IV contrast",
+        "Adult RRL": "10-30 mSv ☢☢☢☢",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "MRA abdomen and pelvis with bilateral lower extremity runoff with IV contrast",
+        "Adult RRL": "0 mSv O",
+        "Peds RRL": "0 mSv [ped] O",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "Plethysmography and pulse volume recording",
+        "Adult RRL": "",
+        "Peds RRL": "",
+        "Appropriateness Category": "May be appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "Catheter-directed angiography",
+        "Adult RRL": "",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      },
+      {
+        "Scenario": "Adult. Nonsmoker, sedentary lifestyle. Left lower-extremity claudication on walking, asymmetrically diminished left femoral pulse. No symptoms at rest. Initial management.",
+        "Scenario ID": "3198461",
+        "Procedure": "Anticoagulation adjunctive therapy",
+        "Adult RRL": "",
+        "Peds RRL": "",
+        "Appropriateness Category": "Usually not appropriate"
+      }
+    ]
+  }
+]
