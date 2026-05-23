@@ -1420,26 +1420,56 @@
         }
 
         function splitPEA(text) {
-            let plan = "";
-            let estimate = "";
-            let final = "";
+            let planLines = [];
+            let estimateLines = [];
+            let finalLines = [];
             
-            let clean = (text || "").replace(/\r/g, "");
+            let currentSection = ""; // "plan", "estimate", "final" or ""
             
-            const planMatch = clean.match(/(?:(?:^|\n)(?:\*\*Plan:\*\*|- Plan:|Plan:))([\s\S]*?)(?=(?:\n)(?:\*\*Estimate\/Rationale:\*\*|- Estimate\/Rationale:|Estimate\/Rationale:|\*\*Estimate:\*\*|- Estimate:|Estimate:|\*\*Final:\*\*|- Final:|Final:|$))/i);
-            const estimateMatch = clean.match(/(?:(?:^|\n)(?:\*\*Estimate\/Rationale:\*\*|- Estimate\/Rationale:|Estimate\/Rationale:|\*\*Estimate:\*\*|- Estimate:|Estimate:))([\s\S]*?)(?=(?:\n)(?:\*\*Final:\*\*|- Final:|Final:|$))/i);
-            const finalMatch = clean.match(/(?:(?:^|\n)(?:\*\*Final:\*\*|- Final:|Final:))([\s\S]*)/i);
+            const lines = (text || "").split("\n");
             
-            if (planMatch) plan = planMatch[1].trim();
-            if (estimateMatch) estimate = estimateMatch[1].trim();
-            if (finalMatch) final = finalMatch[1].trim();
+            for (let line of lines) {
+                const trimmed = line.trim();
+                
+                // Check if this line is a section header (matches variations like Plan:, **Plan**:, - Plan:)
+                if (/^[-*#\s]*\**\s*(plan|clinical\s+plan)\s*\**\s*(:|$)/i.test(trimmed)) {
+                    currentSection = "plan";
+                    continue;
+                }
+                if (/^[-*#\s]*\**\s*(estimate\/rationale|estimate|rationale|clinical\s+rationale)\s*\**\s*(:|$)/i.test(trimmed)) {
+                    currentSection = "estimate";
+                    continue;
+                }
+                if (/^[-*#\s]*\**\s*(final|answer|recommendation|final\s+recommendation)\s*\**\s*(:|$)/i.test(trimmed)) {
+                    currentSection = "final";
+                    continue;
+                }
+                
+                // Add the line to the current section
+                if (currentSection === "plan") {
+                    planLines.push(line);
+                } else if (currentSection === "estimate") {
+                    estimateLines.push(line);
+                } else if (currentSection === "final") {
+                    finalLines.push(line);
+                } else {
+                    // Fallback before any header is matched (usually default to final)
+                    finalLines.push(line);
+                }
+            }
             
-            if (!plan && !estimate && !final) {
-                final = clean;
+            let plan = planLines.join("\n").trim();
+            let estimate = estimateLines.join("\n").trim();
+            let final = finalLines.join("\n").trim();
+            
+            // If we couldn't parse anything into plan and estimate, just return the whole thing in final
+            if (!plan && !estimate) {
+                return { plan: "", estimate: "", final: (text || "").trim() };
             }
             
             return { plan, estimate, final };
         }
+
 
         function renderGuidelinesPanel(data) {
             // Extracted scenario label

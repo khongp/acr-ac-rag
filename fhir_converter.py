@@ -69,7 +69,7 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     extracted: ClinicalExtraction = structured_llm.invoke(
         "Extract ALL of the following from the clinical scenario below:\n"
         "1. Patient demographics (age, gender, date of birth)\n"
-        "2. Clinical conditions/indications\n"
+        "2. Clinical conditions/indications (primary symptom, diagnosis, or mechanism of injury. Proactively append generalized clinical categorization terms, injury mechanisms, or suspected clinical syndromes such as 'major blunt trauma', 'cauda equina syndrome', 'spine trauma', 'low back pain', or 'head trauma' if the scenario implies them, to aid downstream guideline lookup)\n"
         "3. Requested imaging modalities\n"
         "4. Any lab values mentioned (eGFR, INR, Platelets, Hemoglobin, Fibrinogen, HCG, Creatinine, etc.)\n"
         "5. Any allergies mentioned (especially contrast agents like Omnipaque, Isovue, gadolinium, iodine)\n"
@@ -117,8 +117,10 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
             "intent": "proposal",
             "subject": {"reference": "Patient/patient-1"},
             "code": {
-                "coding": [{"display": extracted.service_request.modality}],
-                "text": extracted.service_request.modality
+                "concept": {
+                    "coding": [{"display": extracted.service_request.modality}],
+                    "text": extracted.service_request.modality
+                }
             }
         }
         entries.append({"resource": sr_data})
@@ -230,14 +232,29 @@ def extract_scenario_from_bundle(bundle_dict: dict) -> str:
         
         if rtype == "Patient":
             gender = resource.get("gender", "")
-            if gender:
+            birth_date = resource.get("birthDate", "")
+            age = None
+            if birth_date:
+                try:
+                    if hasattr(birth_date, "year"):
+                        birth_year = birth_date.year
+                    else:
+                        birth_year = int(str(birth_date).split('-')[0])
+                    from datetime import datetime
+                    age = datetime.now().year - birth_year
+                except Exception:
+                    pass
+            if age is not None:
+                patient_info = f"{age}-year-old {gender or 'patient'}"
+            elif gender:
                 patient_info = f"{gender} patient"
         elif rtype == "Condition":
             text = resource.get("code", {}).get("text", "")
             if text:
                 conditions.append(text)
         elif rtype == "ServiceRequest":
-            text = resource.get("code", {}).get("text", "")
+            code_val = resource.get("code", {})
+            text = code_val.get("concept", {}).get("text", "") if "concept" in code_val else code_val.get("text", "")
             if text:
                 requests.append(text)
                 
