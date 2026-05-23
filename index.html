@@ -893,18 +893,34 @@
                     <p style="color: var(--text-muted); font-size: 14.5px;" id="extracted-scenario-label"></p>
                 </div>
                 
-                <div class="pea-block">
-                    <div class="pea-header">RAG Clinical Summary (PEA Format)</div>
-                    <div id="recommendation-text" style="white-space: pre-wrap; font-size: 15px;"></div>
+                <div id="guidelines-final-box" style="margin-bottom: 25px;">
+                    <!-- Final recommendation populated here -->
                 </div>
+
+                <details id="guidelines-details-accordion" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 25px; display: none;">
+                    <summary style="font-weight: 600; font-size: 14.5px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; outline: none; list-style: none;">
+                        <span>🔬 View Clinical Reasoning (PEA Plan &amp; Rationale)</span>
+                        <span id="accordion-toggle-icon" style="font-size: 12px; color: var(--text-muted);">▼</span>
+                    </summary>
+                    <div id="guidelines-details-content" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; line-height: 1.6;">
+                        <!-- Plan & Estimate populated here -->
+                    </div>
+                </details>
 
                 <h3 style="font-size: 16px; margin: 25px 0 15px 0; font-weight: 600;">Modality Appropriateness Ratings (Matched Table Data)</h3>
                 <div class="procedures-list" id="procedures-container">
                     <!-- Cards will be populated here -->
                 </div>
+
+                <h3 style="font-size: 16px; margin: 35px 0 15px 0; font-weight: 600;">Evidence Provenance (Source Reference Guidelines)</h3>
+                <div id="evidence-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                    <!-- Sources populated here -->
+                </div>
+                
+                <div id="recommendation-text-raw" style="display: none;"></div>
                 
                 <div class="btn-action-container">
-                    <button class="btn-action" onclick="copyText('recommendation-text')">Copy Summary</button>
+                    <button class="btn-action" onclick="copyText('recommendation-text-raw')">Copy Raw Summary</button>
                 </div>
             </div>
 
@@ -1403,30 +1419,97 @@
             return html;
         }
 
+        function splitPEA(text) {
+            let plan = "";
+            let estimate = "";
+            let final = "";
+            
+            let clean = (text || "").replace(/\r/g, "");
+            
+            const planMatch = clean.match(/(?:(?:^|\n)(?:\*\*Plan:\*\*|- Plan:|Plan:))([\s\S]*?)(?=(?:\n)(?:\*\*Estimate\/Rationale:\*\*|- Estimate\/Rationale:|Estimate\/Rationale:|\*\*Estimate:\*\*|- Estimate:|Estimate:|\*\*Final:\*\*|- Final:|Final:|$))/i);
+            const estimateMatch = clean.match(/(?:(?:^|\n)(?:\*\*Estimate\/Rationale:\*\*|- Estimate\/Rationale:|Estimate\/Rationale:|\*\*Estimate:\*\*|- Estimate:|Estimate:))([\s\S]*?)(?=(?:\n)(?:\*\*Final:\*\*|- Final:|Final:|$))/i);
+            const finalMatch = clean.match(/(?:(?:^|\n)(?:\*\*Final:\*\*|- Final:|Final:))([\s\S]*)/i);
+            
+            if (planMatch) plan = planMatch[1].trim();
+            if (estimateMatch) estimate = estimateMatch[1].trim();
+            if (finalMatch) final = finalMatch[1].trim();
+            
+            if (!plan && !estimate && !final) {
+                final = clean;
+            }
+            
+            return { plan, estimate, final };
+        }
+
         function renderGuidelinesPanel(data) {
             // Extracted scenario label
             document.getElementById('extracted-scenario-label').innerText = `Matched Clinical Context: "${data.extracted_scenario}"`;
             
-            // Render markdown using custom parser
+            // Set raw text for copy operation
             let rec = data.acr_recommendation || "";
-            document.getElementById('recommendation-text').innerHTML = parseMarkdown(rec);
+            document.getElementById('recommendation-text-raw').innerText = rec;
 
+            // Split and render PEA sections
+            const pea = splitPEA(rec);
+            
+            // Render Final Recommendation Box
+            const finalBox = document.getElementById('guidelines-final-box');
+            if (pea.final) {
+                finalBox.innerHTML = `
+                    <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); border: 1px solid var(--border-color); border-left: 5px solid var(--color-info); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-premium);">
+                        <h4 style="font-size: 13.5px; color: var(--color-primary); font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                            <span>🎯</span> ACR Appropriateness Recommendation
+                        </h4>
+                        <div style="font-size: 14.5px; color: var(--text-main); line-height: 1.6;">
+                            ${parseMarkdown(pea.final)}
+                        </div>
+                    </div>
+                `;
+            } else {
+                finalBox.innerHTML = "";
+            }
+
+            // Render reasoning details in accordion
+            const detailsContent = document.getElementById('guidelines-details-content');
+            if (pea.plan || pea.estimate) {
+                document.getElementById('guidelines-details-accordion').style.display = "block";
+                detailsContent.innerHTML = "";
+                
+                if (pea.plan) {
+                    detailsContent.innerHTML += `
+                        <div style="margin-bottom: 15px;">
+                            <h5 style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">Clinical Retrieval Plan</h5>
+                            <div style="font-size: 13.5px; color: var(--text-main); line-height: 1.5;">${parseMarkdown(pea.plan)}</div>
+                        </div>
+                    `;
+                }
+                
+                if (pea.estimate) {
+                    detailsContent.innerHTML += `
+                        <div>
+                            <h5 style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">Clinical Rationale / Estimate</h5>
+                            <div style="font-size: 13.5px; color: var(--text-main); line-height: 1.5;">${parseMarkdown(pea.estimate)}</div>
+                        </div>
+                    `;
+                }
+            } else {
+                document.getElementById('guidelines-details-accordion').style.display = "none";
+            }
+
+            // Render Modality Appropriateness Ratings Table
             const container = document.getElementById('procedures-container');
             container.innerHTML = "";
 
-            // Parse individual procedure ratings out of ACR sources
             const matchedRows = [];
             const seenProcs = new Set();
-            const age = parseInt(document.getElementById('patient-age').value) || 30; // default to adult
+            const age = parseInt(document.getElementById('patient-age').value) || 30;
             
             (data.acr_sources || []).forEach(src => {
                 if (src.metadata.type === "variant_table") {
-                    // Strip carriage returns from content to prevent regex mismatch
                     const content = (src.content || "").replace(/\r/g, "");
                     const procMatch = content.match(/Procedure:\s*(.+)/i);
                     const ratingMatch = content.match(/Appropriateness Category:\s*(.+)/i);
                     
-                    // Match dose based on patient age
                     let doseMatch = null;
                     if (age < 18) {
                         doseMatch = content.match(/Pediatric Radiation Dose \(RRL\):\s*(.+)/i);
@@ -1445,8 +1528,7 @@
                         if (!seenProcs.has(procName)) {
                             seenProcs.add(procName);
                             
-                            // Map rating text to a score out of 9
-                            let ratingScore = 5; // default moderate
+                            let ratingScore = 5;
                             let colorClass = "med";
                             
                             if (ratingText.toLowerCase().includes("usually appropriate")) {
@@ -1472,7 +1554,6 @@
                 }
             });
 
-            // Sort matched rows by rating score desc
             matchedRows.sort((a,b) => b.score - a.score);
 
             if (matchedRows.length === 0) {
@@ -1496,9 +1577,49 @@
                         </div>`;
                 });
             }
+
+            // Render Evidence Provenance (Source Documents)
+            const evidenceContainer = document.getElementById('evidence-container');
+            evidenceContainer.innerHTML = "";
+            
+            const uniqueSources = new Map();
+            (data.acr_sources || []).forEach(src => {
+                const filename = src.metadata.source || "";
+                if (filename && !uniqueSources.has(filename)) {
+                    const type = src.metadata.type === "variant_table" ? "ACR Table Data" : "ACR Narrative text";
+                    uniqueSources.set(filename, type);
+                }
+            });
+            
+            if (uniqueSources.size > 0) {
+                uniqueSources.forEach((type, filename) => {
+                    let cleanName = filename.replace(/\.pdf$/i, '').replace(/_\d+$/, '').replace(/_/g, ' ').trim();
+                    let searchUrl = `https://www.google.com/search?q=ACR+Appropriateness+Criteria+${encodeURIComponent(cleanName)}`;
+                    
+                    const idMatch = filename.match(/_(\d+)\.pdf$/i);
+                    if (idMatch) {
+                        searchUrl = `https://acsearch.acr.org/docs/${idMatch[1]}/Narrative/`;
+                    }
+                    
+                    evidenceContainer.innerHTML += `
+                        <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; transition: var(--transition-smooth); margin-bottom: 8px;">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-weight: 600; font-size: 14px; color: var(--text-main);">${cleanName}</span>
+                                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">${type}</span>
+                            </div>
+                            <a href="${searchUrl}" target="_blank" class="btn-action" style="padding: 6px 12px; font-size: 12px; text-decoration: none; border-color: var(--color-info); color: var(--color-info); font-weight: 600;">
+                                Open ACR Guideline ↗
+                            </a>
+                        </div>
+                    `;
+                });
+            } else {
+                evidenceContainer.innerHTML = `<div style="color: var(--text-muted); font-style: italic; font-size: 13px;">No reference guidelines found.</div>`;
+            }
         }
 
         function renderSafetyPanel(data) {
+
             const sBox = document.getElementById('safety-summary-box');
             const sIcon = document.getElementById('safety-summary-icon');
             const sTitle = document.getElementById('safety-summary-title');
