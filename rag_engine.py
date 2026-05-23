@@ -36,6 +36,9 @@ CHROMA_PATH = os.getenv("CHROMA_PATH", DEFAULT_CHROMA_PATH).strip()
 CACHE_DB_PATH = os.getenv("CACHE_DB_PATH", "data/query_cache.db").strip()
 PROCEDURES_DB_PATH = os.getenv("PROCEDURES_DB_PATH", "data/acr_procedures.db").strip()
 
+CHROMA_SOURCE_PATH = os.getenv("CHROMA_SOURCE_PATH", "").strip()
+PROCEDURES_SOURCE_PATH = os.getenv("PROCEDURES_SOURCE_PATH", "").strip()
+
 
 def init_cache_db():
     """Ensure query cache table exists in SQLite database."""
@@ -169,56 +172,6 @@ def _extract_topic(content: str) -> str:
     return ""
 
 
-def _choose_best_scenario_llm(query: str, candidates: List[tuple]) -> Optional[tuple]:
-    """
-    Call Gemini to select the single best matching topic/scenario pair from candidates.
-    """
-    if not candidates:
-        return None
-    if len(candidates) == 1:
-        return candidates[0]
-        
-    try:
-        llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0.0)
-        
-        # Format candidates list
-        candidates_text = ""
-        for idx, (topic, scenario) in enumerate(candidates):
-            candidates_text += f"{idx + 1}. Topic: \"{topic}\" | Scenario: \"{scenario}\"\n"
-            
-        prompt = f"""You are a clinical decision support assistant.
-Your task is to select the single most clinically appropriate ACR variant scenario for the patient's presentation.
-
-Patient Case:
-{query}
-
-ACR Variant Candidates:
-{candidates_text}
-
-Respond with ONLY the number of the best matching candidate (e.g. "1" or "2"). Do not include any other text, reasoning, or markdown. If none of the candidates are a good match, respond with "0"."""
-
-        response = llm.invoke(prompt)
-        content = response.content
-        if isinstance(content, list):
-            res_text = "".join(
-                block.get("text", "") if isinstance(block, dict) else str(block)
-                for block in content
-            ).strip()
-        else:
-            res_text = str(content).strip()
-        # Parse index
-        import re
-        match = re.search(r"\d+", res_text)
-        if match:
-            idx = int(match.group(0)) - 1
-            if 0 <= idx < len(candidates):
-                return candidates[idx]
-    except Exception as e:
-        print(f"[WARN] LLM scenario routing failed: {e}")
-        
-    return None
-
-
 class CombinedTypeRetriever(BaseRetriever):
     db: Any
     embeddings: Any
@@ -249,59 +202,44 @@ class CombinedTypeRetriever(BaseRetriever):
                 if pair not in unique_candidates:
                     unique_candidates.append(pair)
 
-        best_topic, best_scenario = None, None
-        if unique_candidates:
-            # Try LLM scenario router
-            print(f"[ROUTER] Prompting LLM to choose from {len(unique_candidates)} candidate scenarios...")
-            chosen = _choose_best_scenario_llm(query, unique_candidates)
-            if chosen:
-                best_topic, best_scenario = chosen
-                print(f"[MATCH-LLM] Topic: '{best_topic}' | Scenario: '{best_scenario}'")
-            else:
-                # Fallback to majority vote
-                pair_counts = Counter()
-                for doc in probe_tables:
-                    sc = _extract_scenario(doc.page_content)
-                    tp = _extract_topic(doc.page_content)
-                    if sc and tp:
-                        pair_counts[(tp, sc)] += 1
-                if pair_counts:
-                    best_topic, best_scenario = pair_counts.most_common(1)[0][0]
-                    print(f"[MATCH-VOTE] Topic: '{best_topic}' | Scenario: '{best_scenario}'")
-
+        # Retrieve top 3 distinct candidate scenarios based on vector rank
+        best_candidates = unique_candidates[:3]
+        
         scenario_tables = []
-        if best_topic and best_scenario:
-            # ── Step 4: Look up detailed procedures from SQLite ──
-            procedures = get_procedures_from_db(best_topic, best_scenario)
-            
-            for row in procedures:
-                proc = row.get("Procedure", "")
-                cat = row.get("Appropriateness Category", "")
-                adult_rrl = row.get("Adult RRL", "")
-                peds_rrl = row.get("Peds RRL", "")
+        if best_candidates:
+            print(f"[ROUTER-COMBINED] Loading procedures for top {len(best_candidates)} candidates...")
+            for best_topic, best_scenario in best_candidates:
+                # ── Step 4: Look up detailed procedures from SQLite ──
+                procedures = get_procedures_from_db(best_topic, best_scenario)
                 
-                content = f"ACR Appropriateness Table Data:\n"
-                content += f"Topic: {best_topic}\n"
-                content += f"Clinical Scenario (Variant): {best_scenario}\n"
-                content += f"Procedure: {proc}\n"
-                content += f"Appropriateness Category: {cat}\n"
-                if adult_rrl:
-                    content += f"Adult Radiation Dose (RRL): {adult_rrl}\n"
-                if peds_rrl:
-                    content += f"Pediatric Radiation Dose (RRL): {peds_rrl}\n"
+                for row in procedures:
+                    proc = row.get("Procedure", "")
+                    cat = row.get("Appropriateness Category", "")
+                    adult_rrl = row.get("Adult RRL", "")
+                    peds_rrl = row.get("Peds RRL", "")
                     
-                scenario_tables.append(Document(
-                    page_content=content,
-                    metadata={
-                        "source": "acr_variant_tables.json",
-                        "type": "variant_table",
-                        "topic": best_topic,
-                        "scenario": best_scenario,
-                    }
-                ))
+                    content = f"ACR Appropriateness Table Data:\n"
+                    content += f"Topic: {best_topic}\n"
+                    content += f"Clinical Scenario (Variant): {best_scenario}\n"
+                    content += f"Procedure: {proc}\n"
+                    content += f"Appropriateness Category: {cat}\n"
+                    if adult_rrl:
+                        content += f"Adult Radiation Dose (RRL): {adult_rrl}\n"
+                    if peds_rrl:
+                        content += f"Pediatric Radiation Dose (RRL): {peds_rrl}\n"
+                        
+                    scenario_tables.append(Document(
+                        page_content=content,
+                        metadata={
+                            "source": "acr_variant_tables.json",
+                            "type": "variant_table",
+                            "topic": best_topic,
+                            "scenario": best_scenario,
+                        }
+                    ))
         else:
             print("[WARN] No scenario matched in probe. Using probe documents directly.")
-            scenario_tables = probe_tables
+            scenario_tables = probe_tables[:5]
 
         # ── Step 5: Get narratives directly (no reranker model needed) ──
         narrative_candidates = self.db.similarity_search_by_vector(
@@ -381,6 +319,23 @@ def init_rag():
     """Initialize all RAG components (embedding model, vector store, LLM).
     Safe to call multiple times — uses singleton pattern."""
     global _retriever, _llm, _chain
+    
+    # 1. Copy database files from GCS source mounts to fast local /tmp storage on Cloud Run
+    if CHROMA_SOURCE_PATH and os.path.exists(CHROMA_SOURCE_PATH):
+        if not os.path.exists(CHROMA_PATH):
+            print(f"[STARTUP] Copying ChromaDB from GCS mount {CHROMA_SOURCE_PATH} to local /tmp storage {CHROMA_PATH}...")
+            import shutil
+            shutil.copytree(CHROMA_SOURCE_PATH, CHROMA_PATH)
+            print("[STARTUP] ChromaDB copy completed.")
+            
+    if PROCEDURES_SOURCE_PATH and os.path.exists(PROCEDURES_SOURCE_PATH):
+        if not os.path.exists(PROCEDURES_DB_PATH):
+            print(f"[STARTUP] Copying procedures DB from {PROCEDURES_SOURCE_PATH} to {PROCEDURES_DB_PATH}...")
+            os.makedirs(os.path.dirname(PROCEDURES_DB_PATH), exist_ok=True)
+            import shutil
+            shutil.copy2(PROCEDURES_SOURCE_PATH, PROCEDURES_DB_PATH)
+            print("[STARTUP] Procedures DB copy completed.")
+
     init_cache_db()
     init_procedures_db()
     if _retriever is None:

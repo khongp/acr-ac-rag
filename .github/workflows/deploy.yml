@@ -33,7 +33,7 @@ jobs:
             --source . \
             --project ${{ env.PROJECT_ID }} \
             --region ${{ env.REGION }} \
-            --update-env-vars CHROMA_PATH="/mnt/gcs/chroma_db_gemini",PROCEDURES_DB_PATH="/mnt/gcs/data/acr_procedures.db",CACHE_DB_PATH="/tmp/query_cache.db",EMBEDDING_MODE="gemini" \
+            --update-env-vars CHROMA_PATH="/tmp/chroma_db_gemini",PROCEDURES_DB_PATH="/tmp/acr_procedures.db",CACHE_DB_PATH="/tmp/query_cache.db",CHROMA_SOURCE_PATH="/mnt/gcs/chroma_db_gemini",PROCEDURES_SOURCE_PATH="/mnt/gcs/data/acr_procedures.db",EMBEDDING_MODE="gemini" \
             --memory 2Gi \
             --add-volume name=acr-data,type=cloud-storage,bucket=${{ env.BUCKET_NAME }} \
             --add-volume-mount volume=acr-data,mount-path=/mnt/gcs \

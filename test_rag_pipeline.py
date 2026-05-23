@@ -11,7 +11,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from dotenv import load_dotenv
 load_dotenv()
 
-scenario = "69 yo female low back pain with suspected cauda equina"
+scenario = "69 yo female low back pain with suspected cauda equina syndrome, new onset urinary retention"
 print(f"Querying RAG pipeline with: '{scenario}'...\n")
 
 result = query_acr_guidelines(scenario)
