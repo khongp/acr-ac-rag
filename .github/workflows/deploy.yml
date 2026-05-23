@@ -11,6 +11,9 @@ env:
   REGION: us-east1
   BUCKET_NAME: acr-ac-rag-data-667793722294
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy to Cloud Run
