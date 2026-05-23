@@ -1594,12 +1594,7 @@
             if (uniqueSources.size > 0) {
                 uniqueSources.forEach((type, filename) => {
                     let cleanName = filename.replace(/\.pdf$/i, '').replace(/_\d+$/, '').replace(/_/g, ' ').trim();
-                    let searchUrl = `https://www.google.com/search?q=ACR+Appropriateness+Criteria+${encodeURIComponent(cleanName)}`;
-                    
-                    const idMatch = filename.match(/_(\d+)\.pdf$/i);
-                    if (idMatch) {
-                        searchUrl = `https://acsearch.acr.org/docs/${idMatch[1]}/Narrative/`;
-                    }
+                    let searchUrl = `https://www.google.com/search?q=ACR+Appropriateness+Criteria+${encodeURIComponent(cleanName)}+pdf`;
                     
                     evidenceContainer.innerHTML += `
                         <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; transition: var(--transition-smooth); margin-bottom: 8px;">
