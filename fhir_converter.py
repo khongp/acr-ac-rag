@@ -471,7 +471,7 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
                 "text": proc
             },
             "subject": {"reference": "Patient/patient-1"},
-            "performedDateTime": proc_date
+            "occurrenceDateTime": proc_date
         }
         entries.append({"resource": proc_resource})
         

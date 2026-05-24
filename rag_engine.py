@@ -27,6 +27,8 @@ from ingest import CachedGoogleGenerativeAIEmbeddings
 load_dotenv()
 
 EMBEDDING_MODE = os.getenv("EMBEDDING_MODE", "local").strip().lower()
+ENABLE_NLP_EXPANSION = os.getenv("ENABLE_NLP_EXPANSION", "false").strip().lower() == "true"
+ENABLE_LLM_RERANK = os.getenv("ENABLE_LLM_RERANK", "false").strip().lower() == "true"
 
 # Support overriding paths via environment variables for GCS mount compatibility
 if EMBEDDING_MODE == "gemini":
@@ -472,10 +474,14 @@ class CombinedTypeRetriever(BaseRetriever):
                 if pair not in unique_candidates:
                     unique_candidates.append(pair)
 
-        # Rerank candidates using LLM to choose the top 3
-        print(f"[RERANK] Prompting LLM to rerank {len(unique_candidates)} unique candidates...")
-        best_candidates = _rerank_scenarios_llm(query, unique_candidates)
-        print(f"[RERANK] Selected top {len(best_candidates)} candidates.")
+        # Rerank candidates using LLM to choose the top 3 (if enabled)
+        if ENABLE_LLM_RERANK:
+            print(f"[RERANK] Prompting LLM to rerank {len(unique_candidates)} unique candidates...")
+            best_candidates = _rerank_scenarios_llm(query, unique_candidates)
+            print(f"[RERANK] Selected top {len(best_candidates)} candidates.")
+        else:
+            print(f"[RERANK] LLM reranking is disabled. Using top {min(3, len(unique_candidates))} candidates from hybrid search.")
+            best_candidates = unique_candidates[:3]
         
         scenario_tables = []
         if best_candidates:
@@ -712,9 +718,13 @@ def query_acr_guidelines(clinical_scenario: str) -> dict:
         
     print(f"[CACHE MISS] Executing RAG query for scenario: '{redacted_scenario}'")
     
-    # Expand query before calling retriever to resolve medical jargon
-    expanded_scenario = _expand_clinical_query(redacted_scenario)
-    print(f"[NLP-EXPANSION] Expanded query: '{expanded_scenario}'")
+    # Expand query before calling retriever to resolve medical jargon (if enabled)
+    if ENABLE_NLP_EXPANSION:
+        expanded_scenario = _expand_clinical_query(redacted_scenario)
+        print(f"[NLP-EXPANSION] Expanded query: '{expanded_scenario}'")
+    else:
+        print("[NLP-EXPANSION] Clinical NLP query expansion is disabled. Using raw redacted query.")
+        expanded_scenario = redacted_scenario
     
     docs = _retriever.invoke(expanded_scenario)
     context = format_docs(docs)

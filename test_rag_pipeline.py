@@ -11,10 +11,19 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from dotenv import load_dotenv
 load_dotenv()
 
-scenario = "69 yo female low back pain with suspected cauda equina syndrome, new onset urinary retention"
-print(f"Querying RAG pipeline with: '{scenario}'...\n")
+import time
 
-result = query_acr_guidelines(scenario)
+scenario = "78 yo male with acute onset of severe headache, worst headache of life, neck stiffness"
+print("Warming up models by running first query...")
+query_acr_guidelines(scenario)
+
+scenario2 = "45yo female with sudden onset of chest pain, shortness of breath, elevated D-dimer"
+print(f"\nQuerying RAG pipeline (cache miss) with: '{scenario2}'...\n")
+
+t0 = time.time()
+result = query_acr_guidelines(scenario2)
+t1 = time.time()
+print(f"\n[LATENCY] Optimized warmed-up cache-miss RAG query took: {t1 - t0:.2f} seconds\n")
 
 print("="*60)
 print("RECOMMENDATION:")

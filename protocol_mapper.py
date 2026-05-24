@@ -38,6 +38,7 @@ load_dotenv()
 
 # Default institution — override via INSTITUTION_ID env var
 DEFAULT_INSTITUTION = os.environ.get("INSTITUTION_ID", "skyridge")
+ENABLE_LLM_FUZZY_MATCH = os.environ.get("ENABLE_LLM_FUZZY_MATCH", "true").strip().lower() == "true"
 
 
 @dataclass
@@ -158,13 +159,17 @@ def get_draft_protocol(
         )
         return draft
     
-    # Step 5: Fallback — LLM-assisted fuzzy matching
-    fuzzy_result = _llm_fuzzy_match(
-        acr_procedure=acr_procedure,
-        acr_scenario=acr_scenario,
-        institution_id=institution,
-        db_path=db_path,
-    )
+    # Step 5: Fallback — LLM-assisted fuzzy matching (if enabled)
+    fuzzy_result = None
+    if ENABLE_LLM_FUZZY_MATCH:
+        fuzzy_result = _llm_fuzzy_match(
+            acr_procedure=acr_procedure,
+            acr_scenario=acr_scenario,
+            institution_id=institution,
+            db_path=db_path,
+        )
+    else:
+        print("[FUZZY MATCH] LLM-assisted fuzzy matching is disabled.")
     
     if fuzzy_result:
         protocol_id = fuzzy_result.get("protocol_id")
@@ -319,7 +324,8 @@ def _llm_fuzzy_match(
     try:
         from langchain_google_genai import ChatGoogleGenerativeAI
         
-        llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0.0)
+        model_name = os.getenv("FUZZY_MATCH_MODEL", "gemini-2.5-flash")
+        llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.0)
         
         prompt = f"""You are a radiology protocol matching assistant.
 

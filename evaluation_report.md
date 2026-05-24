@@ -1,6 +1,6 @@
 # ACR-AC-RAG Batch Validation Report
 
-Generated on: 2026-05-24 00:02:47
+Generated on: 2026-05-24 13:54:47
 
 ### Performance Summary
 - **Total Cases Evaluated**: 11
@@ -10,87 +10,87 @@ Generated on: 2026-05-24 00:02:47
 
 ## Detailed Test Cases
 
-### 1. Major Blunt Trauma - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Major blunt trauma, hemodynamically stable, urinary system trauma suspected, initial imaging
-- **Generated Simulated Query**: *"45yo man, stable after high-speed MVC, presenting with gross hematuria and flank pain. What's the recommended initial imaging for possible renal or bladder injury?"*
-- **FHIR Extracted Scenario**: `"45-year-old male with high-speed motor vehicle collision, major blunt trauma, gross hematuria, flank pain, possible renal injury, possible bladder injury."`
+### 1. Major Blunt Trauma - 🟢 PASS (Rank 2)
+- **Original ACR Scenario**: Major blunt trauma, hemodynamically stable, lower extremity trauma suspected, initial imaging
+- **Generated Simulated Query**: *"30yo male, stable after a high-speed MVC, with severe left lower extremity pain and suspected fracture. What initial imaging is indicated?"*
+- **FHIR Extracted Scenario**: `"30-year-old male with high-speed motor vehicle collision, severe left lower extremity pain, suspected fracture, major blunt trauma."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Major Blunt Trauma`, **Scenario**: `major blunt trauma, hemodynamically stable, urinary system trauma suspected, initial imaging` **(MATCHED)**
-  2. **Topic**: `Hematuria`, **Scenario**: `hematuria, gross, initial imaging`
-  3. **Topic**: `Major Blunt Trauma`, **Scenario**: `major blunt trauma, hemodynamically stable, nos, initial imaging` **(MATCHED)**
+  1. **Topic**: `Acute Hip Pain`, **Scenario**: `hip pain, acute, traumatic, initial imaging`
+  2. **Topic**: `Major Blunt Trauma`, **Scenario**: `major blunt trauma, hemodynamically stable, lower extremity trauma suspected, initial imaging` **(MATCHED)**
+  3. **Topic**: `Acute Hip Pain`, **Scenario**: `hip pain, acute, traumatic, fracture on radiography, next imaging study`
 
 ---
 
 ### 2. Head Trauma - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Head trauma, acute, moderate, GCS 9-12, initial imaging
-- **Generated Simulated Query**: *"67yo female presents after a fall, now confused and lethargic with slurred speech. What initial imaging is recommended for this acute head injury?"*
-- **FHIR Extracted Scenario**: `"67-year-old female with fall, confusion, lethargy, slurred speech, acute head injury, head trauma. Requested: CT Head."`
+- **Original ACR Scenario**: Head trauma, intracranial arterial injury suspected, positive findings on prior imaging
+- **Generated Simulated Query**: *"67yo male with worsening headache and confusion after a fall, following initial CT showing a small intraparenchymal hemorrhage concerning for underlying arterial injury."*
+- **FHIR Extracted Scenario**: `"67-year-old male with worsening headache, confusion after a fall, small intraparenchymal hemorrhage, underlying arterial injury, head trauma."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Head Trauma`, **Scenario**: `head trauma, acute, severe, gcs 3-8, initial imaging` **(MATCHED)**
-  2. **Topic**: `Head Trauma`, **Scenario**: `head trauma, acute, moderate, gcs 9-12, initial imaging` **(MATCHED)**
-  3. **Topic**: `Head Trauma`, **Scenario**: `head trauma, acute, mild, gcs 13-15, imaging indicated per clinical decision rule, initial imaging` **(MATCHED)**
+  1. **Topic**: `Head Trauma`, **Scenario**: `head trauma, acute, neuro decline since last imaging, short-term follow up imaging` **(MATCHED)**
+  2. **Topic**: `Head Trauma-Child`, **Scenario**: `head trauma, moderate to severe, acute, blunt, gcs<=13, not abuse, initial imaging`
+  3. **Topic**: `Head Trauma`, **Scenario**: `head trauma, acute, severe, gcs 3-8, initial imaging` **(MATCHED)**
 
 ---
 
-### 3. Low Back Pain - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging
-- **Generated Simulated Query**: *"62-year-old woman with chronic lower back pain for several months, which has not improved after 6 weeks of conservative treatment. Should I order initial imaging?"*
-- **FHIR Extracted Scenario**: `"62-year-old female with chronic lower back pain, low back pain."`
+### 3. Low Back Pain - 🟢 PASS (Rank 2)
+- **Original ACR Scenario**: Low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging
+- **Generated Simulated Query**: *"48-year-old man with persistent low back pain for 7 weeks, refractory to conservative management with PT and NSAIDs. What initial imaging is appropriate before considering injections?"*
+- **FHIR Extracted Scenario**: `"48-year-old male with persistent low back pain for 7 weeks, refractory to conservative management with PT and NSAIDs, low back pain."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Low Back Pain`, **Scenario**: `low back pain, chronic, no red flags, no prior management, initial imaging` **(MATCHED)**
-  2. **Topic**: `Low Back Pain`, **Scenario**: `low back pain, elderly, initial imaging` **(MATCHED)**
-  3. **Topic**: `Low Back Pain`, **Scenario**: `low back pain, chronic, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging` **(MATCHED)**
+  1. **Topic**: `Back Pain-Child`, **Scenario**: `lumbar spine pain, lasting >4wks, radiography negative, next imaging study`
+  2. **Topic**: `Low Back Pain`, **Scenario**: `low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging` **(MATCHED)**
+  3. **Topic**: `Back Pain-Child`, **Scenario**: `lumbar spine pain, infection, initial imaging`
 
 ---
 
 ### 4. Acute Hip Pain - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Hip pain, acute, traumatic, fracture suspected, radiography negative, next imaging study
-- **Generated Simulated Query**: *"72-year-old female presents with acute hip pain after a fall. Initial X-rays are negative, but clinical suspicion for hip fracture remains high. What's the next recommended imaging study?"*
-- **FHIR Extracted Scenario**: `"72-year-old female with acute hip pain, fall, suspected hip fracture."`
+- **Original ACR Scenario**: Hip pain, acute, traumatic, tendon injury suspected, radiography indeterminate, next imaging study
+- **Generated Simulated Query**: *"45-year-old man presents with acute hip pain after a fall. X-rays were unremarkable, but I suspect a tendon injury. What's the next best imaging?"*
+- **FHIR Extracted Scenario**: `"45-year-old male with acute hip pain after a fall, suspected tendon injury."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Acute Hip Pain`, **Scenario**: `hip pain, acute, traumatic, initial imaging` **(MATCHED)**
-  2. **Topic**: `Stress (Fatigue/Insufficiency) Fracture, Including Sacrum, Excluding Other Vertebrae`, **Scenario**: `stress fracture suspected, hip, initial imaging`
-  3. **Topic**: `Acute Hip Pain`, **Scenario**: `hip pain, acute, traumatic, fracture suspected, radiography indeterminate, next imaging study` **(MATCHED)**
+  1. **Topic**: `Acute Hip Pain`, **Scenario**: `hip pain, acute, traumatic, tendon injury suspected, radiography indeterminate, next imaging study` **(MATCHED)**
+  2. **Topic**: `Acute Hip Pain`, **Scenario**: `hip pain, acute, traumatic, tendon injury suspected, radiography negative, next imaging study` **(MATCHED)**
+  3. **Topic**: `Acute Hip Pain`, **Scenario**: `hip pain, acute, traumatic, muscle injury suspected, radiography indeterminate, next imaging study` **(MATCHED)**
 
 ---
 
-### 5. Rib Fractures - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Rib fracture suspected, after CPR
-- **Generated Simulated Query**: *"68-year-old man with new chest pain and tenderness after recent CPR. Evaluate for rib fractures."*
-- **FHIR Extracted Scenario**: `"68-year-old male with new chest pain, tenderness after recent CPR, suspected rib fractures, post-CPR complications."`
+### 5. Rib Fractures - 🟢 PASS (Rank 2)
+- **Original ACR Scenario**: Rib fracture suspected, pathological
+- **Generated Simulated Query**: *"67-year-old female with new onset, focal left-sided rib pain, no significant trauma. Evaluating for suspected pathological rib fracture."*
+- **FHIR Extracted Scenario**: `"67-year-old female with new onset, focal left-sided rib pain, suspected pathological rib fracture."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Rib Fractures`, **Scenario**: `rib fracture suspected, after cpr` **(MATCHED)**
-  2. **Topic**: `Rib Fractures`, **Scenario**: `chest trauma, blunt, rib fracture suspected` **(MATCHED)**
-  3. **Topic**: `Workup of Pleural Effusion or Pleural Disease`, **Scenario**: `pleural effusion, incidental, incomplete thoracic imaging, next imaging study`
+  1. **Topic**: `Stress (Fatigue/Insufficiency) Fracture, Including Sacrum, Excluding Other Vertebrae`, **Scenario**: `ribs stress fracture on radiography, next imaging study, associated complication`
+  2. **Topic**: `Rib Fractures`, **Scenario**: `rib fracture suspected, pathological` **(MATCHED)**
+  3. **Topic**: `Rib Fractures`, **Scenario**: `rib fracture suspected, after cpr` **(MATCHED)**
 
 ---
 
 ### 6. Acute Spinal Trauma - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Cervical spine trauma, acute, blunt, distracting injury, initial imaging
-- **Generated Simulated Query**: *"32yo male post-MVA with an open tibia fracture. What is the appropriate initial cervical spine imaging?"*
-- **FHIR Extracted Scenario**: `"32-year-old male with Motor Vehicle Accident, Open tibia fracture, Spine trauma, Cervical spine trauma. Requested: Cervical spine imaging."`
+- **Original ACR Scenario**: Lumbar spine trauma, acute, blunt, ligamentous injury suspected, with or without traumatic injury on CT, next imaging study
+- **Generated Simulated Query**: *"45yo man with acute lower back pain after blunt trauma; CT negative for fracture but persistent concern for lumbar ligamentous injury/instability. What is the next imaging study?"*
+- **FHIR Extracted Scenario**: `"45-year-old male with acute lower back pain, blunt trauma, lumbar ligamentous injury/instability, low back pain, spine trauma, major blunt trauma."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Acute Spinal Trauma`, **Scenario**: `cervical spine trauma, acute, blunt, motor vehicle crash with high speed, rollover, or ejection, initial imaging` **(MATCHED)**
-  2. **Topic**: `Acute Spinal Trauma`, **Scenario**: `cervical spine trauma, acute, blunt, distracting injury, initial imaging` **(MATCHED)**
-  3. **Topic**: `Acute Spinal Trauma`, **Scenario**: `cervical spine trauma, acute, blunt, dangerous mechanism, initial imaging` **(MATCHED)**
+  1. **Topic**: `Acute Spinal Trauma`, **Scenario**: `lumbar spine trauma, acute, blunt, ligamentous injury, with or without traumatic injury on ct, next imaging study` **(MATCHED)**
+  2. **Topic**: `Acute Spinal Trauma`, **Scenario**: `lumbar spine trauma, acute, blunt, spinal cord injury, with or without trauma on ct, next imaging study` **(MATCHED)**
+  3. **Topic**: `Acute Spinal Trauma`, **Scenario**: `lumbar spine trauma, acute, blunt, high-energy injury mechanisms, initial imaging` **(MATCHED)**
 
 ---
 
 ### 7. Suspected Spine Infection - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Spine infection suspected, thoracic and lumbar, neck or back pain, with or without fever, dialysis, initial imaging
-- **Generated Simulated Query**: *"What is the most appropriate initial imaging for a 58-year-old female on hemodialysis presenting with new thoracolumbar back pain and low-grade fevers, concerning for spine infection?"*
-- **FHIR Extracted Scenario**: `"58-year-old female with new thoracolumbar back pain, low-grade fevers, spine infection, hemodialysis."`
+- **Original ACR Scenario**: Spine infection suspected, cervical and thoracic, neck or back pain, with or without fever, diabetes mellitus, initial imaging
+- **Generated Simulated Query**: *"68-year-old male with a history of diabetes presenting with new onset neck and upper back pain. Suspected spinal infection; what initial imaging is recommended?"*
+- **FHIR Extracted Scenario**: `"68-year-old male with new onset neck and upper back pain, Suspected spinal infection."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Suspected Spine Infection`, **Scenario**: `spine infection suspected, thoracic, neck or back pain, with or without fever, dialysis, initial imaging` **(MATCHED)**
-  2. **Topic**: `Suspected Spine Infection`, **Scenario**: `spine infection suspected, thoracic and lumbar, radiography abnormal, next imaging study` **(MATCHED)**
-  3. **Topic**: `Suspected Spine Infection`, **Scenario**: `spine infection suspected, thoracic and lumbar, ct abnormal, next imaging study` **(MATCHED)**
+  1. **Topic**: `Suspected Spine Infection`, **Scenario**: `spine infection suspected, cervical, radiography abnormal, next imaging study` **(MATCHED)**
+  2. **Topic**: `Suspected Spine Infection`, **Scenario**: `spine infection suspected, cervical and lumbar, radiography abnormal, next imaging study` **(MATCHED)**
+  3. **Topic**: `Suspected Spine Infection`, **Scenario**: `spine infection suspected, cervical and thoracic, radiography abnormal, next imaging study` **(MATCHED)**
 
 ---
 
 ### 8. Renovascular Hypertension - 🟢 PASS (Rank 1)
 - **Original ACR Scenario**: HTN, high suspicion renal vascular, normal renal function
-- **Generated Simulated Query**: *"67yo female with resistant hypertension. Evaluate for renovascular etiology."*
-- **FHIR Extracted Scenario**: `"67-year-old female with resistant hypertension, renovascular etiology."`
+- **Generated Simulated Query**: *"65-year-old female with resistant hypertension, evaluating for renovascular etiology. Renal function is normal."*
+- **FHIR Extracted Scenario**: `"65-year-old female with Resistant hypertension, Renovascular etiology."`
 - **Retrieved Top 3 Candidates**:
   1. **Topic**: `Renovascular Hypertension`, **Scenario**: `htn, high suspicion renal vascular, decreased renal function` **(MATCHED)**
   2. **Topic**: `Renovascular Hypertension`, **Scenario**: `htn, high suspicion renal vascular, normal renal function` **(MATCHED)**
@@ -99,31 +99,31 @@ Generated on: 2026-05-24 00:02:47
 ---
 
 ### 9. Jaundice - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Jaundice, initial exam
-- **Generated Simulated Query**: *"67yo female presenting with new onset yellowing of skin and eyes. What imaging is recommended to evaluate the cause?"*
-- **FHIR Extracted Scenario**: `"67-year-old female with new onset yellowing of skin and eyes, jaundice."`
+- **Original ACR Scenario**: Jaundice, non-obstructive etiology suspected
+- **Generated Simulated Query**: *"67-year-old female with yellow skin and eyes. Initial workup doesn't suggest biliary obstruction."*
+- **FHIR Extracted Scenario**: `"67-year-old female with yellow skin and eyes, no biliary obstruction."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Jaundice`, **Scenario**: `jaundice, initial exam` **(MATCHED)**
-  2. **Topic**: `Jaundice`, **Scenario**: `jaundice, biliary obstruction suspected` **(MATCHED)**
-  3. **Topic**: `Jaundice`, **Scenario**: `jaundice, non-obstructive etiology suspected` **(MATCHED)**
+  1. **Topic**: `Jaundice`, **Scenario**: `jaundice, non-obstructive etiology suspected` **(MATCHED)**
+  2. **Topic**: `Abnormal Liver Function Tests`, **Scenario**: `abnormal liver function tests, hyperbilirubinemia, subacute cholestasis, unconjugated, initial imaging`
+  3. **Topic**: `Jaundice`, **Scenario**: `jaundice, initial exam` **(MATCHED)**
 
 ---
 
-### 10. Hematuria - 🟢 PASS (Rank 1)
-- **Original ACR Scenario**: Hematuria, gross, initial imaging
-- **Generated Simulated Query**: *"68yo male presents with new onset visible blood in his urine. What is the recommended initial imaging?"*
-- **FHIR Extracted Scenario**: `"68-year-old male with new onset visible hematuria."`
+### 10. Hematuria - 🟢 PASS (Rank 3)
+- **Original ACR Scenario**: Hematuria, microscopic, no risk factors, initial imaging
+- **Generated Simulated Query**: *"62-year-old woman with asymptomatic microscopic hematuria found on routine UA. She has no urologic risk factors. What's the best initial imaging?"*
+- **FHIR Extracted Scenario**: `"62-year-old female with Asymptomatic microscopic hematuria."`
 - **Retrieved Top 3 Candidates**:
-  1. **Topic**: `Hematuria`, **Scenario**: `hematuria, gross, initial imaging` **(MATCHED)**
-  2. **Topic**: `Pretreatment Staging of Urothelial Cancer`, **Scenario**: `bladder cancer, muscle invasive, pretreatment staging`
-  3. **Topic**: `Lower Urinary Tract Symptoms: Suspicion of Benign Prostatic Hyperplasia`, **Scenario**: `benign prostatic hyperplasia (bph) suspected`
+  1. **Topic**: `Post-Treatment Surveillance of Bladder Cancer`, **Scenario**: `bladder cancer, nonmuscle invasive, treated, asymptomatic, surveillance`
+  2. **Topic**: `Post-Treatment Surveillance of Bladder Cancer`, **Scenario**: `bladder cancer, nonmuscle, invasive, treated, risk factors, surveillance`
+  3. **Topic**: `Hematuria`, **Scenario**: `hematuria, gross, initial imaging` **(MATCHED)**
 
 ---
 
 ### 11. Dementia - 🟢 PASS (Rank 1)
 - **Original ACR Scenario**: Cognitive impairment, memory deficits, Alzheimer disease suspected, atypical clinical presentation, initial imaging
-- **Generated Simulated Query**: *"68-year-old female presenting with progressive memory loss and atypical cognitive decline, highly suspicious for Alzheimer's. What initial imaging is recommended?"*
-- **FHIR Extracted Scenario**: `"68-year-old female with progressive memory loss, atypical cognitive decline, Alzheimer's disease (suspected)."`
+- **Generated Simulated Query**: *"68yo male with new onset memory loss and cognitive decline, concerning for atypical Alzheimer's presentation. What is the recommended initial imaging?"*
+- **FHIR Extracted Scenario**: `"68-year-old male with New onset memory loss and cognitive decline, concerning for atypical Alzheimer's presentation."`
 - **Retrieved Top 3 Candidates**:
   1. **Topic**: `Dementia`, **Scenario**: `cognitive impairment, memory deficits, alzheimer disease suspected, atypical clinical presentation, initial imaging` **(MATCHED)**
   2. **Topic**: `Dementia`, **Scenario**: `cognitive impairment, memory deficits, alzheimer disease suspected, typical clinical presentation, initial imaging` **(MATCHED)**
