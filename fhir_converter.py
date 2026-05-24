@@ -51,6 +51,200 @@ def get_extraction_llm():
         raise ValueError("Please set the GOOGLE_API_KEY environment variable to use the LLM.")
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
 
+def fallback_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
+    """
+    A regex-based backup parser that generates a standard FHIR bundle when the LLM is rate-limited or offline.
+    """
+    import re
+    from datetime import date
+    
+    entries = []
+    
+    # 1. Age extraction
+    age = None
+    age_match = re.search(r"\b(\d{1,3})\s*(?:yo|year|yr|-year|years\s+old)\b", clinical_scenario, re.IGNORECASE)
+    if age_match:
+        age = int(age_match.group(1))
+        
+    # 2. Gender extraction
+    gender = "unknown"
+    if re.search(r"\b(male|man|m|gentleman|boy)\b", clinical_scenario, re.IGNORECASE):
+        gender = "male"
+    elif re.search(r"\b(female|woman|f|lady|girl)\b", clinical_scenario, re.IGNORECASE):
+        gender = "female"
+        
+    # Patient Resource
+    patient_data = {
+        "id": "patient-1",
+        "resourceType": "Patient",
+        "gender": gender
+    }
+    if age:
+        patient_data["birthDate"] = f"{date.today().year - age}-01-01"
+    
+    entries.append({"resource": patient_data})
+    
+    # 3. Clinical condition (Indications)
+    condition_data = {
+        "id": "condition-1",
+        "resourceType": "Condition",
+        "clinicalStatus": {
+            "coding": [{"system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active"}]
+        },
+        "subject": {"reference": "Patient/patient-1"},
+        "code": {
+            "coding": [{"display": clinical_scenario}],
+            "text": clinical_scenario
+        }
+    }
+    entries.append({"resource": condition_data})
+    
+    # 4. Lab Values (eGFR, INR, etc.)
+    # eGFR
+    egfr_match = re.search(r"egfr\s*(?:is|of|=)?\s*(\d+(?:\.\d+)?)", clinical_scenario, re.IGNORECASE)
+    if egfr_match:
+        val = float(egfr_match.group(1))
+        obs_data = {
+            "id": "observation-egfr",
+            "resourceType": "Observation",
+            "status": "final",
+            "code": {
+                "coding": [{
+                    "system": "http://loinc.org",
+                    "code": "62238-1",
+                    "display": "Glomerular filtration rate/1.73 sq M.predicted"
+                }],
+                "text": "eGFR"
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "effectiveDateTime": date.today().isoformat(),
+            "valueQuantity": {
+                "value": val,
+                "unit": "mL/min/1.73m²"
+            }
+        }
+        entries.append({"resource": obs_data})
+        
+    # INR
+    inr_match = re.search(r"inr\s*(?:is|of|=)?\s*(\d+(?:\.\d+)?)", clinical_scenario, re.IGNORECASE)
+    if inr_match:
+        val = float(inr_match.group(1))
+        obs_data = {
+            "id": "observation-inr",
+            "resourceType": "Observation",
+            "status": "final",
+            "code": {
+                "coding": [{
+                    "system": "http://loinc.org",
+                    "code": "32960-9",
+                    "display": "Prothrombin time INR"
+                }],
+                "text": "INR"
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "effectiveDateTime": date.today().isoformat(),
+            "valueQuantity": {
+                "value": val
+            }
+        }
+        entries.append({"resource": obs_data})
+        
+    # Platelets
+    plt_match = re.search(r"(?:platelets|platelet|plt)\s*(?:is|of|=)?\s*(\d+)", clinical_scenario, re.IGNORECASE)
+    if plt_match:
+        val = float(plt_match.group(1))
+        obs_data = {
+            "id": "observation-platelets",
+            "resourceType": "Observation",
+            "status": "final",
+            "code": {
+                "coding": [{
+                    "system": "http://loinc.org",
+                    "code": "777-3",
+                    "display": "Platelets [#/volume] in Blood"
+                }],
+                "text": "Platelets"
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "effectiveDateTime": date.today().isoformat(),
+            "valueQuantity": {
+                "value": val,
+                "unit": "K/uL"
+            }
+        }
+        entries.append({"resource": obs_data})
+        
+    # HCG / Pregnancy
+    if re.search(r"\b(pregnant|pregnancy|hcg|positive\s+hcg)\b", clinical_scenario, re.IGNORECASE):
+        obs_data = {
+            "id": "observation-hcg",
+            "resourceType": "Observation",
+            "status": "final",
+            "code": {
+                "coding": [{
+                    "system": "http://loinc.org",
+                    "code": "8302-2",
+                    "display": "hCG [Presence] in Urine/Serum"
+                }],
+                "text": "hCG"
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "effectiveDateTime": date.today().isoformat(),
+            "valueString": "positive"
+        }
+        entries.append({"resource": obs_data})
+        
+    # 5. Allergies (especially contrast agents)
+    from medical_ontology import CONTRAST_ALLERGY_MAP
+    allergy_idx = 1
+    for key, val in CONTRAST_ALLERGY_MAP.items():
+        if re.search(rf"\b{key}\b", clinical_scenario, re.IGNORECASE):
+            allergy_data = {
+                "id": f"allergy-{allergy_idx}",
+                "resourceType": "AllergyIntolerance",
+                "clinicalStatus": {
+                    "coding": [{"system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", "code": "active"}]
+                },
+                "patient": {"reference": "Patient/patient-1"},
+                "code": {
+                    "coding": [
+                        {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": val["rxnorm"], "display": val.get("generic", key)},
+                        {"system": "http://snomed.info/sct", "code": val["snomed_class"], "display": val["class_display"]}
+                    ],
+                    "text": key.capitalize()
+                }
+            }
+            entries.append({"resource": allergy_data})
+            allergy_idx += 1
+            
+    # 6. Medications
+    from medical_ontology import MEDICATION_MAP
+    med_idx = 1
+    for key, val in MEDICATION_MAP.items():
+        if re.search(rf"\b{key}\b", clinical_scenario, re.IGNORECASE):
+            med_data = {
+                "id": f"medication-{med_idx}",
+                "resourceType": "MedicationStatement",
+                "status": "active",
+                "subject": {"reference": "Patient/patient-1"},
+                "medication": {
+                    "concept": {
+                        "coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": val["rxnorm"], "display": val.get("generic", key)}],
+                        "text": key.capitalize()
+                    }
+                }
+            }
+            entries.append({"resource": med_data})
+            med_idx += 1
+            
+    bundle_data = {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": entries
+    }
+    return Bundle(**bundle_data)
+
+
 def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     """
     Takes a raw clinical scenario text, extracts entities using an LLM, 
@@ -63,19 +257,23 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     """
     from datetime import date
     
-    llm = get_extraction_llm()
-    structured_llm = llm.with_structured_output(ClinicalExtraction)
-    
-    extracted: ClinicalExtraction = structured_llm.invoke(
-        "Extract ALL of the following from the clinical scenario below:\n"
-        "1. Patient demographics (age, gender, date of birth)\n"
-        "2. Clinical conditions/indications (primary symptom, diagnosis, or mechanism of injury. Proactively append generalized clinical categorization terms, injury mechanisms, or suspected clinical syndromes such as 'major blunt trauma', 'cauda equina syndrome', 'spine trauma', 'low back pain', or 'head trauma' if the scenario implies them, to aid downstream guideline lookup)\n"
-        "3. Requested imaging modalities\n"
-        "4. Any lab values mentioned (eGFR, INR, Platelets, Hemoglobin, Fibrinogen, HCG, Creatinine, etc.)\n"
-        "5. Any allergies mentioned (especially contrast agents like Omnipaque, Isovue, gadolinium, iodine)\n"
-        "6. Any current medications mentioned (especially anticoagulants like Eliquis, Xarelto, Warfarin, Plavix, Heparin)\n"
-        f"\nClinical Scenario:\n{clinical_scenario}"
-    )
+    try:
+        llm = get_extraction_llm()
+        structured_llm = llm.with_structured_output(ClinicalExtraction)
+        
+        extracted: ClinicalExtraction = structured_llm.invoke(
+            "Extract ALL of the following from the clinical scenario below:\n"
+            "1. Patient demographics (age, gender, date of birth)\n"
+            "2. Clinical conditions/indications (primary symptom, diagnosis, or mechanism of injury. Proactively append generalized clinical categorization terms, injury mechanisms, or suspected clinical syndromes such as 'major blunt trauma', 'cauda equina syndrome', 'spine trauma', 'low back pain', or 'head trauma' if the scenario implies them, to aid downstream guideline lookup)\n"
+            "3. Requested imaging modalities\n"
+            "4. Any lab values mentioned (eGFR, INR, Platelets, Hemoglobin, Fibrinogen, HCG, Creatinine, etc.)\n"
+            "5. Any allergies mentioned (especially contrast agents like Omnipaque, Isovue, gadolinium, iodine)\n"
+            "6. Any current medications mentioned (especially anticoagulants like Eliquis, Xarelto, Warfarin, Plavix, Heparin)\n"
+            f"\nClinical Scenario:\n{clinical_scenario}"
+        )
+    except Exception as e:
+        print(f"[WARN] Structured LLM FHIR extraction failed: {e}. Falling back to regex parser...")
+        return fallback_text_to_fhir_bundle(clinical_scenario)
     
     entries = []
     

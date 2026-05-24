@@ -938,6 +938,14 @@
 
     <div class="app-container">
         
+        <!-- Connection Error Banner -->
+        <div id="connection-error-banner" class="info-banner" style="display: none; background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; color: #b91c1c; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 15px;">
+            <span style="font-size: 20px; color: #ef4444;">⚠️</span>
+            <div style="font-weight: 600; font-size: 13.5px;">
+                Connection Error: Cannot communicate with the clinical backend. Reconnecting...
+            </div>
+        </div>
+        
         <div class="info-banner">
             <div>
                 <strong>Non-Device Clinical Decision Support (CDS) System:</strong> Provided as guidelines under FDA policy. This application retrieves literature to aid healthcare professionals but does not replace professional clinical judgment.
@@ -1246,6 +1254,47 @@
         let currentActiveTab = 'guidelines';
         let latestCDSResult = null;
         let isLoading = false;
+        let serverOnline = true;
+
+        async function checkBackendHealth() {
+            try {
+                const res = await fetch("/", { method: "HEAD" });
+                if (res.ok) {
+                    if (!serverOnline) {
+                        setServerOnlineState(true);
+                    }
+                } else {
+                    setServerOnlineState(false);
+                }
+            } catch (err) {
+                setServerOnlineState(false);
+            }
+        }
+
+        function setServerOnlineState(online) {
+            serverOnline = online;
+            const banner = document.getElementById('connection-error-banner');
+            const submitBtn = document.querySelector('.btn-submit');
+            
+            if (online) {
+                if (banner) banner.style.display = 'none';
+                if (submitBtn && !isLoading) {
+                    submitBtn.disabled = false;
+                    submitBtn.querySelector('span').innerText = "Run CDS Engine";
+                }
+            } else {
+                if (banner) banner.style.display = 'flex';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.querySelector('span').innerText = "System Offline";
+                }
+            }
+        }
+
+        // Poll health status every 10 seconds
+        setInterval(checkBackendHealth, 10000);
+        // Initial health check on page load
+        window.addEventListener('load', checkBackendHealth);
 
         function applyPreset(num) {
             const data = PRESETS[num];

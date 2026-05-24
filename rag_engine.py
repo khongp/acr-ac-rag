@@ -42,10 +42,58 @@ CHROMA_SOURCE_PATH = os.getenv("CHROMA_SOURCE_PATH", "").strip()
 PROCEDURES_SOURCE_PATH = os.getenv("PROCEDURES_SOURCE_PATH", "").strip()
 
 
+def redact_phi(text: str) -> str:
+    """
+    Scans and redacts common patient identifiers (MRNs, SSNs, DOBs, phone numbers) 
+    from clinical texts to ensure HIPAA compliance before writing to cache or logs.
+    """
+    if not text:
+        return ""
+    
+    # 1. Phone numbers
+    phone_pattern = r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
+    text = re.sub(phone_pattern, "[REDACTED_PHONE]", text)
+    
+    # 2. SSN
+    ssn_pattern = r"\b\d{3}-\d{2}-\d{4}\b"
+    text = re.sub(ssn_pattern, "[REDACTED_SSN]", text)
+    
+    # 3. DOB
+    dob_pattern = r"\b(?:dob|birthdate|birth\s+date)\s*[:-]?\s*(?:\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{4}[-/]\d{1,2}[-/]\d{1,2})\b"
+    text = re.sub(dob_pattern, "DOB: [REDACTED_DOB]", text, flags=re.IGNORECASE)
+    
+    # 4. MRN
+    mrn_pattern = r"\b(?:mrn|medical\s+record\s+number)\s*[:-]?\s*\d{4,12}\b"
+    text = re.sub(mrn_pattern, "MRN: [REDACTED_MRN]", text, flags=re.IGNORECASE)
+    
+    # 5. Names: Common clinical patterns like "patient John Doe", "Mr. Smith"
+    name_patterns = [
+        (r"\bpatient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b", "patient [REDACTED_NAME]"),
+        (r"\b(?:mr|ms|mrs|dr)\.\s*([A-Z][a-z]+)\b", "[REDACTED_TITLE] [REDACTED_LASTNAME]"),
+    ]
+    for pattern, repl in name_patterns:
+        text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
+        
+    return text
+
+
+def get_db_connection(db_path: str) -> sqlite3.Connection:
+    """
+    Establish a SQLite database connection with a 30-second timeout 
+    and WAL (Write-Ahead Logging) enabled for concurrency support.
+    """
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+    except Exception as e:
+        print(f"[WARN] Failed to enable WAL mode: {e}")
+    return conn
+
+
 def init_cache_db():
     """Ensure query cache and overrides tables exist in SQLite database."""
     os.makedirs(os.path.dirname(CACHE_DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(CACHE_DB_PATH)
+    conn = get_db_connection(CACHE_DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS query_cache (
@@ -73,16 +121,20 @@ def add_clinician_override(query_key: str, original: str, overridden: str, reaso
     """Log a clinician override to the SQLite database."""
     from datetime import datetime
     try:
-        conn = sqlite3.connect(CACHE_DB_PATH)
+        # Redact PHI from clinician notes and query key
+        redacted_query = redact_phi(query_key)
+        redacted_notes = redact_phi(notes)
+        
+        conn = get_db_connection(CACHE_DB_PATH)
         cursor = conn.cursor()
         ts = datetime.now().isoformat()
         cursor.execute("""
             INSERT INTO clinician_overrides (timestamp, query_key, original_recommendation, overridden_recommendation, override_reason, clinician_notes)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (ts, query_key.strip().lower(), original, overridden, reason, notes))
+        """, (ts, redacted_query.strip().lower(), original, overridden, reason, redacted_notes))
         conn.commit()
         conn.close()
-        print(f"[OVERRIDE] Saved override for query '{query_key}' (Reason: {reason})")
+        print(f"[OVERRIDE] Saved override for query '{redacted_query}' (Reason: {reason})")
     except Exception as e:
         print(f"[WARN] Error saving clinician override: {e}")
 
@@ -90,7 +142,7 @@ def add_clinician_override(query_key: str, original: str, overridden: str, reaso
 def get_clinician_overrides() -> list:
     """Retrieve the audit history of clinician overrides from SQLite."""
     try:
-        conn = sqlite3.connect(CACHE_DB_PATH)
+        conn = get_db_connection(CACHE_DB_PATH)
         cursor = conn.cursor()
         cursor.execute("""
             SELECT id, timestamp, query_key, original_recommendation, overridden_recommendation, override_reason, clinician_notes
@@ -118,9 +170,9 @@ def get_clinician_overrides() -> list:
 
 def get_cached_query(clinical_scenario: str) -> Optional[dict]:
     """Retrieve RAG response from cache if exists."""
-    cache_key = clinical_scenario.strip().lower()
+    cache_key = redact_phi(clinical_scenario).strip().lower()
     try:
-        conn = sqlite3.connect(CACHE_DB_PATH)
+        conn = get_db_connection(CACHE_DB_PATH)
         cursor = conn.cursor()
         cursor.execute("SELECT recommendation, sources FROM query_cache WHERE query_key = ?", (cache_key,))
         row = cursor.fetchone()
@@ -137,9 +189,9 @@ def get_cached_query(clinical_scenario: str) -> Optional[dict]:
 
 def set_cached_query(clinical_scenario: str, result: dict):
     """Write RAG response to SQLite persistent cache."""
-    cache_key = clinical_scenario.strip().lower()
+    cache_key = redact_phi(clinical_scenario).strip().lower()
     try:
-        conn = sqlite3.connect(CACHE_DB_PATH)
+        conn = get_db_connection(CACHE_DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             "INSERT OR REPLACE INTO query_cache (query_key, recommendation, sources) VALUES (?, ?, ?)",
@@ -151,11 +203,10 @@ def set_cached_query(clinical_scenario: str, result: dict):
         print(f"[WARN] Error writing cache: {e}")
 
 
-
 def init_procedures_db():
     """Ensure the acr_procedures table exists and is populated in SQLite."""
     os.makedirs(os.path.dirname(PROCEDURES_DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(PROCEDURES_DB_PATH)
+    conn = get_db_connection(PROCEDURES_DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS acr_procedures (
@@ -201,7 +252,7 @@ def get_procedures_from_db(topic: str, scenario: str) -> list:
     """Retrieve procedures from SQLite procedures table."""
     procedures = []
     try:
-        conn = sqlite3.connect(PROCEDURES_DB_PATH)
+        conn = get_db_connection(PROCEDURES_DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             "SELECT variant_json FROM acr_procedures WHERE topic_key = ? AND scenario_key = ?",
@@ -582,22 +633,25 @@ def query_acr_guidelines(clinical_scenario: str) -> dict:
     """
     init_rag()
     
+    # Redact PHI from input scenario before database lookup or logging
+    redacted_scenario = redact_phi(clinical_scenario)
+    
     # Check SQLite cache
-    cached = get_cached_query(clinical_scenario)
+    cached = get_cached_query(redacted_scenario)
     if cached:
-        print(f"[CACHE HIT] Scenario: '{clinical_scenario}' (SQLite)")
+        print(f"[CACHE HIT] Scenario: '{redacted_scenario}' (SQLite)")
         return cached
         
-    print(f"[CACHE MISS] Executing RAG query for scenario: '{clinical_scenario}'")
+    print(f"[CACHE MISS] Executing RAG query for scenario: '{redacted_scenario}'")
     
     # Expand query before calling retriever to resolve medical jargon
-    expanded_scenario = _expand_clinical_query(clinical_scenario)
+    expanded_scenario = _expand_clinical_query(redacted_scenario)
     print(f"[NLP-EXPANSION] Expanded query: '{expanded_scenario}'")
     
     docs = _retriever.invoke(expanded_scenario)
     context = format_docs(docs)
     
-    response = _chain.invoke({"context": context, "question": clinical_scenario})
+    response = _chain.invoke({"context": context, "question": redacted_scenario})
     
     result = {
         "recommendation": response,
@@ -605,5 +659,5 @@ def query_acr_guidelines(clinical_scenario: str) -> dict:
     }
     
     # Save to SQLite cache
-    set_cached_query(clinical_scenario, result)
+    set_cached_query(redacted_scenario, result)
     return result
