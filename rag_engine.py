@@ -430,15 +430,32 @@ class CombinedTypeRetriever(BaseRetriever):
         query_emb = self.embeddings.embed_query(query)
 
         # ── Step 2: Probe table docs for scenario detection (Hybrid Search) ──
-        vector_tables = self.db.similarity_search_by_vector(
-            query_emb, k=self.k_tables, filter={"type": "variant_table"}
-        )
+        try:
+            vector_tables_with_scores = self.db.similarity_search_with_score(
+                query, k=self.k_tables, filter={"type": "variant_table"}
+            )
+            vector_tables = []
+            for doc, score in vector_tables_with_scores:
+                doc.metadata["score"] = float(score)
+                doc.metadata["retrieval_method"] = "vector"
+                vector_tables.append(doc)
+        except Exception as e:
+            print(f"[WARN] Vector table search with score failed: {e}. Falling back to standard search.")
+            vector_tables = self.db.similarity_search_by_vector(
+                query_emb, k=self.k_tables, filter={"type": "variant_table"}
+            )
+            for doc in vector_tables:
+                doc.metadata["score"] = 1.0
+                doc.metadata["retrieval_method"] = "vector"
         
         bm25_tables = []
         if self.bm25_retriever:
             try:
                 bm25_docs = self.bm25_retriever.invoke(query)
                 bm25_tables = [d for d in bm25_docs if d.metadata.get("type") == "variant_table"]
+                for doc in bm25_tables:
+                    doc.metadata["retrieval_method"] = "bm25"
+                    doc.metadata["score"] = doc.metadata.get("score", 1.0)
             except Exception as e:
                 print(f"[WARN] BM25 table query failed: {e}")
                 
@@ -483,6 +500,13 @@ class CombinedTypeRetriever(BaseRetriever):
                     if peds_rrl:
                         content += f"Pediatric Radiation Dose (RRL): {peds_rrl}\n"
                         
+                    # Find source score if available from fused tables
+                    matching_score = 1.0
+                    for t_doc in fused_tables:
+                        if _extract_scenario(t_doc.page_content) == best_scenario.lower() and _extract_topic(t_doc.page_content).lower() == best_topic.lower():
+                            matching_score = t_doc.metadata.get("score", 1.0)
+                            break
+                            
                     scenario_tables.append(Document(
                         page_content=content,
                         metadata={
@@ -490,6 +514,8 @@ class CombinedTypeRetriever(BaseRetriever):
                             "type": "variant_table",
                             "topic": best_topic,
                             "scenario": best_scenario,
+                            "score": matching_score,
+                            "retrieval_method": "hybrid_db"
                         }
                     ))
         else:
@@ -497,15 +523,32 @@ class CombinedTypeRetriever(BaseRetriever):
             scenario_tables = vector_tables[:5]
 
         # ── Step 5: Get narratives via hybrid search ──
-        vector_narratives = self.db.similarity_search_by_vector(
-            query_emb, k=self.k_narrative, filter={"type": "narrative"}
-        )
+        try:
+            vector_narratives_with_scores = self.db.similarity_search_with_score(
+                query, k=self.k_narrative, filter={"type": "narrative"}
+            )
+            vector_narratives = []
+            for doc, score in vector_narratives_with_scores:
+                doc.metadata["score"] = float(score)
+                doc.metadata["retrieval_method"] = "vector"
+                vector_narratives.append(doc)
+        except Exception as e:
+            print(f"[WARN] Vector narrative search with score failed: {e}. Falling back to standard search.")
+            vector_narratives = self.db.similarity_search_by_vector(
+                query_emb, k=self.k_narrative, filter={"type": "narrative"}
+            )
+            for doc in vector_narratives:
+                doc.metadata["score"] = 1.0
+                doc.metadata["retrieval_method"] = "vector"
         
         bm25_narratives = []
         if self.bm25_retriever:
             try:
                 bm25_docs = self.bm25_retriever.invoke(query)
                 bm25_narratives = [d for d in bm25_docs if d.metadata.get("type") == "narrative"]
+                for doc in bm25_narratives:
+                    doc.metadata["retrieval_method"] = "bm25"
+                    doc.metadata["score"] = doc.metadata.get("score", 1.0)
             except Exception as e:
                 print(f"[WARN] BM25 narrative query failed: {e}")
                 
@@ -680,7 +723,9 @@ def query_acr_guidelines(clinical_scenario: str) -> dict:
     
     result = {
         "recommendation": response,
-        "sources": [{"content": d.page_content, "metadata": d.metadata} for d in docs]
+        "sources": [{"content": d.page_content, "metadata": d.metadata} for d in docs],
+        "raw_query": redacted_scenario,
+        "expanded_query": expanded_scenario
     }
     
     # Save to SQLite cache

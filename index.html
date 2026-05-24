@@ -921,6 +921,248 @@
             gap: 12px;
             background: var(--bg-main);
         }
+
+        /* Attending Co-Pilot Chat Drawer */
+        .copilot-drawer {
+            position: fixed;
+            top: 0;
+            right: -380px;
+            width: 360px;
+            height: 100%;
+            background-color: var(--bg-surface);
+            border-left: 1px solid var(--border-color);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease-in-out;
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+        }
+        .copilot-drawer.active {
+            right: 0;
+        }
+        .copilot-header {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .copilot-header h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+        .copilot-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: var(--transition-smooth);
+            line-height: 1;
+        }
+        .copilot-close-btn:hover {
+            opacity: 1;
+        }
+        .copilot-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #f8fafc;
+        }
+        .chat-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .chat-bubble.user {
+            background-color: #0f172a;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .chat-bubble.attending {
+            background-color: white;
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border-color);
+        }
+        .copilot-input-area {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-surface);
+            display: flex;
+            gap: 10px;
+        }
+        .copilot-input-area textarea {
+            flex: 1;
+            height: 40px;
+            resize: none;
+            border-radius: var(--radius-md);
+            padding: 10px;
+            font-size: 13px;
+            font-family: var(--font-main);
+            border: 1px solid var(--border-color);
+            outline: none;
+            background-color: var(--bg-card);
+        }
+        .copilot-send-btn {
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            padding: 0 16px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: var(--transition-smooth);
+        }
+        .copilot-send-btn:hover {
+            background-color: var(--color-primary-hover);
+        }
+        .copilot-toggle-trigger {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #0f172a;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            z-index: 1000;
+            transition: transform 0.2s;
+        }
+        .copilot-toggle-trigger:hover {
+            transform: scale(1.05);
+        }
+        .copilot-suggested-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 15px;
+            background-color: #f8fafc;
+            border-top: 1px solid var(--border-color);
+        }
+        .suggested-q-btn {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 11px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition-smooth);
+            text-align: left;
+        }
+        .suggested-q-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.02);
+        }
+
+        /* CDS Hooks Simulator Styles */
+        .cds-hooks-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100% - 40px);
+        }
+        @media (max-width: 900px) {
+            .cds-hooks-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .cds-hooks-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100%;
+        }
+        .cds-card {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-premium);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .cds-card-header {
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cds-card-header.info { background-color: #0284c7; }
+        .cds-card-header.warning { background-color: #d97706; }
+        .cds-card-header.critical { background-color: #dc2626; }
+        
+        .cds-card-body {
+            padding: 16px;
+            font-size: 13px;
+            color: var(--text-main);
+            flex: 1;
+            line-height: 1.5;
+        }
+        .cds-card-footer {
+            padding: 10px 16px;
+            border-top: 1px solid var(--border-color);
+            background-color: #f8fafc;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .cds-action-btn {
+            background-color: #0f172a;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .cds-action-btn:hover {
+            background-color: #1e293b;
+        }
+        .cds-dismiss-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .cds-dismiss-btn:hover {
+            background-color: var(--bg-hover);
+        }
     </style>
 </head>
 <body>
@@ -974,6 +1216,18 @@
                         <span class="preset-title">Dyspnea / PE</span>
                         <span>Knee Post-op, 45M</span>
                     </button>
+                    <button class="preset-btn" onclick="applyPreset(5)">
+                        <span class="preset-title">Pediatric Abd</span>
+                        <span>Weight 25kg, 8M</span>
+                    </button>
+                    <button class="preset-btn" onclick="applyPreset(6)">
+                        <span class="preset-title">Headache/Pacemkr</span>
+                        <span>MRI Screening, 55F</span>
+                    </button>
+                    <button class="preset-btn" onclick="applyPreset(7)">
+                        <span class="preset-title">Flank/Recent CT</span>
+                        <span>Radiation Alert, 62M</span>
+                    </button>
                 </div>
             </div>
 
@@ -981,6 +1235,18 @@
                 <div class="section-title">Clinical Scenario</div>
                 <div class="form-group">
                     <textarea id="scenario-input" class="form-control" placeholder="Enter clinical presentation (e.g., '69 yo female low back pain with suspected cauda equina syndrome...')"></textarea>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label for="proposed-order">EHR Proposed Order</label>
+                    <select id="proposed-order" class="form-control">
+                        <option value="CT Lumbar Spine">CT Lumbar Spine</option>
+                        <option value="MRI Lumbar Spine without contrast">MRI Lumbar Spine without contrast</option>
+                        <option value="CT Abdomen and Pelvis with contrast">CT Abdomen and Pelvis with contrast</option>
+                        <option value="MRI Brain without and with contrast">MRI Brain without and with contrast</option>
+                        <option value="US Abdomen RUQ">US Abdomen RUQ</option>
+                        <option value="CT Chest with contrast">CT Chest with contrast</option>
+                        <option value="X-ray Chest 2 Views">X-ray Chest 2 Views</option>
+                    </select>
                 </div>
             </div>
 
@@ -1002,9 +1268,15 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="patient-egfr">eGFR Lab Value (mL/min/1.73m²)</label>
-                    <input type="number" id="patient-egfr" class="form-control" value="62">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="patient-egfr">eGFR (mL/min/1.73m²)</label>
+                        <input type="number" id="patient-egfr" class="form-control" value="62">
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-weight">Weight (kg)</label>
+                        <input type="number" id="patient-weight" class="form-control" value="70">
+                    </div>
                 </div>
 
                 <div class="form-row">
@@ -1028,16 +1300,42 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="patient-preg">Pregnancy Risk</label>
-                    <select id="patient-preg" class="form-control">
-                        <option value="no">Not Pregnant / N/A</option>
-                        <option value="yes">Confirmed Pregnant</option>
-                        <option value="pending">Pregnancy Test Pending</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="patient-preg">Pregnancy Risk</label>
+                        <select id="patient-preg" class="form-control">
+                            <option value="no">Not Pregnant / N/A</option>
+                            <option value="yes">Confirmed Pregnant</option>
+                            <option value="pending">Pregnancy Test Pending</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="patient-recentscans">Recent CT Scan</label>
+                        <select id="patient-recentscans" class="form-control">
+                            <option value="none">None</option>
+                            <option value="ct-24">CT Scan &lt; 24h ago</option>
+                            <option value="ct-48">CT Scan &lt; 48h ago</option>
+                            <option value="ct-72">CT Scan &lt; 72h ago</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 10px;">
+                <div class="form-group" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 2px;">MRI Safety Pre-Screening</label>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                            <input type="checkbox" id="patient-pacemaker" style="width: 15px; height: 15px; cursor: pointer;"> Pacemaker
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                            <input type="checkbox" id="patient-metal" style="width: 15px; height: 15px; cursor: pointer;"> Metal Implant
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                            <input type="checkbox" id="patient-claustro" style="width: 15px; height: 15px; cursor: pointer;"> Claustrophobia
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <input type="checkbox" id="override-patient-data" style="width: 16px; height: 16px; cursor: pointer;">
                     <label for="override-patient-data" style="cursor: pointer; margin-bottom: 0; font-size: 13px; font-weight: 500; color: var(--text-muted);">Override patient parameters (Manual Simulator)</label>
                 </div>
@@ -1048,6 +1346,7 @@
                     <label for="institution">Hospital Protocol Library</label>
                     <select id="institution" class="form-control">
                         <option value="skyridge">Skyridge Medical Center</option>
+                        <option value="denver_general">Denver General Hospital</option>
                     </select>
                 </div>
                 
@@ -1066,6 +1365,8 @@
                 <button class="tab-btn" onclick="switchTab('safety')">Safety Alerts</button>
                 <button class="tab-btn" onclick="switchTab('protocol')">Draft Protocol</button>
                 <button class="tab-btn" onclick="switchTab('fhir')">FHIR Bundle</button>
+                <button class="tab-btn" onclick="switchTab('cdshook')">CDS Hooks Simulator</button>
+                <button class="tab-btn" onclick="switchTab('diagnostics')">RAG Diagnostics</button>
             </div>
 
             <!-- Placeholder State -->
@@ -1207,6 +1508,73 @@
                 <pre class="json-inspector"><code id="fhir-json-block">No bundle generated yet.</code></pre>
             </div>
 
+            <!-- Panel 5: CDS Hooks Simulator -->
+            <div id="panel-cdshook" class="panel">
+                <div class="acr-guidelines-header">
+                    <h2 class="acr-rec-title">EHR CDS Hooks Simulator</h2>
+                    <p style="color: var(--text-muted); font-size: 14.5px;">Simulates an Epic/Cerner order-select / order-sign hook interaction. Accept dynamic guidelines recommendations directly into the active order.</p>
+                </div>
+                
+                <div class="cds-hooks-grid" style="margin-top: 20px;">
+                    <!-- Outgoing EHR Request Payload JSON -->
+                    <div class="cds-hooks-column">
+                        <h3 style="font-size: 15px; margin-bottom: 10px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <span>📤</span> Outgoing CDS Hooks JSON Request
+                        </h3>
+                        <pre class="json-inspector" style="max-height: 500px; overflow-y: auto; font-size: 12px; margin: 0; background: var(--bg-main); border: 1px solid var(--border-color);"><code id="cds-json-request">No payload generated. Run CDS Engine first.</code></pre>
+                    </div>
+                    
+                    <!-- Rendered Cards from CDS Hooks Response -->
+                    <div class="cds-hooks-column">
+                        <h3 style="font-size: 15px; margin-bottom: 10px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <span>📥</span> Rendered Clinical Decision Cards
+                        </h3>
+                        <div id="cds-rendered-cards" style="display: flex; flex-direction: column; gap: 15px;">
+                            <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
+                                Run CDS Engine to trigger simulation and render EHR cards.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 6: RAG Diagnostics & Similarity search -->
+            <div id="panel-diagnostics" class="panel">
+                <div class="acr-guidelines-header">
+                    <h2 class="acr-rec-title">RAG Engine Search Diagnostics</h2>
+                    <p style="color: var(--text-muted); font-size: 14.5px;">Inner details of the hybrid vector-semantic database retrieval, clinical query expansion, and Reciprocal Rank Fusion (RRF) scoring.</p>
+                </div>
+                
+                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 20px;">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 15px;">
+                        <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 700; color: var(--color-info);">
+                            🔍 Clinical Query Expansion (NLP Processing)
+                        </h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div style="background: var(--bg-main); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Raw Scenario Input</div>
+                                <div id="diag-raw-query" style="font-size: 13.5px; font-weight: 500; font-family: monospace; white-space: pre-wrap; overflow-wrap: break-word; color: var(--text-main);">N/A</div>
+                            </div>
+                            <div style="background: var(--bg-main); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--color-info); margin-bottom: 5px;">Expanded Search Terms (LLM/Ontology)</div>
+                                <div id="diag-expanded-query" style="font-size: 13.5px; font-weight: 500; font-family: monospace; white-space: pre-wrap; overflow-wrap: break-word; color: var(--color-info);">N/A</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 700; color: var(--text-main);">
+                            📊 Retrieved Document Matching Scores (Hybrid RRF)
+                        </h3>
+                        <div id="diag-retrieved-docs-container" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
+                                Run CDS Engine to display RAG matching diagnostics.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -1220,7 +1588,13 @@
                 egfr: 62,
                 allergy: "none",
                 meds: "none",
-                preg: "no"
+                preg: "no",
+                weight: 70,
+                recentscans: "none",
+                pacemaker: false,
+                metal: false,
+                claustro: false,
+                proposedOrder: "CT Lumbar Spine"
             },
             2: {
                 scenario: "28 year old female presenting with right lower quadrant abdominal pain, nausea, and low-grade fever. Allergy to Omnipaque (hives). Taking Eliquis 5mg BID. Pregnancy test pending.",
@@ -1229,7 +1603,13 @@
                 egfr: 62,
                 allergy: "Omnipaque",
                 meds: "Eliquis",
-                preg: "pending"
+                preg: "pending",
+                weight: 65,
+                recentscans: "none",
+                pacemaker: false,
+                metal: false,
+                claustro: false,
+                proposedOrder: "CT Abdomen and Pelvis with contrast"
             },
             3: {
                 scenario: "72 year old male with sudden onset slurred speech and right hemiplegia. eGFR 28. On Warfarin therapy.",
@@ -1238,7 +1618,13 @@
                 egfr: 28,
                 allergy: "none",
                 meds: "Warfarin",
-                preg: "no"
+                preg: "no",
+                weight: 82,
+                recentscans: "none",
+                pacemaker: false,
+                metal: false,
+                claustro: false,
+                proposedOrder: "CT Brain with contrast"
             },
             4: {
                 scenario: "45 year old male status-post right knee arthroplasty, presenting with sudden-onset chest pain and dyspnea. D-dimer elevated.",
@@ -1247,7 +1633,58 @@
                 egfr: 95,
                 allergy: "none",
                 meds: "none",
-                preg: "no"
+                preg: "no",
+                weight: 90,
+                recentscans: "none",
+                pacemaker: false,
+                metal: false,
+                claustro: false,
+                proposedOrder: "CT Chest with contrast"
+            },
+            5: {
+                scenario: "8 year old male presenting with acute abdominal pain, suspected appendicitis. Needs pediatric scan protocol.",
+                age: 8,
+                gender: "male",
+                egfr: 90,
+                allergy: "none",
+                meds: "none",
+                preg: "no",
+                weight: 25,
+                recentscans: "none",
+                pacemaker: false,
+                metal: false,
+                claustro: false,
+                proposedOrder: "CT Abdomen and Pelvis with contrast"
+            },
+            6: {
+                scenario: "55 year old female presenting with persistent severe headache. Has a cardiac pacemaker implant. Rule out aneurysm.",
+                age: 55,
+                gender: "female",
+                egfr: 85,
+                allergy: "none",
+                meds: "none",
+                preg: "no",
+                weight: 68,
+                recentscans: "none",
+                pacemaker: true,
+                metal: false,
+                claustro: false,
+                proposedOrder: "MRI Brain without and with contrast"
+            },
+            7: {
+                scenario: "62 year old male presenting with flank pain, rule out renal calculi. Patient had a CT scan of the abdomen 24 hours ago.",
+                age: 62,
+                gender: "male",
+                egfr: 75,
+                allergy: "none",
+                meds: "none",
+                preg: "no",
+                weight: 80,
+                recentscans: "ct-24",
+                pacemaker: false,
+                metal: false,
+                claustro: false,
+                proposedOrder: "CT Abdomen and Pelvis with contrast"
             }
         };
 
@@ -1255,12 +1692,25 @@
         const urlParams = new URLSearchParams(window.location.search);
         const apiParam = urlParams.get('api');
         if (apiParam) {
-            localStorage.setItem('API_BASE', apiParam);
+            if (apiParam === "clear" || apiParam === "reset") {
+                localStorage.removeItem('API_BASE');
+            } else {
+                localStorage.setItem('API_BASE', apiParam);
+            }
+        }
+
+        let savedApiBase = localStorage.getItem('API_BASE') || "";
+        // Safety guard: if we are in production but the saved API base points to localhost, ignore/clear it
+        if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+            if (savedApiBase.includes("localhost") || savedApiBase.includes("127.0.0.1")) {
+                savedApiBase = "";
+                localStorage.removeItem('API_BASE');
+            }
         }
 
         const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "8000"
             ? "http://localhost:8000"
-            : (localStorage.getItem("API_BASE") || "");
+            : savedApiBase;
 
         let currentActiveTab = 'guidelines';
         let latestCDSResult = null;
@@ -1269,20 +1719,25 @@
 
         async function checkBackendHealth() {
             try {
-                const res = await fetch(`${API_BASE}/`, { method: "HEAD" });
+                const res = await fetch(`${API_BASE}/health`, { method: "GET" });
                 if (res.ok) {
-                    if (!serverOnline) {
+                    const data = await res.json();
+                    if (data.status === "healthy") {
                         setServerOnlineState(true);
+                    } else if (data.status === "initializing") {
+                        setServerOnlineState(false, "System Initializing: The clinical backend is pre-loading RAG models. Please wait...");
+                    } else {
+                        setServerOnlineState(false, `System Degraded: ${data.error || "RAG engine failed to initialize."}`);
                     }
                 } else {
-                    setServerOnlineState(false);
+                    setServerOnlineState(false, "Connection Error: Cannot communicate with the clinical backend. Reconnecting...");
                 }
             } catch (err) {
-                setServerOnlineState(false);
+                setServerOnlineState(false, "Connection Error: Cannot communicate with the clinical backend. Reconnecting...");
             }
         }
 
-        function setServerOnlineState(online) {
+        function setServerOnlineState(online, message = "") {
             serverOnline = online;
             const banner = document.getElementById('connection-error-banner');
             const submitBtn = document.querySelector('.btn-submit');
@@ -1294,7 +1749,12 @@
                     submitBtn.querySelector('span').innerText = "Run CDS Engine";
                 }
             } else {
-                if (banner) banner.style.display = 'flex';
+                if (banner) {
+                    banner.style.display = 'flex';
+                    if (message) {
+                        banner.querySelector('div').innerText = message;
+                    }
+                }
                 if (submitBtn) {
                     submitBtn.disabled = true;
                     submitBtn.querySelector('span').innerText = "System Offline";
@@ -1316,6 +1776,15 @@
             document.getElementById('patient-allergy').value = data.allergy;
             document.getElementById('patient-meds').value = data.meds;
             document.getElementById('patient-preg').value = data.preg;
+            
+            document.getElementById('patient-weight').value = data.weight !== undefined ? data.weight : 70;
+            document.getElementById('patient-recentscans').value = data.recentscans || "none";
+            document.getElementById('patient-pacemaker').checked = !!data.pacemaker;
+            document.getElementById('patient-metal').checked = !!data.metal;
+            document.getElementById('patient-claustro').checked = !!data.claustro;
+            if (data.proposedOrder) {
+                document.getElementById('proposed-order').value = data.proposedOrder;
+            }
             
             // Auto check override since presets depend on sidebar values
             document.getElementById('override-patient-data').checked = true;
@@ -1357,6 +1826,11 @@
             let allergy = "none";
             let meds = "none";
             let preg = "no";
+            let weight = "70";
+            let recentCT = "none";
+            let pacemaker = false;
+            let metal = false;
+            let claustro = false;
             
             bundle.entry.forEach(entry => {
                 const res = entry.resource;
@@ -1378,6 +1852,8 @@
                         const val = res.valueCodeableConcept && res.valueCodeableConcept.text ? res.valueCodeableConcept.text.toLowerCase() : "";
                         if (val.includes("positive")) preg = "yes";
                         else if (val.includes("pending")) preg = "pending";
+                    } else if (codeText.includes("weight") || loincCode === "29463-7") {
+                        if (res.valueQuantity) weight = res.valueQuantity.value;
                     }
                 } else if (res.resourceType === "AllergyIntolerance") {
                     const substance = res.code && res.code.text ? res.code.text : "";
@@ -1401,6 +1877,16 @@
                         else if (lMed.includes("warfarin")) meds = "Warfarin";
                         else if (lMed.includes("heparin")) meds = "Heparin";
                     }
+                } else if (res.resourceType === "Condition") {
+                    const codeText = res.code && res.code.text ? res.code.text.toLowerCase() : "";
+                    if (codeText.includes("pacemaker")) pacemaker = true;
+                    if (codeText.includes("metal") || codeText.includes("aneurysm clip")) metal = true;
+                    if (codeText.includes("claustrophobia")) claustro = true;
+                } else if (res.resourceType === "Procedure") {
+                    const codeText = res.code && res.code.text ? res.code.text.toLowerCase() : "";
+                    if (codeText.includes("ct") || codeText.includes("computed tomography")) {
+                        recentCT = "ct-24"; // default estimate if CT seen
+                    }
                 }
             });
             
@@ -1411,6 +1897,11 @@
             document.getElementById('patient-allergy').value = allergy;
             document.getElementById('patient-meds').value = meds;
             document.getElementById('patient-preg').value = preg;
+            document.getElementById('patient-weight').value = weight;
+            document.getElementById('patient-recentscans').value = recentCT;
+            document.getElementById('patient-pacemaker').checked = pacemaker;
+            document.getElementById('patient-metal').checked = metal;
+            document.getElementById('patient-claustro').checked = claustro;
         }
 
         async function submitAnalysis() {
@@ -1442,6 +1933,11 @@
                 const allergy = document.getElementById('patient-allergy').value;
                 const meds = document.getElementById('patient-meds').value;
                 const preg = document.getElementById('patient-preg').value;
+                const weight = parseFloat(document.getElementById('patient-weight').value);
+                const recentScan = document.getElementById('patient-recentscans').value;
+                const pacemaker = document.getElementById('patient-pacemaker').checked;
+                const metal = document.getElementById('patient-metal').checked;
+                const claustro = document.getElementById('patient-claustro').checked;
 
                 // Generate a synthetic FHIR bundle mock matching fhir_converter.py conventions
                 const bundle = {
@@ -1535,6 +2031,89 @@
                         }
                     });
                 }
+                
+                // Add weight observation
+                if (weight && !isNaN(weight)) {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "Observation",
+                            "id": "obs-weight",
+                            "status": "final",
+                            "code": {
+                                "coding": [{ "system": "http://loinc.org", "code": "29463-7", "display": "Body weight" }],
+                                "text": "Body Weight"
+                            },
+                            "valueQuantity": {
+                                "value": weight,
+                                "unit": "kg"
+                            },
+                            "effectiveDateTime": new Date().toISOString()
+                        }
+                    });
+                }
+
+                // Add recent CT scan if specified
+                if (recentScan !== "none") {
+                    let daysAgo = 1;
+                    if (recentScan === "ct-48") daysAgo = 2;
+                    else if (recentScan === "ct-72") daysAgo = 3;
+                    const scanDate = new Date();
+                    scanDate.setDate(scanDate.getDate() - daysAgo);
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "Procedure",
+                            "id": "proc-recent-ct",
+                            "status": "completed",
+                            "code": {
+                                "coding": [{ "display": `Recent CT scan (${daysAgo} days ago)` }],
+                                "text": `Computed Tomography (CT) scan ${daysAgo} days ago`
+                            },
+                            "subject": { "reference": "Patient/patient-simulated" },
+                            "performedDateTime": scanDate.toISOString().split('T')[0]
+                        }
+                    });
+                }
+
+                // Add pre-screening conditions
+                if (pacemaker) {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "Condition",
+                            "id": "cond-pacemaker",
+                            "clinicalStatus": { "coding": [{ "code": "active" }] },
+                            "code": {
+                                "coding": [{ "display": "Cardiac pacemaker" }],
+                                "text": "cardiac pacemaker"
+                            }
+                        }
+                    });
+                }
+                if (metal) {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "Condition",
+                            "id": "cond-metal-implant",
+                            "clinicalStatus": { "coding": [{ "code": "active" }] },
+                            "code": {
+                                "coding": [{ "display": "Metallic implant" }],
+                                "text": "metallic implant"
+                            }
+                        }
+                    });
+                }
+                if (claustro) {
+                    bundle.entry.push({
+                        "resource": {
+                            "resourceType": "Condition",
+                            "id": "cond-claustrophobia",
+                            "clinicalStatus": { "coding": [{ "code": "active" }] },
+                            "code": {
+                                "coding": [{ "display": "Claustrophobia" }],
+                                "text": "claustrophobia"
+                            }
+                        }
+                    });
+                }
 
                 requestBody = {
                     bundle: bundle,
@@ -1573,6 +2152,10 @@
                 renderSafetyPanel(data);
                 renderProtocolPanel(data);
                 renderFHIRPanel(data);
+                renderDiagnosticsPanel(data);
+
+                // Run CDS Hook simulation
+                await runCDSHookSimulation(scenario, overrideParam, institution);
 
                 // Switch to active tab panel
                 document.getElementById('loading').classList.remove('active');
@@ -1962,7 +2545,7 @@
                                 <div class="evidence-card-info">
                                     <span class="evidence-card-title">${cleanName}</span>
                                     <span class="evidence-card-meta">
-                                        ${type} ${src.score ? `&bull; Score: ${parseFloat(src.score).toFixed(3)}` : ''}
+                                        ${type} ${(src.metadata && src.metadata.score !== undefined) ? `&bull; Score: ${parseFloat(src.metadata.score).toFixed(3)}` : ''}
                                     </span>
                                 </div>
                                 <div class="evidence-card-actions">
@@ -2304,8 +2887,497 @@
             }
         }
 
+        // ==========================================
+        // Option 5: Attending Co-Pilot Chat Engine
+        // ==========================================
+        let copilotOpen = false;
+        let copilotHistory = [];
+
+        function toggleCopilot() {
+            const drawer = document.getElementById('copilot-drawer');
+            copilotOpen = !copilotOpen;
+            if (copilotOpen) {
+                drawer.classList.add('active');
+            } else {
+                drawer.classList.remove('active');
+            }
+        }
+
+        async function sendSuggestedQuestion(text) {
+            document.getElementById('copilot-input').value = text;
+            await sendCopilotMessage();
+        }
+
+        function handleCopilotKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendCopilotMessage();
+            }
+        }
+
+        async function sendCopilotMessage() {
+            const inputEl = document.getElementById('copilot-input');
+            const message = inputEl.value.trim();
+            if (!message) return;
+
+            inputEl.value = "";
+            
+            // Append User Message to UI
+            appendChatBubble("user", message);
+            
+            // Append to history
+            copilotHistory.push({ role: "user", content: message });
+            
+            // Show typing indicator
+            const typingId = appendChatBubble("attending", "...", true);
+            
+            const scenario = document.getElementById('scenario-input').value.trim();
+            
+            try {
+                const response = await fetch(`${API_BASE}/v1/copilot/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scenario_text: scenario,
+                        chat_history: copilotHistory,
+                        message: message
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+
+                if (data.status === "success" && data.response) {
+                    appendChatBubble("attending", data.response);
+                    copilotHistory.push({ role: "attending", content: data.response });
+                } else {
+                    appendChatBubble("attending", "Sorry, I encountered an issue processing that query.");
+                }
+            } catch (err) {
+                console.error("Co-pilot chat error:", err);
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+                appendChatBubble("attending", `Error communicating with co-pilot service: ${err.message}`);
+            }
+        }
+
+        function appendChatBubble(role, content, isTyping = false) {
+            const container = document.getElementById('copilot-messages');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${role}`;
+            
+            const uniqueId = `bubble-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            bubble.id = uniqueId;
+            
+            if (isTyping) {
+                bubble.innerHTML = `<span style="opacity: 0.5;">Typing...</span>`;
+            } else {
+                bubble.innerHTML = parseMarkdown(content);
+            }
+            
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+            return uniqueId;
+        }
+
+        // ==========================================
+        // Option 1 & 3: CDS Hooks EHR Simulation
+        // ==========================================
+        async function runCDSHookSimulation(scenario, overrideParam, institution) {
+            const age = parseInt(document.getElementById('patient-age').value) || 69;
+            const gender = document.getElementById('patient-gender').value || "female";
+            const egfr = document.getElementById('patient-egfr').value;
+            const allergy = document.getElementById('patient-allergy').value;
+            const meds = document.getElementById('patient-meds').value;
+            const preg = document.getElementById('patient-preg').value;
+            const weight = parseFloat(document.getElementById('patient-weight').value) || 70;
+            const recentScan = document.getElementById('patient-recentscans').value;
+            const pacemaker = document.getElementById('patient-pacemaker').checked;
+            const metal = document.getElementById('patient-metal').checked;
+            const claustro = document.getElementById('patient-claustro').checked;
+            
+            const proposedOrder = document.getElementById('proposed-order').value || "CT Lumbar Spine";
+            
+            // Build the same FHIR bundle that would be created by submitAnalysis
+            const fhirBundle = {
+                "resourceType": "Bundle",
+                "type": "collection",
+                "entry": [
+                    {
+                        "resource": {
+                            "resourceType": "Patient",
+                            "id": "patient-simulated",
+                            "gender": gender,
+                            "birthDate": new Date(new Date().getFullYear() - age, 0, 1).toISOString().split('T')[0]
+                        }
+                    },
+                    {
+                        "resource": {
+                            "resourceType": "ServiceRequest",
+                            "id": "servicerequest-1",
+                            "status": "draft",
+                            "intent": "proposal",
+                            "subject": { "reference": "Patient/patient-simulated" },
+                            "code": {
+                                "concept": {
+                                    "coding": [{ "display": proposedOrder }],
+                                    "text": proposedOrder
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "resource": {
+                            "resourceType": "Condition",
+                            "id": "condition-simulated",
+                            "code": { "text": scenario },
+                            "clinicalStatus": {
+                                "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }]
+                            }
+                        }
+                    }
+                ]
+            };
+
+            // Add other parameters to the bundle
+            if (egfr) {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "Observation",
+                        "id": "obs-egfr",
+                        "status": "final",
+                        "code": {
+                            "coding": [{ "system": "http://loinc.org", "code": "33914-3", "display": "eGFR" }]
+                        },
+                        "valueQuantity": {
+                            "value": parseFloat(egfr),
+                            "unit": "mL/min/1.73m²"
+                        },
+                        "effectiveDateTime": new Date().toISOString()
+                    }
+                });
+            }
+            if (allergy !== "none") {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "AllergyIntolerance",
+                        "id": "allergy-contrast",
+                        "code": { "text": allergy }
+                    }
+                });
+            }
+            if (meds !== "none") {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "MedicationStatement",
+                        "id": "med-anticoag",
+                        "medicationCodeableConcept": { "text": meds }
+                    }
+                });
+            }
+            if (preg === "yes" || preg === "pending") {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "Observation",
+                        "id": "obs-preg",
+                        "status": "final",
+                        "code": {
+                            "coding": [{ "system": "http://loinc.org", "code": "11477-7", "display": "Urine Pregnancy Test" }]
+                        },
+                        "valueCodeableConcept": {
+                            "text": preg === "yes" ? "Positive" : "Pending"
+                        }
+                    }
+                });
+            }
+            
+            // Option 3 parameters
+            if (weight) {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "Observation",
+                        "id": "obs-weight",
+                        "status": "final",
+                        "code": {
+                            "coding": [{ "system": "http://loinc.org", "code": "29463-7", "display": "Body weight" }]
+                        },
+                        "valueQuantity": {
+                            "value": parseFloat(weight),
+                            "unit": "kg"
+                        }
+                    }
+                });
+            }
+            if (recentScan !== "none") {
+                let daysAgo = 1;
+                if (recentScan === "ct-48") daysAgo = 2;
+                else if (recentScan === "ct-72") daysAgo = 3;
+                const scanDate = new Date();
+                scanDate.setDate(scanDate.getDate() - daysAgo);
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "Procedure",
+                        "id": "proc-recent-ct",
+                        "status": "completed",
+                        "code": { "text": `Recent CT scan (${daysAgo} days ago)` },
+                        "performedDateTime": scanDate.toISOString().split('T')[0]
+                    }
+                });
+            }
+            if (pacemaker) {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "Condition",
+                        "id": "cond-pacemaker",
+                        "code": { "text": "Cardiac pacemaker implant" }
+                    }
+                });
+            }
+            if (metal) {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "Condition",
+                        "id": "cond-metal",
+                        "code": { "text": "Metallic implant" }
+                    }
+                });
+            }
+            if (claustro) {
+                fhirBundle.entry.push({
+                    "resource": {
+                        "resourceType": "Condition",
+                        "id": "cond-claustrophobia",
+                        "code": { "text": "Claustrophobia" }
+                    }
+                });
+            }
+
+            // Create CDS Hooks payload
+            const cdsPayload = {
+                "hook": "order-select",
+                "hookInstance": "d1577c69-eebe-4d15-b7b2-3c11306b2e3e",
+                "fhirServer": `${API_BASE}/fhir`,
+                "context": {
+                    "userId": "Practitioner/rad-physician-1",
+                    "patientId": "Patient/patient-simulated",
+                    "selections": [ "ServiceRequest/servicerequest-1" ],
+                    "institutionId": institution
+                },
+                "prefetch": {
+                    "patient": {
+                        "resource": fhirBundle.entry[0].resource
+                    },
+                    "activeOrders": {
+                        "resource": fhirBundle
+                    }
+                }
+            };
+
+            // Render output JSON to UI request panel
+            document.getElementById('cds-json-request').innerText = JSON.stringify(cdsPayload, null, 2);
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/cds-hook`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cdsPayload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+                
+                const data = await response.json();
+                renderCDSHookCards(data);
+            } catch (err) {
+                console.error("CDS Hook simulation error:", err);
+                document.getElementById('cds-rendered-cards').innerHTML = `
+                    <div style="padding: 20px; color: var(--color-warning); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
+                        Error querying CDS Hook service: ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        function renderCDSHookCards(data) {
+            const container = document.getElementById('cds-rendered-cards');
+            container.innerHTML = "";
+            
+            const cards = data.cards || [];
+            
+            if (cards.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
+                        No clinical alerts or suggestions returned. The order proposal matches guidelines and has no safety contraindications.
+                    </div>
+                `;
+                return;
+            }
+            
+            cards.forEach(card => {
+                const indicatorClass = card.indicator || "info"; // info, warning, critical
+                
+                let suggestionsHtml = "";
+                if (card.suggestions && card.suggestions.length > 0) {
+                    card.suggestions.forEach(sug => {
+                        // Find the recommended procedure name from actions
+                        let recommendedName = "";
+                        const createAction = sug.actions.find(act => act.type === "create");
+                        if (createAction && createAction.resource && createAction.resource.code && createAction.resource.code.concept) {
+                            recommendedName = createAction.resource.code.concept.text;
+                        }
+                        
+                        if (recommendedName) {
+                            suggestionsHtml += `
+                                <button class="cds-action-btn" onclick="acceptCDSHookSuggestion('${recommendedName}')">
+                                    Accept Recommendation: ${recommendedName}
+                                </button>
+                            `;
+                        }
+                    });
+                }
+                
+                container.innerHTML += `
+                    <div class="cds-card" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; background: var(--bg-card); box-shadow: var(--shadow-premium);">
+                        <div class="cds-card-header ${indicatorClass}">
+                            <span>${card.summary}</span>
+                            <span style="font-size: 10px; opacity: 0.8; font-weight: 500;">${card.source.label}</span>
+                        </div>
+                        <div class="cds-card-body" style="padding: 16px; font-size: 13px; color: var(--text-main); flex: 1; line-height: 1.5;">
+                            ${parseMarkdown(card.detail)}
+                        </div>
+                        ${suggestionsHtml ? `
+                        <div class="cds-card-footer" style="padding: 10px 16px; border-top: 1px solid var(--border-color); background-color: var(--bg-main); display: flex; justify-content: flex-end; gap: 10px;">
+                            ${suggestionsHtml}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+        }
+
+        function acceptCDSHookSuggestion(recommendedName) {
+            const dropdown = document.getElementById('proposed-order');
+            
+            // Check if recommendedName already exists in options
+            let found = false;
+            for (let i = 0; i < dropdown.options.length; i++) {
+                if (dropdown.options[i].value.toLowerCase().trim() === recommendedName.toLowerCase().trim()) {
+                    dropdown.selectedIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+            
+            // If not found, add it
+            if (!found) {
+                const opt = document.createElement('option');
+                opt.value = recommendedName;
+                opt.innerText = recommendedName;
+                dropdown.appendChild(opt);
+                dropdown.value = recommendedName;
+            }
+            
+            // Display alert to the user that order has been accepted
+            alert(`EHR simulation updated: Changed proposed order to "${recommendedName}". Re-running decision support engine.`);
+            
+            // Re-run
+            submitAnalysis();
+        }
+
+        // ==========================================
+        // Option 4: RAG Diagnostics Rendering
+        // ==========================================
+        function renderDiagnosticsPanel(data) {
+            // Raw query and expanded query
+            document.getElementById('diag-raw-query').innerText = data.raw_query || document.getElementById('scenario-input').value;
+            document.getElementById('diag-expanded-query').innerText = data.expanded_query || "N/A";
+            
+            const container = document.getElementById('diag-retrieved-docs-container');
+            container.innerHTML = "";
+            
+            const sources = data.acr_sources || [];
+            
+            if (sources.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
+                        No retrieved documents.
+                    </div>
+                `;
+                return;
+            }
+            
+            sources.forEach((src, idx) => {
+                const filename = src.metadata.source || "ACR Guidelines";
+                let cleanName = filename.replace(/\.pdf$/i, '').replace(/_\d+$/, '').replace(/_/g, ' ').trim();
+                
+                const type = src.metadata.type === "variant_table" ? "Matched Procedure Table Row" : "Clinical Narrative Snippet";
+                const score = src.metadata.score !== undefined ? parseFloat(src.metadata.score).toFixed(4) : "1.0000";
+                const retrieval = src.metadata.retrieval_method || "vector";
+                
+                // Let's render a nicely styled diagnostic tile
+                container.innerHTML += `
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 15px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <span style="font-weight: 700; color: var(--text-main); font-size: 14px;">[Doc ${idx + 1}] ${cleanName}</span>
+                                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                    <span style="font-size: 10.5px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; padding: 2px 6px; border-radius: var(--radius-sm); font-weight: 600;">${type}</span>
+                                    <span style="font-size: 10.5px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 6px; border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase;">Method: ${retrieval}</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">Relevance Score</div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--color-info);">${score}</div>
+                            </div>
+                        </div>
+                        <div style="background: var(--bg-main); border-left: 3px solid var(--border-color); padding: 8px 12px; font-family: monospace; font-size: 12px; color: var(--text-muted); white-space: pre-wrap; overflow-x: auto; margin-top: 5px;">
+                            ${src.content}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
         loadOverridesHistory();
     </script>
+
+    <!-- Attending Co-Pilot Chat Toggle Button -->
+    <div id="copilot-toggle" class="copilot-toggle-trigger" onclick="toggleCopilot()">
+        <span style="font-size: 24px; pointer-events: none;">💬</span>
+    </div>
+
+    <!-- Attending Co-Pilot Chat Drawer -->
+    <div id="copilot-drawer" class="copilot-drawer">
+        <div class="copilot-header">
+            <h3>💬 Attending Radiology Co-Pilot</h3>
+            <button class="copilot-close-btn" onclick="toggleCopilot()">&times;</button>
+        </div>
+        <div id="copilot-messages" class="copilot-chat-messages">
+            <div class="chat-bubble attending">
+                Hello! I am your Attending Radiology Co-Pilot. You can ask me follow-up questions about the retrieved ACR appropriateness guidelines or protocoling rules.
+            </div>
+        </div>
+        
+        <!-- Suggested Prompts -->
+        <div class="copilot-suggested-questions" id="copilot-suggestions">
+            <button class="suggested-q-btn" onclick="sendSuggestedQuestion('Why did you recommend MRI over CT?')">Why MRI over CT?</button>
+            <button class="suggested-q-btn" onclick="sendSuggestedQuestion('What is the standard pre-medication dosing protocol?')">Pre-medication protocol?</button>
+            <button class="suggested-q-btn" onclick="sendSuggestedQuestion('What are the safety requirements for Gadolinium?')">Gadolinium safety?</button>
+        </div>
+        
+        <div class="copilot-input-area">
+            <textarea id="copilot-input" placeholder="Ask follow-up..." rows="1" onkeydown="handleCopilotKeydown(event)"></textarea>
+            <button class="copilot-send-btn" onclick="sendCopilotMessage()">Send</button>
+        </div>
+    </div>
     
     <!-- Clinician Override Modal -->
     <div id="override-modal" class="modal-overlay">

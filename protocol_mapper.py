@@ -62,6 +62,8 @@ class DraftProtocol:
     protocol_type: Optional[str] = None     # "imaging" or "ir"
     protocol_details: Dict[str, Any] = field(default_factory=dict)
     protocol_steps: List[Dict[str, Any]] = field(default_factory=list)
+    scanner_id: Optional[str] = None
+    scanner_type: Optional[str] = None
     
     # Safety evaluation
     safety_profile: Optional[Dict[str, Any]] = None
@@ -109,6 +111,14 @@ def get_draft_protocol(
             acr_scenario_text=acr_scenario,
             db_path=db_path,
         )
+        # Fallback to scenario-less lookup if no exact match found
+        if not matches:
+            matches = lookup_protocol_by_acr(
+                acr_procedure_text=acr_procedure,
+                institution_id=institution,
+                acr_scenario_text=None,
+                db_path=db_path,
+            )
     
     # Step 3: Extract patient safety data from FHIR bundle
     patient_data = extract_patient_safety_data(fhir_bundle)
@@ -143,6 +153,8 @@ def get_draft_protocol(
             protocol_steps=steps,
             safety_profile=safety.to_dict(),
             mapping_method=best.get("mapping_method"),
+            scanner_id=best.get("scanner_id"),
+            scanner_type=best.get("scanner_type"),
         )
         return draft
     
@@ -163,7 +175,7 @@ def get_draft_protocol(
             from protocol_db import get_connection
             with get_connection(db_path) as conn:
                 row = conn.execute(
-                    "SELECT * FROM imaging_protocol WHERE id = ?", [protocol_id]
+                    "SELECT ip.*, s.model as scanner_type FROM imaging_protocol ip LEFT JOIN scanner s ON ip.scanner_id = s.id WHERE ip.id = ?", [protocol_id]
                 ).fetchone()
                 if row:
                     protocol_details = dict(row)
@@ -190,6 +202,8 @@ def get_draft_protocol(
             protocol_steps=steps,
             safety_profile=safety.to_dict(),
             mapping_method="llm_assisted",
+            scanner_id=protocol_details.get("scanner_id"),
+            scanner_type=protocol_details.get("scanner_type"),
         )
         return draft
     

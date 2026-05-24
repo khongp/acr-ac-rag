@@ -4,6 +4,8 @@ Run: python seed_db.py
 """
 
 import os
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 from protocol_db import initialize_db, get_db_path, get_connection
 
 def seed_skyridge(db_path=None):

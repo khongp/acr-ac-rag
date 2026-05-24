@@ -45,6 +45,9 @@ class ClinicalExtraction(BaseModel):
     lab_values: List[ExtractedLabValue] = Field(default_factory=list, description="Any lab results mentioned in the scenario")
     allergies: List[ExtractedAllergy] = Field(default_factory=list, description="Any allergies mentioned in the scenario")
     medications: List[ExtractedMedication] = Field(default_factory=list, description="Any current medications mentioned in the scenario")
+    patient_weight_kg: Optional[float] = Field(None, description="Patient's weight in kilograms (kg) if mentioned. If weight is mentioned in lbs, convert it to kg (lbs / 2.2).")
+    recent_procedures: List[str] = Field(default_factory=list, description="Any past scans, procedures, or surgeries (especially CT, MRI, X-rays) along with timeframe if mentioned.")
+    implants: List[str] = Field(default_factory=list, description="Any implants, pacemakers, cochlear implants, aneurysm clips, or claustrophobia mentioned.")
 
 def get_extraction_llm():
     if "GOOGLE_API_KEY" not in os.environ:
@@ -269,6 +272,9 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
             "4. Any lab values mentioned (eGFR, INR, Platelets, Hemoglobin, Fibrinogen, HCG, Creatinine, etc.)\n"
             "5. Any allergies mentioned (especially contrast agents like Omnipaque, Isovue, gadolinium, iodine)\n"
             "6. Any current medications mentioned (especially anticoagulants like Eliquis, Xarelto, Warfarin, Plavix, Heparin)\n"
+            "7. Patient weight (in kg or lbs, convert to kg numeric value)\n"
+            "8. Any recent scans or prior procedures (especially CT, MRI, X-rays with timeframes like '2 days ago' or 'last week')\n"
+            "9. Any implants, pacemakers, cochlear implants, or claustrophobia\n"
             f"\nClinical Scenario:\n{clinical_scenario}"
         )
     except Exception as e:
@@ -405,6 +411,69 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
         if med.dose:
             med_data["dosage"] = [{"text": med.dose}]
         entries.append({"resource": med_data})
+        
+    # 7. Weight Observation
+    if extracted.patient_weight_kg:
+        weight_obs = {
+            "id": "observation-weight",
+            "resourceType": "Observation",
+            "status": "final",
+            "code": {
+                "coding": [{
+                    "system": "http://loinc.org",
+                    "code": "29463-7",
+                    "display": "Body weight"
+                }],
+                "text": "Body Weight"
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "effectiveDateTime": date.today().isoformat(),
+            "valueQuantity": {
+                "value": extracted.patient_weight_kg,
+                "unit": "kg"
+            }
+        }
+        entries.append({"resource": weight_obs})
+
+    # 8. Implants Conditions
+    for i, implant in enumerate(extracted.implants):
+        implant_cond = {
+            "id": f"condition-implant-{i+1}",
+            "resourceType": "Condition",
+            "clinicalStatus": {
+                "coding": [{"system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active"}]
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "code": {
+                "coding": [{"display": implant}],
+                "text": implant
+            }
+        }
+        entries.append({"resource": implant_cond})
+
+    # 9. Recent Procedures
+    for i, proc in enumerate(extracted.recent_procedures):
+        import re
+        from datetime import date, timedelta
+        
+        proc_date = date.today().isoformat()
+        days_match = re.search(r"(\d+)\s*day", proc, re.IGNORECASE)
+        if days_match:
+            days_ago = int(days_match.group(1))
+            proc_date = (date.today() - timedelta(days=days_ago)).isoformat()
+            
+        proc_resource = {
+            "id": f"procedure-recent-{i+1}",
+            "resourceType": "Procedure",
+            "status": "completed",
+            "code": {
+                "coding": [{"display": proc}],
+                "text": proc
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "performedDateTime": proc_date
+        }
+        entries.append({"resource": proc_resource})
         
     # Create Bundle
     bundle_data = {

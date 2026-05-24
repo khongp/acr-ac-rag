@@ -156,6 +156,10 @@ def extract_patient_safety_data(fhir_bundle: dict) -> Dict[str, Any]:
         "allergy_codes": [],
         "medications": [],
         "medication_codes": [],
+        "weight": None,
+        "recent_exams": [],
+        "implants": [],
+        "claustrophobia": False,
     }
     
     entries = fhir_bundle.get("entry", [])
@@ -183,6 +187,12 @@ def extract_patient_safety_data(fhir_bundle: dict) -> Dict[str, Any]:
         
         elif rtype in ("MedicationStatement", "MedicationRequest", "MedicationAdministration"):
             _extract_medication(resource, data)
+            
+        elif rtype == "Condition":
+            _extract_condition(resource, data)
+            
+        elif rtype == "Procedure":
+            _extract_procedure(resource, data)
     
     return data
 
@@ -222,6 +232,15 @@ def _extract_observation(resource: dict, data: dict):
         data["fibrinogen"] = lab_entry
     elif any(term in code_text for term in ["hcg", "pregnancy", "beta-hcg"]):
         data["hcg"] = lab_entry
+    elif any(term in code_text for term in ["weight", "body weight", "29463-7"]):
+        if isinstance(value, (int, float)):
+            data["weight"] = value
+        elif isinstance(value, str):
+            try:
+                # Try parsing string numeric values (e.g. "72 kg")
+                data["weight"] = float(re.findall(r"\d+\.?\d*", value)[0])
+            except Exception:
+                pass
 
 
 def _extract_allergy(resource: dict, data: dict):
@@ -284,6 +303,57 @@ def _extract_medication(resource: dict, data: dict):
                     "code": code_val,
                     "display": display or text
                 })
+
+
+def _extract_condition(resource: dict, data: dict):
+    """Parse Condition resources for implants, pacemaker, claustrophobia."""
+    code_text = ""
+    codings = resource.get("code", {}).get("coding", [])
+    for coding in codings:
+        code_text += coding.get("display", "") + " " + coding.get("code", "") + " "
+    code_text += resource.get("code", {}).get("text", "")
+    code_text = code_text.lower()
+    
+    if any(term in code_text for term in ["pacemaker", "icd", "cardiac device"]):
+        data["implants"].append("pacemaker")
+    if any(term in code_text for term in ["aneurysm clip", "metallic clip", "metallic implant", "shrapnel", "cochlear"]):
+        data["implants"].append("metallic implant")
+    if "claustrophobia" in code_text:
+        data["claustrophobia"] = True
+
+
+def _extract_procedure(resource: dict, data: dict):
+    """Parse a Procedure resource for history of recent exams."""
+    code_text = ""
+    codings = resource.get("code", {}).get("coding", [])
+    for coding in codings:
+        code_text += coding.get("display", "") + " " + coding.get("code", "") + " "
+    code_text += resource.get("code", {}).get("text", "")
+    code_text = code_text.lower()
+    
+    date_val = resource.get("performedDateTime", resource.get("performedPeriod", {}).get("start", ""))
+    if isinstance(date_val, str) and date_val:
+        date_val = date_val[:10]
+        
+    status = resource.get("status")
+    
+    modality = None
+    if "ct" in code_text or "computed tomography" in code_text:
+        modality = "CT"
+    elif "mri" in code_text or "magnetic resonance" in code_text:
+        modality = "MRI"
+    elif "us" in code_text or "ultrasound" in code_text:
+        modality = "US"
+    elif "xray" in code_text or "radiograph" in code_text or "x-ray" in code_text:
+        modality = "XRAY"
+        
+    if modality:
+        data["recent_exams"].append({
+            "modality": modality,
+            "date": date_val,
+            "name": resource.get("code", {}).get("text", "Previous Exam"),
+            "status": status
+        })
 
 
 # ─────────────────────────────────────────────
@@ -679,26 +749,117 @@ def evaluate_safety(
     if contrast_rules:
         profile.safety_flags = evaluate_contrast_rules(contrast_rules, patient_data)
         
-        # Check for premedication requirement
+        # Check for premedication requirement or substitutions
         for flag in profile.safety_flags:
             if flag.triggered and flag.action == "require_premedication":
                 profile.premedication_required = True
                 profile.premedication_text = flag.details.get("premedication_text")
             if flag.triggered and flag.action == "substitute_protocol":
                 profile.substitute_protocol_id = flag.details.get("substitute_protocol_id")
+                
+    # 2. Pediatric Weight-Based Contrast Adjustment (Option 3)
+    age = patient_data.get("age")
+    weight = patient_data.get("weight")
+    contrast_type = protocol_data.get("contrast_type")
     
-    # 2. IR lab thresholds
+    if age is not None and age < 18 and contrast_type in ["iv", "iv_oral", "iv_rectal"]:
+        if weight:
+            ped_vol = round(2.0 * weight, 1)
+            adult_vol = protocol_data.get("contrast_volume_ml") or 100.0
+            final_vol = min(ped_vol, adult_vol)
+            flag = SafetyFlag(
+                rule_type="pediatric_dosing",
+                severity="info",
+                message=f"👶 Pediatric Patient: Contrast volume adjusted to {final_vol} mL based on weight of {weight} kg (2 mL/kg, capped at standard adult dose of {adult_vol} mL).",
+                triggered=True,
+                action="adjust_contrast_volume",
+                details={"pediatric_volume_ml": final_vol, "weight_kg": weight}
+            )
+            profile.safety_flags.append(flag)
+            # Update contrast_volume_ml dynamically in protocol details so the dashboard reflects the adjusted recipe
+            protocol_data["contrast_volume_ml"] = final_vol
+        else:
+            flag = SafetyFlag(
+                rule_type="pediatric_dosing",
+                severity="warning",
+                message="⚠️ Pediatric Patient: IV contrast ordered but patient weight is missing. Cannot calculate weight-based dose.",
+                triggered=True,
+                action="request_weight",
+                details={}
+            )
+            profile.safety_flags.append(flag)
+
+    # 3. Cumulative Radiation Risk Checker (Option 3)
+    recent_ct_exams = []
+    for exam in patient_data.get("recent_exams", []):
+        if exam.get("modality") == "CT" and exam.get("date"):
+            try:
+                exam_date = datetime.strptime(exam["date"][:10], "%Y-%m-%d")
+                time_diff = datetime.now() - exam_date
+                if time_diff.total_seconds() <= 72 * 3600:  # 72 hours
+                    recent_ct_exams.append(exam)
+            except Exception:
+                pass
+                
+    if recent_ct_exams and protocol_data.get("modality") == "CT":
+        exam_names = ", ".join([f"{e.get('name')} ({e.get('date')})" for e in recent_ct_exams])
+        flag = SafetyFlag(
+            rule_type="radiation_risk",
+            severity="warning",
+            message=f"☢️ High Cumulative Radiation Risk: Patient had recent CT exam(s) ({exam_names}) within the last 72 hours. Consider US or MRI alternative if appropriate.",
+            triggered=True,
+            action="review_radiation_exposure",
+            details={"recent_ct_exams": recent_ct_exams}
+        )
+        profile.safety_flags.append(flag)
+
+    # 4. MRI Safety Pre-screening (Option 3)
+    if protocol_data.get("modality") == "MRI":
+        implants = patient_data.get("implants", [])
+        if "pacemaker" in implants:
+            flag = SafetyFlag(
+                rule_type="mri_safety",
+                severity="hard_stop",
+                message="🚫 Pacemaker Detected: Cardiac device is an absolute contraindication for standard MRI. Confirm if MR-conditional and follow cardiology prep.",
+                triggered=True,
+                action="verify_mr_conditional",
+                details={"implant": "pacemaker"}
+            )
+            profile.safety_flags.append(flag)
+        elif "metallic implant" in implants:
+            flag = SafetyFlag(
+                rule_type="mri_safety",
+                severity="warning",
+                message="⚠️ Metallic Implant Detected: Review clinical records to verify MR compatibility of implant/foreign body prior to MRI scan.",
+                triggered=True,
+                action="verify_implant_compatibility",
+                details={"implant": "metallic_implant"}
+            )
+            profile.safety_flags.append(flag)
+            
+        if patient_data.get("claustrophobia"):
+            flag = SafetyFlag(
+                rule_type="mri_safety",
+                severity="info",
+                message="ℹ️ Patient Claustrophobia: Consider ordering mild oral sedation (e.g. Diazepam) or scheduling on an open-bore scanner.",
+                triggered=True,
+                action="provide_sedation",
+                details={"issue": "claustrophobia"}
+            )
+            profile.safety_flags.append(flag)
+    
+    # 5. IR lab thresholds
     ir_details = protocol_data.get("ir_details", {})
     lab_thresholds = ir_details.get("lab_thresholds", [])
     if lab_thresholds:
         profile.lab_checks = evaluate_ir_lab_thresholds(lab_thresholds, patient_data)
     
-    # 3. IR medication holds
+    # 6. IR medication holds
     med_holds = ir_details.get("med_holds", [])
     if med_holds:
         profile.med_holds = evaluate_ir_med_holds(med_holds, patient_data)
     
-    # 4. Compute overall status
+    # 7. Compute overall status
     profile.compute_overall_status()
     
     return profile

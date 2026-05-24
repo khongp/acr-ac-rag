@@ -30,18 +30,28 @@ from rag_engine import query_acr_guidelines, init_rag, add_clinician_override, g
 
 # Priority 3: Eager model loading at startup
 # Eliminates the 30-40s cold-start penalty on first request
+rag_initialized = False
+rag_error = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load ML models in a background thread during startup."""
+    global rag_initialized, rag_error
     logger.info("[STARTUP] Pre-loading RAG models (embeddings, reranker, LLM)...")
     
     # Diagnostics check on assets existence
     if not os.path.exists("chroma_db_gemini") and not os.path.exists("chroma_db_local"):
          logger.warning("[STARTUP WARNING] Vector database directory not found in current workspace. Ensure ingest.py has been run.")
          
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, init_rag)
-    logger.info("[READY] All models loaded — server ready for requests")
+    try:
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, init_rag)
+        rag_initialized = True
+        logger.info("[READY] All models loaded — server ready for requests")
+    except Exception as e:
+        rag_error = str(e)
+        logger.critical(f"[CRITICAL STARTUP ERROR] RAG model initialization failed: {e}", exc_info=True)
+        
     yield
     # Shutdown: nothing to clean up
 
@@ -53,26 +63,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Hardened CORS origins setup
+# Permissive CORS origins setup to prevent connection errors across environments
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
 if allowed_origins_env:
     allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 else:
-    # Strict default list for development and production safety
-    allowed_origins = [
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://localhost:3000",
-        "http://localhost:5173",  # Vite dev server
-    ]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    # If not explicitly configured, fall back to permissive matching for easy cross-origin connection
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https?://.*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 class AnalyzeRequest(BaseModel):
     text: Optional[str] = None
@@ -89,6 +99,24 @@ class OverrideRequest(BaseModel):
     overridden_recommendation: str
     override_reason: str
     clinician_notes: str = ""
+
+
+@app.get("/health")
+async def health_check():
+    """Lightweight endpoint for frontend health checking."""
+    global rag_initialized, rag_error
+    if rag_error:
+        return {
+            "status": "degraded",
+            "error": rag_error,
+            "message": "RAG engine failed to initialize on startup. Check backend API keys and file mounts."
+        }
+    elif not rag_initialized:
+        return {
+            "status": "initializing",
+            "message": "RAG engine is still initializing in the background."
+        }
+    return {"status": "healthy"}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -200,6 +228,8 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
             "fhir_bundle": bundle_dict,
             "acr_recommendation": acr_result["recommendation"],
             "acr_sources": acr_result["sources"],
+            "raw_query": acr_result.get("raw_query"),
+            "expanded_query": acr_result.get("expanded_query"),
             "draft_protocol": None,
             "protocol_error": str(e),
         }
@@ -211,6 +241,8 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
         "fhir_bundle": bundle_dict,
         "acr_recommendation": acr_result["recommendation"],
         "acr_sources": acr_result["sources"],
+        "raw_query": acr_result.get("raw_query"),
+        "expanded_query": acr_result.get("expanded_query"),
         "draft_protocol": draft.to_dict(),
     }
 
@@ -245,30 +277,237 @@ async def list_overrides():
         raise HTTPException(status_code=500, detail=f"Error retrieving overrides: {str(e)}")
 
 
+class CoPilotChatRequest(BaseModel):
+    scenario_text: str
+    chat_history: list = []
+    message: str
+
+
+@app.post("/v1/copilot/chat")
+async def copilot_chat(req: CoPilotChatRequest):
+    """Conversational Attending Radiology Co-Pilot endpoint."""
+    logger.info("Received request on /v1/copilot/chat")
+    try:
+        from copilot_engine import generate_copilot_response, CoPilotChatRequest as EngineRequest, ChatMessage
+        
+        history = []
+        if isinstance(req.chat_history, list):
+            for m in req.chat_history:
+                history.append(ChatMessage(role=m.get("role", "user"), content=m.get("content", "")))
+                
+        engine_req = EngineRequest(
+            scenario_text=req.scenario_text,
+            chat_history=history,
+            message=req.message
+        )
+        response_text = generate_copilot_response(engine_req)
+        return {"status": "success", "response": response_text}
+    except Exception as e:
+        logger.error("Error generating co-pilot response", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error generating co-pilot response: {str(e)}")
+
+
+def fhir_bundle_from_cds_hook_payload(payload: dict) -> dict:
+    """Extracts FHIR resources from a CDS Hooks request payload and compiles them into a standard FHIR Bundle."""
+    resources = []
+    
+    def collect_resources(obj):
+        if isinstance(obj, dict):
+            if "resourceType" in obj:
+                resources.append(obj)
+            else:
+                for k, v in obj.items():
+                    collect_resources(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                collect_resources(item)
+                
+    # Collect from context (e.g., selections, draftOrders) and prefetch
+    collect_resources(payload.get("context", {}))
+    collect_resources(payload.get("prefetch", {}))
+    
+    # Filter resources and deduplicate by ID/resourceType
+    seen = set()
+    unique_entries = []
+    for r in resources:
+        # If it's a Bundle itself, extract its entries
+        if r.get("resourceType") == "Bundle":
+            for entry in r.get("entry", []):
+                sub_res = entry.get("resource")
+                if sub_res and "resourceType" in sub_res:
+                    key = (sub_res["resourceType"], sub_res.get("id"))
+                    if key not in seen:
+                        seen.add(key)
+                        unique_entries.append({"resource": sub_res})
+        else:
+            key = (r["resourceType"], r.get("id"))
+            if key not in seen:
+                seen.add(key)
+                unique_entries.append({"resource": r})
+                
+    return {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": unique_entries
+    }
+
+
 @app.post("/v1/cds-hook")
 async def cds_hook(request: Request):
     """
-    Minimal CDS Hooks implementation (order-select).
-    Returns a mocked Information Card initially, as planned.
+    Dynamic CDS Hooks implementation (order-select / order-sign).
+    Parses full EHR CDS Hook payload, runs RAG + Safety, and returns dynamic Cards.
     """
-    payload = await request.json()
+    logger.info("Received request on /v1/cds-hook")
+    try:
+        payload = await request.json()
+    except Exception as e:
+        logger.warning(f"Failed to parse JSON body: {e}")
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        
+    # 1. Compile FHIR bundle from request
+    bundle_dict = fhir_bundle_from_cds_hook_payload(payload)
     
-    # Phase 1: Minimal parsing
+    # 2. Extract context scenario text
+    scenario_str = extract_scenario_from_bundle(bundle_dict)
+    
+    # Extract institution_id (or read from selection or default)
     context = payload.get("context", {})
-    selections = context.get("selections", [])
-    
-    response_cards = {
-        "cards": [
-            {
-                "summary": "ACR Appropriateness Criteria Consultation",
-                "indicator": "info",
-                "detail": "Connection to the ACR-AC-RAG backend was successful. The patient's draft orders have been acknowledged.",
-                "source": {
-                    "label": "ACR-AC-RAG Service",
-                    "url": "https://acr.org/"
+    institution_id = payload.get("prefetch", {}).get("institution_id", {}).get("resource", {}).get("id")
+    if not institution_id:
+        institution_id = context.get("institutionId") or "skyridge"
+        
+    # 3. Query ACR guidelines
+    try:
+        acr_result = query_acr_guidelines(scenario_str)
+    except Exception as e:
+        logger.error("Error in RAG retrieval during CDS hook", exc_info=True)
+        # Fall back to a default error card
+        return {
+            "cards": [
+                {
+                    "summary": "ACR Guidelines Retrieval Error",
+                    "indicator": "warning",
+                    "detail": f"Failed to retrieve ACR appropriateness criteria: {str(e)}",
+                    "source": {"label": "ACR-AC-RAG Hub"}
                 }
-            }
-        ]
+            ]
+        }
+        
+    # 4. Map protocol and evaluate safety
+    draft_protocol = None
+    try:
+        from protocol_mapper import get_draft_protocol
+        draft_protocol = get_draft_protocol(
+            acr_result=acr_result,
+            fhir_bundle=bundle_dict,
+            institution_id=institution_id
+        )
+    except Exception as e:
+        logger.error(f"Error mapping protocol during CDS hook: {e}", exc_info=True)
+        
+    # 5. Construct CDS Cards
+    cards = []
+    
+    # Extract original ordered modality from ServiceRequest in selection
+    original_service_request = None
+    for entry in bundle_dict.get("entry", []):
+        res = entry.get("resource", {})
+        if res.get("resourceType") == "ServiceRequest":
+            original_service_request = res
+            break
+            
+    # A. Add Appropriateness Criteria Card
+    rec_text = acr_result.get("recommendation", "")
+    detail_text = f"**Clinical Scenario**: {scenario_str}\n\n**Guidelines Recommendation**:\n{rec_text}"
+    
+    appropriateness_card = {
+        "summary": "ACR Appropriateness Criteria Recommendation",
+        "indicator": "info",
+        "detail": detail_text,
+        "source": {
+            "label": "American College of Radiology Appropriateness Criteria",
+            "url": "https://www.acr.org/Clinical-Resources/ACR-Appropriateness-Criteria"
+        }
     }
     
-    return response_cards
+    # If the current selection doesn't match the recommended protocol, add a Suggestion
+    if draft_protocol and original_service_request and draft_protocol.status in ("matched", "fuzzy_matched"):
+        original_name = original_service_request.get("code", {}).get("text", "")
+        recommended_name = draft_protocol.protocol_name
+        
+        # Check if they are substantially different
+        if recommended_name and original_name and recommended_name.lower().strip() != original_name.lower().strip():
+            # Add dynamic suggestion to change the order
+            change_suggestion = {
+                "label": f"Change order to recommended protocol: {recommended_name}",
+                "uuid": "suggestion-replace-order",
+                "actions": [
+                    {
+                        "type": "delete",
+                        "description": f"Cancel original order for {original_name}",
+                        "resource": f"ServiceRequest/{original_service_request.get('id', 'servicerequest-1')}"
+                    },
+                    {
+                        "type": "create",
+                        "description": f"Create new order for {recommended_name}",
+                        "resource": {
+                            "resourceType": "ServiceRequest",
+                            "status": "draft",
+                            "intent": "proposal",
+                            "subject": {"reference": f"Patient/{bundle_dict.get('entry', [{}])[0].get('resource', {}).get('id', 'patient-1')}"},
+                            "code": {
+                                "concept": {
+                                    "coding": [{"display": recommended_name}],
+                                    "text": recommended_name
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+            appropriateness_card["suggestions"] = [change_suggestion]
+            
+    cards.append(appropriateness_card)
+    
+    # B. Add Safety Alerts Cards
+    if draft_protocol and draft_protocol.safety_profile:
+        safety = draft_protocol.safety_profile
+        
+        # Triggered safety flags (e.g. eGFR, Allergy, Pregnancy, Radiation, Implant)
+        for flag in safety.get("safety_flags", []):
+            if flag.get("triggered"):
+                severity = flag.get("severity", "warning")
+                indicator = "critical" if severity == "hard_stop" else "warning"
+                
+                card = {
+                    "summary": f"Patient Safety Flag: {flag.get('rule_type').replace('_', ' ').title()}",
+                    "indicator": indicator,
+                    "detail": f"**Alert**: {flag.get('message')}\n\n**Action Required**: {flag.get('action').replace('_', ' ').title()}",
+                    "source": {"label": f"{institution_id.capitalize()} Safety Engine"}
+                }
+                cards.append(card)
+                
+        # Lab Checks failures
+        for lab in safety.get("lab_checks", []):
+            if not lab.get("is_met"):
+                card = {
+                    "summary": f"Contraindication: Inadequate {lab.get('lab_name')} Lab Value",
+                    "indicator": "critical" if lab.get("action_if_not_met") == "hard_stop" else "warning",
+                    "detail": f"Patient's {lab.get('lab_name')} is {lab.get('patient_value') or 'not found'} (Threshold: {lab.get('required_operator')} {lab.get('required_value')}).\n\n**Correction Guidance**: {lab.get('correction_guidance', 'Hold or reschedule.')}",
+                    "source": {"label": f"{institution_id.capitalize()} Lab Check"}
+                }
+                cards.append(card)
+                
+        # Medication Holds required
+        for hold in safety.get("med_holds", []):
+            if hold.get("patient_is_taking"):
+                card = {
+                    "summary": f"Required Medication Hold: {hold.get('medication_name')}",
+                    "indicator": "warning",
+                    "detail": f"Patient is taking {hold.get('medication_name')}. Hold for **{hold.get('hold_hours_before')} hours before** procedure and resume **{hold.get('resume_hours_after') or 24} hours after**.",
+                    "source": {"label": f"{institution_id.capitalize()} Anticoagulant Protocol"}
+                }
+                cards.append(card)
+                
+    return {"cards": cards}

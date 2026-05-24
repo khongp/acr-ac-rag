@@ -282,9 +282,10 @@ def lookup_protocol_by_acr(
                    ip.oral_prep_conditions, ip.slice_thickness_mm,
                    ip.reconstruction, ip.special_instructions,
                    ip.estimated_time_min, ip.requires_iv_access,
-                   ip.patient_position
+                   ip.patient_position, ip.scanner_id, s.model as scanner_type
             FROM acr_protocol_map apm
             LEFT JOIN imaging_protocol ip ON apm.imaging_protocol_id = ip.id
+            LEFT JOIN scanner s ON ip.scanner_id = s.id
             WHERE apm.institution_id = ?
               AND apm.acr_procedure_text LIKE ?
               AND apm.is_active = 1
