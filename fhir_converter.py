@@ -49,7 +49,7 @@ class ClinicalExtraction(BaseModel):
 def get_extraction_llm():
     if "GOOGLE_API_KEY" not in os.environ:
         raise ValueError("Please set the GOOGLE_API_KEY environment variable to use the LLM.")
-    return ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0.0)
+    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
 
 def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     """
