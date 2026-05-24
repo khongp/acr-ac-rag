@@ -1251,6 +1251,17 @@
             }
         };
 
+        // Support query param ?api=https://your-api.com and save to localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const apiParam = urlParams.get('api');
+        if (apiParam) {
+            localStorage.setItem('API_BASE', apiParam);
+        }
+
+        const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "8000"
+            ? "http://localhost:8000"
+            : (localStorage.getItem("API_BASE") || "");
+
         let currentActiveTab = 'guidelines';
         let latestCDSResult = null;
         let isLoading = false;
@@ -1258,7 +1269,7 @@
 
         async function checkBackendHealth() {
             try {
-                const res = await fetch("/", { method: "HEAD" });
+                const res = await fetch(`${API_BASE}/`, { method: "HEAD" });
                 if (res.ok) {
                     if (!serverOnline) {
                         setServerOnlineState(true);
@@ -1537,7 +1548,7 @@
             }
 
             try {
-                const response = await fetch("/v1/protocol", {
+                const response = await fetch(`${API_BASE}/v1/protocol`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -2234,7 +2245,7 @@
             };
             
             try {
-                const response = await fetch('/v1/override', {
+                const response = await fetch(`${API_BASE}/v1/override`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -2255,7 +2266,7 @@
         
         async function loadOverridesHistory() {
             try {
-                const response = await fetch('/v1/overrides');
+                const response = await fetch(`${API_BASE}/v1/overrides`);
                 const data = await response.json();
                 const container = document.getElementById('overrides-history-container');
                 

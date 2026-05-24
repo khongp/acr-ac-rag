@@ -40,6 +40,21 @@ PROCEDURES_DB_PATH = os.getenv("PROCEDURES_DB_PATH", "data/acr_procedures.db").s
 
 CHROMA_SOURCE_PATH = os.getenv("CHROMA_SOURCE_PATH", "").strip()
 PROCEDURES_SOURCE_PATH = os.getenv("PROCEDURES_SOURCE_PATH", "").strip()
+CACHE_SOURCE_PATH = os.getenv("CACHE_SOURCE_PATH", "").strip()
+
+
+def sync_cache_to_gcs():
+    """Copy the query_cache.db file from local storage back to the GCS mount path."""
+    if CACHE_SOURCE_PATH and CACHE_DB_PATH:
+        if os.path.exists(CACHE_DB_PATH):
+            try:
+                os.makedirs(os.path.dirname(CACHE_SOURCE_PATH), exist_ok=True)
+                import shutil
+                shutil.copy2(CACHE_DB_PATH, CACHE_SOURCE_PATH)
+                print(f"[SYNC] Successfully backed up query cache DB to GCS mount: {CACHE_SOURCE_PATH}")
+            except Exception as e:
+                print(f"[WARN] Error backing up query cache DB to GCS mount: {e}")
+
 
 
 def redact_phi(text: str) -> str:
@@ -135,6 +150,7 @@ def add_clinician_override(query_key: str, original: str, overridden: str, reaso
         conn.commit()
         conn.close()
         print(f"[OVERRIDE] Saved override for query '{redacted_query}' (Reason: {reason})")
+        sync_cache_to_gcs()
     except Exception as e:
         print(f"[WARN] Error saving clinician override: {e}")
 
@@ -199,6 +215,7 @@ def set_cached_query(clinical_scenario: str, result: dict):
         )
         conn.commit()
         conn.close()
+        sync_cache_to_gcs()
     except Exception as e:
         print(f"[WARN] Error writing cache: {e}")
 
@@ -585,6 +602,14 @@ def init_rag():
             import shutil
             shutil.copy2(PROCEDURES_SOURCE_PATH, PROCEDURES_DB_PATH)
             print("[STARTUP] Procedures DB copy completed.")
+
+    if CACHE_SOURCE_PATH and os.path.exists(CACHE_SOURCE_PATH):
+        if not os.path.exists(CACHE_DB_PATH):
+            print(f"[STARTUP] Copying query cache DB from {CACHE_SOURCE_PATH} to {CACHE_DB_PATH}...")
+            os.makedirs(os.path.dirname(CACHE_DB_PATH), exist_ok=True)
+            import shutil
+            shutil.copy2(CACHE_SOURCE_PATH, CACHE_DB_PATH)
+            print("[STARTUP] Query cache DB copy completed.")
 
     init_cache_db()
     init_procedures_db()
