@@ -215,8 +215,120 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
         "entry": entries
     }
     
+    bundle_data = enrich_bundle_with_ontology(bundle_data)
+    
     # This will validate against the official FHIR R4 schema
     return Bundle(**bundle_data)
+
+
+def enrich_bundle_with_ontology(bundle_data: dict) -> dict:
+    """
+    Enriches FHIR bundle resource entries with standard ontology coding blocks
+    (LOINC, RxNorm, SNOMED-CT) from medical_ontology.py.
+    """
+    from medical_ontology import LOINC_MAP, MEDICATION_MAP, CONTRAST_ALLERGY_MAP
+    
+    for entry in bundle_data.get("entry", []):
+        resource = entry.get("resource", {})
+        rtype = resource.get("resourceType")
+        
+        # 1. Observation (Lab Values)
+        if rtype == "Observation":
+            code_obj = resource.get("code", {})
+            text = code_obj.get("text", "").lower().strip()
+            
+            # Map based on LOINC_MAP keys
+            for key, val in LOINC_MAP.items():
+                if key in text or text in key:
+                    if "coding" not in code_obj:
+                        code_obj["coding"] = []
+                    
+                    has_loinc = False
+                    for c in code_obj["coding"]:
+                        if c.get("system") == "http://loinc.org":
+                            c["code"] = val["code"]
+                            c["display"] = val["display"]
+                            has_loinc = True
+                            break
+                    if not has_loinc:
+                        code_obj["coding"].append({
+                            "system": "http://loinc.org",
+                            "code": val["code"],
+                            "display": val["display"]
+                        })
+                    break
+                    
+        # 2. AllergyIntolerance
+        elif rtype == "AllergyIntolerance":
+            code_obj = resource.get("code", {})
+            text = code_obj.get("text", "").lower().strip()
+            
+            for key, val in CONTRAST_ALLERGY_MAP.items():
+                if key in text:
+                    if "coding" not in code_obj:
+                        code_obj["coding"] = []
+                    
+                    # Inject specific RxNorm coding for substance
+                    has_rxnorm = False
+                    for c in code_obj["coding"]:
+                        if c.get("system") == "http://www.nlm.nih.gov/research/umls/rxnorm":
+                            c["code"] = val["rxnorm"]
+                            c["display"] = val.get("generic", key)
+                            has_rxnorm = True
+                            break
+                    if not has_rxnorm:
+                        code_obj["coding"].append({
+                            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                            "code": val["rxnorm"],
+                            "display": val.get("generic", key)
+                        })
+                        
+                    # Inject SNOMED-CT class coding
+                    has_snomed = False
+                    for c in code_obj["coding"]:
+                        if c.get("system") == "http://snomed.info/sct":
+                            c["code"] = val["snomed_class"]
+                            c["display"] = val["class_display"]
+                            has_snomed = True
+                            break
+                    if not has_snomed:
+                        code_obj["coding"].append({
+                            "system": "http://snomed.info/sct",
+                            "code": val["snomed_class"],
+                            "display": val["class_display"]
+                        })
+                    break
+                    
+        # 3. MedicationStatement
+        elif rtype == "MedicationStatement":
+            med_obj = resource.get("medication", {})
+            concept_obj = med_obj.get("concept", {})
+            if not concept_obj:
+                concept_obj = {"coding": [], "text": med_obj.get("text", "")}
+                med_obj["concept"] = concept_obj
+                
+            text = concept_obj.get("text", "").lower().strip()
+            for key, val in MEDICATION_MAP.items():
+                if key in text:
+                    if "coding" not in concept_obj:
+                        concept_obj["coding"] = []
+                        
+                    has_rxnorm = False
+                    for c in concept_obj["coding"]:
+                        if c.get("system") == "http://www.nlm.nih.gov/research/umls/rxnorm":
+                            c["code"] = val["rxnorm"]
+                            c["display"] = val.get("generic", key)
+                            has_rxnorm = True
+                            break
+                    if not has_rxnorm:
+                        concept_obj["coding"].append({
+                            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                            "code": val["rxnorm"],
+                            "display": val.get("generic", key)
+                        })
+                    break
+                    
+    return bundle_data
 
 def extract_scenario_from_bundle(bundle_dict: dict) -> str:
     """

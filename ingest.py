@@ -210,20 +210,86 @@ def load_variants_from_json(json_path):
 
 def chunk_pdf_documents(documents: list) -> list:
     """
-    Direct page-based chunking with RecursiveCharacterTextSplitter.
-    We avoid section-based splitting because terms like 'Relative Radiation Level'
-    or 'Appropriateness Category' appear repeatedly on almost every page/row,
-    causing excessive fragmentation.
+    Hierarchical section-aware chunking.
+    1. Group pages by source document (PDF).
+    2. For each PDF, concatenate pages into a single full text.
+    3. Split text by major section headings:
+       - Summary of Literature
+       - Clinical Considerations
+       - Summary of Recommendations
+       - Methodology
+       - Abbreviations
+    4. For each section, sub-split it using RecursiveCharacterTextSplitter if it exceeds 3000 chars.
+    5. Prepend section header to each final chunk for retrieval context.
     """
     from langchain_text_splitters import RecursiveCharacterTextSplitter
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=4000,
-        chunk_overlap=400,
+    from collections import defaultdict
+    import re
+
+    # Group pages by document filename
+    docs_by_source = defaultdict(list)
+    for doc in documents:
+        src = doc.metadata.get("source", "unknown")
+        docs_by_source[src].append(doc)
+
+    # Regex for common section titles in ACR PDFs
+    section_pattern = re.compile(
+        r"(\n|^)(SUMMARY\s+OF\s+LITERATURE|CLINICAL\s+CONSIDERATIONS|SUMMARY\s+OF\s+RECOMMENDATIONS|METHODOLOGY|ABBREVIATIONS|Summary\s+of\s+Literature|Clinical\s+Considerations|Summary\s+of\s+Recommendations|Methodology|Abbreviations)\b",
+        re.IGNORECASE
+    )
+
+    sub_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=3000,
+        chunk_overlap=300,
         length_function=len,
         separators=["\n\n", "\n", ". ", " ", ""],
     )
-    final_chunks = splitter.split_documents(documents)
-    print(f"  Split {len(documents)} pages -> {len(final_chunks)} final chunks")
+
+    final_chunks = []
+
+    for src, pages in docs_by_source.items():
+        # Sort pages to ensure proper sequence
+        pages_sorted = sorted(pages, key=lambda d: d.metadata.get("page", 0))
+        full_text = "\n".join(p.page_content for p in pages_sorted)
+
+        # Find all split points
+        matches = list(section_pattern.finditer(full_text))
+        
+        # If no section headings found, treat the whole document as one section ("General Narrative")
+        if not matches:
+            sections = [("General Narrative", full_text)]
+        else:
+            sections = []
+            # Text before the first heading is usually introductory
+            first_start = matches[0].start()
+            if first_start > 100:
+                sections.append(("Introduction", full_text[:first_start]))
+                
+            for i, match in enumerate(matches):
+                sec_name = match.group(2).strip().title()
+                start_idx = match.end()
+                end_idx = matches[i+1].start() if i + 1 < len(matches) else len(full_text)
+                sec_content = full_text[start_idx:end_idx].strip()
+                if sec_content:
+                    sections.append((sec_name, sec_content))
+
+        # Chunk each section and build final Document objects
+        for sec_name, sec_text in sections:
+            sub_texts = sub_splitter.split_text(sec_text)
+            for idx, text in enumerate(sub_texts):
+                content = f"Section: {sec_name}\n\n{text}"
+                
+                final_chunks.append(Document(
+                    page_content=content,
+                    metadata={
+                        "source": src,
+                        "type": "narrative",
+                        "section": sec_name,
+                        "chunk_index": idx
+                    }
+                ))
+
+    print(f"  Hierarchical section chunking completed: {len(documents)} pages -> {len(final_chunks)} final chunks")
     return final_chunks
 
 
@@ -307,6 +373,25 @@ def ingest_documents():
         print(f"  Ingesting batch {i // batch_size + 1}/{(len(chunks) - 1) // batch_size + 1} ({len(batch)} chunks)...")
         db.add_documents(batch)
     
+    # ── Build and Save BM25 Retriever ──
+    print("\nBuilding and saving BM25 Retriever index...")
+    from langchain_community.retrievers import BM25Retriever
+    import pickle
+    
+    os.makedirs("data", exist_ok=True)
+    chunks_path = "data/bm25_chunks.pkl"
+    retriever_path = "data/bm25_retriever.pkl"
+    
+    with open(chunks_path, "wb") as f:
+        pickle.dump(chunks, f)
+        
+    bm25_retriever = BM25Retriever.from_documents(chunks)
+    with open(retriever_path, "wb") as f:
+        pickle.dump(bm25_retriever, f)
+        
+    print(f"  Saved BM25 Chunks:     {chunks_path}")
+    print(f"  Saved BM25 Retriever:  {retriever_path}")
+
     # Verify
     count = db._collection.count()
     print(f"\n{'=' * 60}")

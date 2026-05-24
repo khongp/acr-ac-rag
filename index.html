@@ -729,6 +729,109 @@
             margin-bottom: 15px;
             color: var(--border-color);
         }
+
+        /* Clinician Override Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 550px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+            text-align: left;
+        }
+        .modal-overlay.active .modal-container {
+            transform: translateY(0);
+        }
+        .modal-header {
+            background: linear-gradient(135deg, var(--color-primary), #1e293b);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+            color: white;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            opacity: 1;
+        }
+        .modal-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .form-control {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            font-size: 14px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-control:focus {
+            border-color: var(--color-info);
+        }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: var(--bg-main);
+        }
     </style>
 </head>
 <body>
@@ -919,8 +1022,18 @@
                 
                 <div id="recommendation-text-raw" style="display: none;"></div>
                 
-                <div class="btn-action-container">
+                <div class="btn-action-container" style="display: flex; gap: 12px; margin-top: 15px;">
                     <button class="btn-action" onclick="copyText('recommendation-text-raw')">Copy Raw Summary</button>
+                    <button class="btn-action" id="btn-override-recommendation" onclick="openOverrideModal()" style="border-color: var(--color-warning); color: var(--color-warning); font-weight: 600; display: none;">⚠️ Override Recommendation</button>
+                </div>
+                
+                <div id="overrides-history-section" style="margin-top: 35px; border-top: 1px dashed var(--border-color); padding-top: 25px;">
+                    <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--color-primary);">
+                        <span>📋</span> Clinical Overrides Audit Log
+                    </h3>
+                    <div id="overrides-history-container" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="font-size: 13px; color: var(--text-muted); font-style: italic; padding: 12px; border: 1px dashed var(--border-color); border-radius: var(--radius-md); text-align: center;">No clinician overrides logged at this institution yet.</div>
+                    </div>
                 </div>
             </div>
 
@@ -1470,10 +1583,69 @@
             return { plan, estimate, final };
         }
 
+        // Global functions for inline evidence snippets toggle and keyword highlighting
+        window.toggleSnippet = function(id) {
+            const el = document.getElementById('snippet-' + id);
+            const arrow = document.getElementById('arrow-' + id);
+            if (el.style.display === 'none') {
+                el.style.display = 'block';
+                if (arrow) {
+                    arrow.style.transform = 'rotate(90deg)';
+                    arrow.innerText = '▼';
+                }
+            } else {
+                el.style.display = 'none';
+                if (arrow) {
+                    arrow.style.transform = 'rotate(0deg)';
+                    arrow.innerText = '▶';
+                }
+            }
+        };
+
+        function highlightKeywords(text, query) {
+            if (!text) return "";
+            if (!query) return text;
+            
+            // Extract keywords from query
+            const stopWords = new Set(["with", "and", "the", "a", "of", "in", "to", "for", "on", "is", "at", "by", "an", "patient", "history", "presenting", "years", "old", "male", "female", "present", "show", "showing", "has", "have", "had", "no", "yes", "any", "some", "or", "but", "not", "severe", "known", "allergy", "allergies"]);
+            
+            // Split query by spaces and clean up
+            const words = query.toLowerCase()
+                .replace(/[^a-zA-Z0-9\s]/g, ' ')
+                .split(/\s+/)
+                .map(w => w.trim())
+                .filter(w => w.length > 2 && !stopWords.has(w));
+                
+            if (words.length === 0) return text;
+            
+            // Escape HTML first to prevent code injection and match correctly
+            let escapedText = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+                
+            // Sort words by length descending so longer words get replaced first (prevents partial highlighting)
+            words.sort((a, b) => b.length - a.length);
+            
+            // Build regex pattern
+            const escapedWords = words.map(w => w.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+            const pattern = new RegExp(`\\b(${escapedWords.join('|')})\\b`, 'gi');
+            
+            // Replace with a styled mark
+            return escapedText.replace(pattern, (match) => {
+                return `<mark style="background-color: rgba(255, 235, 59, 0.4); color: inherit; padding: 2px 4px; border-radius: 4px; font-weight: bold; border-bottom: 2px solid #fbc02d; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">${match}</mark>`;
+            });
+        }
+
 
         function renderGuidelinesPanel(data) {
             // Extracted scenario label
             document.getElementById('extracted-scenario-label').innerText = `Matched Clinical Context: "${data.extracted_scenario}"`;
+            
+            // Unhide the override button
+            document.getElementById('btn-override-recommendation').style.display = "block";
             
             // Set raw text for copy operation
             let rec = data.acr_recommendation || "";
@@ -1608,21 +1780,21 @@
                 });
             }
 
-            // Render Evidence Provenance (Source Documents)
+            // Render Evidence Provenance (Source Documents & Snippets)
             const evidenceContainer = document.getElementById('evidence-container');
             evidenceContainer.innerHTML = "";
             
-            const uniqueSources = new Map();
-            (data.acr_sources || []).forEach(src => {
-                const filename = src.metadata.source || "";
-                if (filename && !uniqueSources.has(filename)) {
-                    const type = src.metadata.type === "variant_table" ? "ACR Table Data" : "ACR Narrative text";
-                    uniqueSources.set(filename, type);
-                }
-            });
+            const query = document.getElementById('scenario-input').value.trim();
+            const sources = data.acr_sources || [];
             
-            if (uniqueSources.size > 0) {
-                uniqueSources.forEach((type, filename) => {
+            if (sources.length > 0) {
+                sources.forEach((src, idx) => {
+                    const filename = src.metadata.source || "";
+                    if (!filename) return;
+                    
+                    const isTable = src.metadata.type === "variant_table";
+                    const type = isTable ? "ACR Table Data" : "ACR Guideline Snippet";
+                    
                     let cleanName = filename.replace(/\.pdf$/i, '').replace(/_\d+$/, '').replace(/_/g, ' ').trim();
                     let searchUrl = `https://www.google.com/search?q=ACR+Appropriateness+Criteria+${encodeURIComponent(cleanName)}+pdf`;
                     
@@ -1631,15 +1803,32 @@
                         searchUrl = `https://gravitas.acr.org/ACPortal/TopicNarrative?topicId=${idMatch[1]}`;
                     }
                     
+                    const snippetId = `snippet-idx-${idx}`;
+                    const highlightedContent = highlightKeywords(src.content || "", query);
+                    
                     evidenceContainer.innerHTML += `
-                        <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; transition: var(--transition-smooth); margin-bottom: 8px;">
-                            <div style="display: flex; flex-direction: column; gap: 2px;">
-                                <span style="font-weight: 600; font-size: 14px; color: var(--text-main);">${cleanName}</span>
-                                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">${type}</span>
+                        <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 10px; transition: var(--transition-smooth); display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-sm);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSnippet('${snippetId}')">
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <span style="font-weight: 600; font-size: 14px; color: var(--text-main);">${cleanName}</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">
+                                        ${type} ${src.score ? `&bull; Score: ${parseFloat(src.score).toFixed(3)}` : ''}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <a href="${searchUrl}" target="_blank" class="btn-action" style="padding: 4px 8px; font-size: 11px; text-decoration: none; border-color: var(--color-info); color: var(--color-info); font-weight: 600;" onclick="event.stopPropagation();">
+                                        Open PDF ↗
+                                    </a>
+                                    <span id="arrow-${snippetId}" style="transition: transform 0.2s; font-size: 10px; color: var(--text-muted); transform-origin: center;">▶</span>
+                                </div>
                             </div>
-                            <a href="${searchUrl}" target="_blank" class="btn-action" style="padding: 6px 12px; font-size: 12px; text-decoration: none; border-color: var(--color-info); color: var(--color-info); font-weight: 600;">
-                                Open ACR Guideline ↗
-                            </a>
+                            
+                            <!-- Collapsible Snippet Area -->
+                            <div id="snippet-${snippetId}" style="display: none; padding-top: 10px; border-top: 1px dashed var(--border-color); margin-top: 4px;">
+                                <div style="background-color: rgba(15, 118, 110, 0.03); border-left: 3px solid var(--color-info); padding: 10px 14px; border-radius: 4px; font-size: 13px; font-family: var(--font-main); line-height: 1.5; color: var(--text-main); white-space: pre-line; max-height: 350px; overflow-y: auto;">
+                                    ${highlightedContent}
+                                </div>
+                            </div>
                         </div>
                     `;
                 });
@@ -1853,6 +2042,162 @@
             navigator.clipboard.writeText(text);
             alert("Draft scan recipe copied for EMR copy-paste!");
         }
+
+        // --- Clinician Overrides JS Logic ---
+        
+        function openOverrideModal() {
+            if (!latestCDSResult) return;
+            
+            const selectProc = document.getElementById('override-select-procedure');
+            selectProc.innerHTML = "";
+            
+            const seenProcs = new Set();
+            selectProc.innerHTML += `<option value="Do Not Image">Do Not Image (Cancel Order)</option>`;
+            
+            (latestCDSResult.acr_sources || []).forEach(src => {
+                if (src.metadata.type === "variant_table") {
+                    const content = src.content || "";
+                    const procMatch = content.match(/Procedure:\s*(.+)/i);
+                    if (procMatch) {
+                        const procName = procMatch[1].trim();
+                        if (!seenProcs.has(procName)) {
+                            seenProcs.add(procName);
+                            selectProc.innerHTML += `<option value="${procName}">${procName}</option>`;
+                        }
+                    }
+                }
+            });
+            
+            selectProc.innerHTML += `<option value="Custom Alternate Procedure">Custom Alternate Modality...</option>`;
+            document.getElementById('override-notes').value = "";
+            document.getElementById('override-modal').classList.add('active');
+        }
+        
+        function closeOverrideModal() {
+            document.getElementById('override-modal').classList.remove('active');
+        }
+        
+        async function submitOverride() {
+            if (!latestCDSResult) return;
+            
+            const query_key = latestCDSResult.extracted_scenario || document.getElementById('scenario-input').value;
+            const original_recommendation = latestCDSResult.acr_recommendation || "";
+            const overridden_recommendation = document.getElementById('override-select-procedure').value;
+            const override_reason = document.getElementById('override-select-reason').value;
+            const clinician_notes = document.getElementById('override-notes').value;
+            
+            const payload = {
+                query_key: query_key,
+                original_recommendation: original_recommendation,
+                overridden_recommendation: overridden_recommendation,
+                override_reason: override_reason,
+                clinician_notes: clinician_notes
+            };
+            
+            try {
+                const response = await fetch('/v1/override', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const resData = await response.json();
+                if (resData.status === "success") {
+                    closeOverrideModal();
+                    alert(`Override logged successfully!\nAlternate selected: ${overridden_recommendation}`);
+                    loadOverridesHistory();
+                } else {
+                    alert("Error logging override: " + resData.message);
+                }
+            } catch (err) {
+                console.error("Error submitting override:", err);
+                alert("Error connecting to server to save override.");
+            }
+        }
+        
+        async function loadOverridesHistory() {
+            try {
+                const response = await fetch('/v1/overrides');
+                const data = await response.json();
+                const container = document.getElementById('overrides-history-container');
+                
+                if (data.status === "success" && data.overrides && data.overrides.length > 0) {
+                    container.innerHTML = "";
+                    data.overrides.slice(0, 5).forEach(o => {
+                        const dateStr = new Date(o.timestamp).toLocaleString();
+                        container.innerHTML += `
+                            <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; font-size: 13px; line-height: 1.4;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="font-weight: 700; color: var(--color-warning);">🔄 ${o.override_reason}</span>
+                                    <span style="font-size: 11px; color: var(--text-muted);">${dateStr}</span>
+                                </div>
+                                <div style="margin-bottom: 4px;">
+                                    <span style="font-weight: 500; color: var(--text-muted);">Query:</span> "${o.query_key}"
+                                </div>
+                                <div style="margin-bottom: 4px;">
+                                    <span style="font-weight: 500; color: var(--text-muted);">Selected Alternate:</span> <strong>${o.overridden_recommendation}</strong>
+                                </div>
+                                ${o.clinician_notes ? `
+                                <div style="background: var(--bg-card); border-left: 3px solid var(--border-color); padding: 4px 8px; margin-top: 6px; font-style: italic; color: var(--text-muted); font-size: 12px;">
+                                    "${o.clinician_notes}"
+                                </div>` : ''}
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML = `
+                        <div style="font-size: 13px; color: var(--text-muted); font-style: italic; padding: 12px; border: 1px dashed var(--border-color); border-radius: var(--radius-md); text-align: center;">
+                            No clinician overrides logged at this institution yet.
+                        </div>`;
+                }
+            } catch (err) {
+                console.error("Error loading overrides history:", err);
+            }
+        }
+
+        loadOverridesHistory();
     </script>
+    
+    <!-- Clinician Override Modal -->
+    <div id="override-modal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>📋 Log Clinician Guideline Override</h3>
+                <button class="modal-close" onclick="closeOverrideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 8px;">
+                    If clinical presentation or safety parameters dictate a variance from the ACR recommendation, log the override here for institutional audit tracking.
+                </p>
+                
+                <div class="form-group">
+                    <label for="override-select-procedure">Select Overridden Protocol / Modality</label>
+                    <select id="override-select-procedure" class="form-control">
+                        <!-- Populated dynamically with alternate procedures -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="override-select-reason">Override Reason Code</label>
+                    <select id="override-select-reason" class="form-control">
+                        <option value="Severe Contrast Allergy">Severe Contrast Allergy (Anaphylaxis Risk)</option>
+                        <option value="Renal Insufficiency / Contrast Risk">Renal Insufficiency / Contrast Nephropathy Risk</option>
+                        <option value="Safety Contraindication (Pacemaker/Implants)">Safety Contraindication (e.g. Pacemaker, Metallic Implants)</option>
+                        <option value="Patient Preference / Claustrophobia">Patient Preference / Severe Claustrophobia</option>
+                        <option value="Clinical Judgment / Atypical Presentation">Clinical Judgment / Atypical Presentation</option>
+                        <option value="Other">Other (Document in notes below)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="override-notes">Clinician Notes &amp; Rationale</label>
+                    <textarea id="override-notes" class="form-control" rows="3" placeholder="Provide detailed reasoning for the clinical override..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action" onclick="closeOverrideModal()" style="border-color: var(--border-color); color: var(--text-main);">Cancel</button>
+                <button class="btn-action" onclick="submitOverride()" style="background: var(--color-warning); border-color: var(--color-warning); color: white; font-weight: 600;">Confirm Override</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

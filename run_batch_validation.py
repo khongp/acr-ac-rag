@@ -41,7 +41,7 @@ TARGET_TOPICS = [
 def get_llm():
     if "GOOGLE_API_KEY" not in os.environ:
         raise ValueError("GOOGLE_API_KEY not found in environment.")
-    return ChatGoogleGenerativeAI(model="gemini-3.5-flash", temperature=0.5)
+    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.5)
 
 def generate_synthetic_query(topic: str, scenario: str) -> str:
     """Generate a realistic, short clinical query from formal ACR descriptions."""
@@ -128,24 +128,23 @@ def run_validation(sample_size: int = 15):
             print(f"    [ERR] FHIR Conversion/Extraction Failed: {e}")
             continue
             
-        # Phase 3: Query Vector DB and extract candidate scenarios
-        query_emb = retriever.embeddings.embed_query(extracted_scenario)
-        probe_tables = retriever.db.similarity_search_by_vector(
-            query_emb, k=30, filter={"type": "variant_table"}
-        )
-        
-        # Detect unique candidates
-        unique_candidates = []
-        for doc in probe_tables:
-            sc = _extract_scenario(doc.page_content)
-            tp = _extract_topic(doc.page_content)
-            if sc and tp:
-                pair = (tp, sc)
-                if pair not in unique_candidates:
-                    unique_candidates.append(pair)
-                    
+        # Phase 3: Run RAG pipeline (Hybrid + LLM Reranking)
+        try:
+            retrieved_docs = retriever.invoke(extracted_scenario)
+            top_candidates = []
+            for doc in retrieved_docs:
+                if doc.metadata.get("type") == "variant_table":
+                    tp = doc.metadata.get("topic")
+                    sc = doc.metadata.get("scenario")
+                    if tp and sc:
+                        pair = (tp, sc)
+                        if pair not in top_candidates:
+                            top_candidates.append(pair)
+        except Exception as e:
+            print(f"    [ERR] Retriever invocation failed: {e}")
+            continue
+            
         # Check if expected topic is in top 3 unique candidates
-        top_candidates = unique_candidates[:3]
         matched_rank = -1
         for rank, (cand_topic, cand_scenario) in enumerate(top_candidates):
             if cand_topic.lower() == topic.lower():

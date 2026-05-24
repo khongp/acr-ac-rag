@@ -9,6 +9,8 @@ import os
 import re
 import json
 import sqlite3
+import pickle
+import time
 from collections import Counter
 from typing import List, Any, Optional
 
@@ -41,7 +43,7 @@ PROCEDURES_SOURCE_PATH = os.getenv("PROCEDURES_SOURCE_PATH", "").strip()
 
 
 def init_cache_db():
-    """Ensure query cache table exists in SQLite database."""
+    """Ensure query cache and overrides tables exist in SQLite database."""
     os.makedirs(os.path.dirname(CACHE_DB_PATH), exist_ok=True)
     conn = sqlite3.connect(CACHE_DB_PATH)
     cursor = conn.cursor()
@@ -52,8 +54,66 @@ def init_cache_db():
             sources TEXT
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clinician_overrides (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            query_key TEXT,
+            original_recommendation TEXT,
+            overridden_recommendation TEXT,
+            override_reason TEXT,
+            clinician_notes TEXT
+        )
+    """)
     conn.commit()
     conn.close()
+
+
+def add_clinician_override(query_key: str, original: str, overridden: str, reason: str, notes: str):
+    """Log a clinician override to the SQLite database."""
+    from datetime import datetime
+    try:
+        conn = sqlite3.connect(CACHE_DB_PATH)
+        cursor = conn.cursor()
+        ts = datetime.now().isoformat()
+        cursor.execute("""
+            INSERT INTO clinician_overrides (timestamp, query_key, original_recommendation, overridden_recommendation, override_reason, clinician_notes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (ts, query_key.strip().lower(), original, overridden, reason, notes))
+        conn.commit()
+        conn.close()
+        print(f"[OVERRIDE] Saved override for query '{query_key}' (Reason: {reason})")
+    except Exception as e:
+        print(f"[WARN] Error saving clinician override: {e}")
+
+
+def get_clinician_overrides() -> list:
+    """Retrieve the audit history of clinician overrides from SQLite."""
+    try:
+        conn = sqlite3.connect(CACHE_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, timestamp, query_key, original_recommendation, overridden_recommendation, override_reason, clinician_notes
+            FROM clinician_overrides ORDER BY id DESC LIMIT 50
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        
+        overrides = []
+        for r in rows:
+            overrides.append({
+                "id": r[0],
+                "timestamp": r[1],
+                "query_key": r[2],
+                "original_recommendation": r[3],
+                "overridden_recommendation": r[4],
+                "override_reason": r[5],
+                "clinician_notes": r[6]
+            })
+        return overrides
+    except Exception as e:
+        print(f"[WARN] Error fetching clinician overrides: {e}")
+        return []
 
 
 def get_cached_query(clinical_scenario: str) -> Optional[dict]:
@@ -172,9 +232,123 @@ def _extract_topic(content: str) -> str:
     return ""
 
 
+_bm25_retriever = None
+
+def reciprocal_rank_fusion(doc_lists: List[List[Document]], k: int = 60) -> List[Document]:
+    """
+    Fuses multiple ranked lists of documents using Reciprocal Rank Fusion.
+    """
+    scores = {}
+    doc_by_id = {}
+    for doc_list in doc_lists:
+        for rank, doc in enumerate(doc_list):
+            doc_id = doc.page_content
+            doc_by_id[doc_id] = doc
+            if doc_id not in scores:
+                scores[doc_id] = 0.0
+            scores[doc_id] += 1.0 / (k + (rank + 1))
+            
+    sorted_docs = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)
+    return [doc_by_id[doc_id] for doc_id in sorted_docs]
+
+
+def load_bm25_retriever():
+    """Loads the pre-built BM25 index from disk with fallbacks."""
+    bm25_path = "data/bm25_retriever.pkl"
+    if os.path.exists(bm25_path):
+        print(f"Loading BM25 Retriever from {bm25_path}...")
+        try:
+            with open(bm25_path, "rb") as f:
+                retriever = pickle.load(f)
+            return retriever
+        except Exception as e:
+            print(f"[WARN] Error loading BM25 pickle: {e}")
+            
+    # Try rebuild fallback
+    chunks_path = "data/bm25_chunks.pkl"
+    if os.path.exists(chunks_path):
+        print(f"Rebuilding BM25 Retriever from chunks at {chunks_path}...")
+        try:
+            from langchain_community.retrievers import BM25Retriever
+            with open(chunks_path, "rb") as f:
+                chunks = pickle.load(f)
+            retriever = BM25Retriever.from_documents(chunks)
+            return retriever
+        except Exception as e:
+            print(f"[WARN] Error rebuilding BM25: {e}")
+            
+    print("[WARN] BM25 index not found. Hybrid search will fallback to vector-only.")
+    return None
+
+
+def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
+    """
+    Uses Gemini to rerank candidate topics and scenarios based on clinical relevance.
+    Returns the top 3 most clinically relevant candidate scenarios.
+    """
+    if not candidates:
+        return []
+    if len(candidates) <= 3:
+        return candidates
+        
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from pydantic import BaseModel, Field
+        from typing import List
+        
+        class SelectedCandidate(BaseModel):
+            topic: str = Field(description="The exact Topic name from the candidate list")
+            scenario: str = Field(description="The exact Scenario (Variant) name from the candidate list")
+            rationale: str = Field(description="1-sentence explanation of why this fits the clinical presentation")
+            
+        class RerankedOutput(BaseModel):
+            rankings: List[SelectedCandidate] = Field(description="Top 3 selected candidate scenarios, in order of clinical relevance")
+            
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
+        structured_llm = llm.with_structured_output(RerankedOutput)
+        
+        candidates_str = ""
+        for idx, (t, s) in enumerate(candidates):
+            candidates_str += f"{idx+1}. Topic: '{t}' | Scenario: '{s}'\n"
+            
+        prompt = (
+            "You are a medical guidelines reranking agent.\n"
+            "Given the patient's clinical scenario, review the list of candidate ACR Appropriateness Criteria topics/scenarios "
+            "and select the top 3 most clinically relevant ones, ranked from most relevant to least relevant.\n"
+            "Do not modify the topic or scenario names, they must match the input candidates exactly.\n\n"
+            f"Patient Scenario: {query}\n\n"
+            "Candidate List:\n"
+            f"{candidates_str}\n"
+            "Output the top 3 rankings:"
+        )
+        
+        res = structured_llm.invoke(prompt)
+        
+        selected = []
+        for rank in res.rankings:
+            matched_pair = None
+            for t, s in candidates:
+                if t.lower() == rank.topic.lower() and s.lower() == rank.scenario.lower():
+                    matched_pair = (t, s)
+                    break
+            if matched_pair and matched_pair not in selected:
+                selected.append(matched_pair)
+                
+        if not selected:
+            print("[WARN] LLM reranker failed to match any candidates. Falling back to default order.")
+            return candidates[:3]
+            
+        return selected[:3]
+        
+    except Exception as e:
+        print(f"[WARN] LLM reranker failed: {e}. Falling back to default vector/BM25 rank.")
+        return candidates[:3]
+
+
 class CombinedTypeRetriever(BaseRetriever):
     db: Any
     embeddings: Any
+    bm25_retriever: Any = None
     k_tables: int = 30
     k_narrative: int = 5
 
@@ -187,14 +361,25 @@ class CombinedTypeRetriever(BaseRetriever):
         # ── Step 1: Query embedding ──
         query_emb = self.embeddings.embed_query(query)
 
-        # ── Step 2: Probe table docs for scenario detection ──
-        probe_tables = self.db.similarity_search_by_vector(
+        # ── Step 2: Probe table docs for scenario detection (Hybrid Search) ──
+        vector_tables = self.db.similarity_search_by_vector(
             query_emb, k=self.k_tables, filter={"type": "variant_table"}
         )
+        
+        bm25_tables = []
+        if self.bm25_retriever:
+            try:
+                bm25_docs = self.bm25_retriever.invoke(query)
+                bm25_tables = [d for d in bm25_docs if d.metadata.get("type") == "variant_table"]
+            except Exception as e:
+                print(f"[WARN] BM25 table query failed: {e}")
+                
+        # Reciprocal Rank Fusion
+        fused_tables = reciprocal_rank_fusion([vector_tables, bm25_tables])
 
         # ── Step 3: Scenario detection ──
         unique_candidates = []
-        for doc in probe_tables:
+        for doc in fused_tables:
             sc = _extract_scenario(doc.page_content)
             tp = _extract_topic(doc.page_content)
             if sc and tp:
@@ -202,8 +387,10 @@ class CombinedTypeRetriever(BaseRetriever):
                 if pair not in unique_candidates:
                     unique_candidates.append(pair)
 
-        # Retrieve top 3 distinct candidate scenarios based on vector rank
-        best_candidates = unique_candidates[:3]
+        # Rerank candidates using LLM to choose the top 3
+        print(f"[RERANK] Prompting LLM to rerank {len(unique_candidates)} unique candidates...")
+        best_candidates = _rerank_scenarios_llm(query, unique_candidates)
+        print(f"[RERANK] Selected top {len(best_candidates)} candidates.")
         
         scenario_tables = []
         if best_candidates:
@@ -238,15 +425,26 @@ class CombinedTypeRetriever(BaseRetriever):
                         }
                     ))
         else:
-            print("[WARN] No scenario matched in probe. Using probe documents directly.")
-            scenario_tables = probe_tables[:5]
+            print("[WARN] No scenario matched in probe. Using vector probe documents directly.")
+            scenario_tables = vector_tables[:5]
 
-        # ── Step 5: Get narratives directly (no reranker model needed) ──
-        narrative_candidates = self.db.similarity_search_by_vector(
+        # ── Step 5: Get narratives via hybrid search ──
+        vector_narratives = self.db.similarity_search_by_vector(
             query_emb, k=self.k_narrative, filter={"type": "narrative"}
         )
+        
+        bm25_narratives = []
+        if self.bm25_retriever:
+            try:
+                bm25_docs = self.bm25_retriever.invoke(query)
+                bm25_narratives = [d for d in bm25_docs if d.metadata.get("type") == "narrative"]
+            except Exception as e:
+                print(f"[WARN] BM25 narrative query failed: {e}")
+                
+        fused_narratives = reciprocal_rank_fusion([vector_narratives, bm25_narratives])
+        best_narratives = fused_narratives[:self.k_narrative]
 
-        return scenario_tables + narrative_candidates
+        return scenario_tables + best_narratives
 
 
 def get_retriever():
@@ -265,6 +463,7 @@ def get_retriever():
     return CombinedTypeRetriever(
         db=db,
         embeddings=embeddings,
+        bm25_retriever=_bm25_retriever,
         k_tables=30,
         k_narrative=5,
     )
@@ -318,7 +517,7 @@ _chain = None
 def init_rag():
     """Initialize all RAG components (embedding model, vector store, LLM).
     Safe to call multiple times — uses singleton pattern."""
-    global _retriever, _llm, _chain
+    global _retriever, _llm, _chain, _bm25_retriever
     
     # 1. Copy database files from GCS source mounts to fast local /tmp storage on Cloud Run
     if CHROMA_SOURCE_PATH and os.path.exists(CHROMA_SOURCE_PATH):
@@ -338,12 +537,41 @@ def init_rag():
 
     init_cache_db()
     init_procedures_db()
+    if _bm25_retriever is None:
+        _bm25_retriever = load_bm25_retriever()
     if _retriever is None:
         _retriever = get_retriever()
     if _llm is None:
         _llm = get_llm()
     if _chain is None:
         _chain = prompt | _llm | StrOutputParser()
+
+
+def _expand_clinical_query(query: str) -> str:
+    """
+    Uses Gemini to expand medical abbreviations, shorthand, and acronyms in the query.
+    This is extremely cheap and low-latency, and makes keyword and vector RAG matching
+    highly robust for real-world clinician inputs.
+    """
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
+        prompt = (
+            "You are a medical vocabulary expansion agent.\n"
+            "Analyze the following clinical query and expand any shorthand, abbreviations, or acronyms "
+            "to their full, formal medical names (e.g. resolve LBP to Low Back Pain, MVC to Motor Vehicle Collision, "
+            "CES to cauda equina syndrome, GU to genitourinary, r/o to rule out, etc.).\n"
+            "Return the original query text combined with the expanded terms as a single query string for a search engine.\n"
+            "Keep the output extremely concise and return ONLY the resulting query string.\n\n"
+            f"Clinical Query: {query}\n"
+            "Expanded Search Query:"
+        )
+        res = llm.invoke(prompt)
+        expanded = res.content.strip()
+        return expanded if expanded else query
+    except Exception as e:
+        print(f"[WARN] Clinical NLP expansion failed: {e}. Using raw query.")
+        return query
 
 
 def query_acr_guidelines(clinical_scenario: str) -> dict:
@@ -361,7 +589,12 @@ def query_acr_guidelines(clinical_scenario: str) -> dict:
         return cached
         
     print(f"[CACHE MISS] Executing RAG query for scenario: '{clinical_scenario}'")
-    docs = _retriever.invoke(clinical_scenario)
+    
+    # Expand query before calling retriever to resolve medical jargon
+    expanded_scenario = _expand_clinical_query(clinical_scenario)
+    print(f"[NLP-EXPANSION] Expanded query: '{expanded_scenario}'")
+    
+    docs = _retriever.invoke(expanded_scenario)
     context = format_docs(docs)
     
     response = _chain.invoke({"context": context, "question": clinical_scenario})

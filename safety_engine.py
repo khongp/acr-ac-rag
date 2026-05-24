@@ -153,7 +153,9 @@ def extract_patient_safety_data(fhir_bundle: dict) -> Dict[str, Any]:
         "fibrinogen": None,
         "hcg": None,
         "allergies": [],
+        "allergy_codes": [],
         "medications": [],
+        "medication_codes": [],
     }
     
     entries = fhir_bundle.get("entry", [])
@@ -232,6 +234,17 @@ def _extract_allergy(resource: dict, data: dict):
         display = coding.get("display", "")
         if display and display not in data["allergies"]:
             data["allergies"].append(display)
+        
+        system = coding.get("system")
+        code_val = coding.get("code")
+        if system and code_val:
+            if "allergy_codes" not in data:
+                data["allergy_codes"] = []
+            data["allergy_codes"].append({
+                "system": system,
+                "code": code_val,
+                "display": display or text
+            })
 
 
 def _extract_medication(resource: dict, data: dict):
@@ -260,6 +273,17 @@ def _extract_medication(resource: dict, data: dict):
             display = coding.get("display", "")
             if display and display not in data["medications"]:
                 data["medications"].append(display)
+            
+            system = coding.get("system")
+            code_val = coding.get("code")
+            if system and code_val:
+                if "medication_codes" not in data:
+                    data["medication_codes"] = []
+                data["medication_codes"].append({
+                    "system": system,
+                    "code": code_val,
+                    "display": display or text
+                })
 
 
 # ─────────────────────────────────────────────
@@ -345,17 +369,65 @@ def _check_egfr(condition: dict, patient_data: dict) -> tuple:
 
 def _check_allergies(condition: dict, patient_data: dict) -> tuple:
     """Check if patient has allergies to specified contrast agents."""
+    from medical_ontology import CONTRAST_ALLERGY_MAP
+    
     agents = condition.get("agents", [])
     patient_allergies = [a.lower() for a in patient_data.get("allergies", [])]
+    patient_allergy_codes = patient_data.get("allergy_codes", [])
     
     matches = []
+    
+    # Pre-calculate target codes and classes for the rule's agents
+    target_rxnorms = set()
+    target_snomeds = set()
+    for agent in agents:
+        agent_lower = agent.lower().strip()
+        # Look up in mapping
+        # 1. Direct match by key
+        if agent_lower in CONTRAST_ALLERGY_MAP:
+            target_rxnorms.add(CONTRAST_ALLERGY_MAP[agent_lower]["rxnorm"])
+            target_snomeds.add(CONTRAST_ALLERGY_MAP[agent_lower]["snomed_class"])
+        # 2. Check if it matches class_display
+        for k, v in CONTRAST_ALLERGY_MAP.items():
+            if v["class_display"].lower() == agent_lower:
+                target_snomeds.add(v["snomed_class"])
+            if v["generic"].lower() == agent_lower:
+                target_rxnorms.add(v["rxnorm"])
+                target_snomeds.add(v["snomed_class"])
+                
+    # Evaluate matches
+    # A. Text-based matches (existing fallback)
     for agent in agents:
         for allergy in patient_allergies:
             if agent.lower() in allergy or allergy in agent.lower():
-                matches.append({"agent": agent, "patient_allergy": allergy})
-    
-    triggered = len(matches) > 0
-    details = {"matched_allergies": matches} if triggered else {"status": "no_allergy_match"}
+                matches.append({"agent": agent, "patient_allergy": allergy, "match_type": "text"})
+                
+    # B. Code-based matches (highest fidelity)
+    for code_entry in patient_allergy_codes:
+        sys = code_entry.get("system", "")
+        val = code_entry.get("code", "")
+        disp = code_entry.get("display", "")
+        
+        # Check RxNorm match
+        if "rxnorm" in sys.lower() or sys == "http://www.nlm.nih.gov/research/umls/rxnorm":
+            if val in target_rxnorms:
+                matches.append({"agent": disp or agent, "patient_allergy": f"RxNorm Code {val}", "match_type": "code"})
+        # Check SNOMED match
+        if "snomed" in sys.lower() or sys == "http://snomed.info/sct":
+            if val in target_snomeds:
+                matches.append({"agent": disp or agent, "patient_allergy": f"SNOMED Class {val}", "match_type": "code"})
+                
+    # Deduplicate matches by (agent, patient_allergy)
+    seen = set()
+    deduped_matches = []
+    for m in matches:
+        key = (m["agent"].lower(), m["patient_allergy"].lower())
+        if key not in seen:
+            seen.add(key)
+            deduped_matches.append(m)
+            
+    triggered = len(deduped_matches) > 0
+    details = {"matched_allergies": deduped_matches} if triggered else {"status": "no_allergy_match"}
     return triggered, details
 
 
@@ -507,6 +579,7 @@ def evaluate_ir_med_holds(
     Adjusts hold times for renal function if applicable.
     """
     patient_meds = [m.lower() for m in patient_data.get("medications", [])]
+    patient_med_codes = patient_data.get("medication_codes", [])
     egfr_data = patient_data.get("egfr")
     egfr_value = egfr_data.get("value") if egfr_data else None
     
@@ -518,11 +591,32 @@ def evaluate_ir_med_holds(
         # Check if patient is on this medication
         # Match by generic name, brand name, or partial match
         is_taking = False
-        search_terms = med_name.lower().replace("(", "").replace(")", "").split()
-        for patient_med in patient_meds:
-            if any(term in patient_med for term in search_terms if len(term) > 3):
-                is_taking = True
-                break
+        
+        # Code-based match first
+        from medical_ontology import MEDICATION_MAP
+        target_rxnorms = set()
+        med_name_lower = med_name.lower().strip()
+        
+        # Parse names from the medication map
+        for key, val in MEDICATION_MAP.items():
+            if key in med_name_lower or med_name_lower in key:
+                target_rxnorms.add(val["rxnorm"])
+                
+        for code_entry in patient_med_codes:
+            sys = code_entry.get("system", "")
+            val = code_entry.get("code", "")
+            if "rxnorm" in sys.lower() or sys == "http://www.nlm.nih.gov/research/umls/rxnorm":
+                if val in target_rxnorms:
+                    is_taking = True
+                    break
+                    
+        # Text fallback if not matched by code
+        if not is_taking:
+            search_terms = med_name.lower().replace("(", "").replace(")", "").split()
+            for patient_med in patient_meds:
+                if any(term in patient_med for term in search_terms if len(term) > 3):
+                    is_taking = True
+                    break
         
         hold_hours = hold["hold_hours_before"]
         renal_adjusted = False

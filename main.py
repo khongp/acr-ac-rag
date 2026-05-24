@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional
 import os
 
 from fhir_converter import convert_text_to_fhir_bundle, extract_scenario_from_bundle
-from rag_engine import query_acr_guidelines, init_rag
+from rag_engine import query_acr_guidelines, init_rag, add_clinician_override, get_clinician_overrides
 
 
 # Priority 3: Eager model loading at startup
@@ -48,6 +48,13 @@ class ProtocolRequest(BaseModel):
     text: Optional[str] = None
     bundle: Optional[Dict[str, Any]] = None
     institution_id: Optional[str] = None   # Override default institution
+
+class OverrideRequest(BaseModel):
+    query_key: str
+    original_recommendation: str
+    overridden_recommendation: str
+    override_reason: str
+    clinician_notes: str = ""
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -161,6 +168,32 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
         "acr_sources": acr_result["sources"],
         "draft_protocol": draft.to_dict(),
     }
+
+
+@app.post("/v1/override")
+async def save_override(req: OverrideRequest):
+    """Log a clinician override to the audit database."""
+    try:
+        add_clinician_override(
+            query_key=req.query_key,
+            original=req.original_recommendation,
+            overridden=req.overridden_recommendation,
+            reason=req.override_reason,
+            notes=req.clinician_notes
+        )
+        return {"status": "success", "message": "Override logged successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error logging override: {str(e)}")
+
+
+@app.get("/v1/overrides")
+async def list_overrides():
+    """Retrieve audit history of overrides."""
+    try:
+        overrides = get_clinician_overrides()
+        return {"status": "success", "overrides": overrides}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving overrides: {str(e)}")
 
 
 @app.post("/v1/cds-hook")
