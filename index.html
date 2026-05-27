@@ -1163,6 +1163,121 @@
         .cds-dismiss-btn:hover {
             background-color: var(--bg-hover);
         }
+
+        /* Mobile UI/UX Responsiveness Enhancements */
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                margin: 15px auto;
+                gap: 20px;
+                padding: 0 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .tab-bar {
+                overflow-x: auto;
+                white-space: nowrap;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                scrollbar-width: none; /* Hide scrollbar Firefox */
+                -ms-overflow-style: none;  /* Hide scrollbar IE/Edge */
+                padding: 4px;
+            }
+            .tab-bar::-webkit-scrollbar {
+                display: none; /* Hide scrollbar Chrome/Safari/Opera */
+            }
+            .tab-btn {
+                flex: 0 0 auto;
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+                padding: 12px 16px;
+            }
+            .logo-section h1 {
+                font-size: 18px;
+            }
+            .logo-section p {
+                font-size: 12px;
+            }
+            .sidebar {
+                padding: 16px;
+                gap: 15px;
+            }
+            .panel {
+                padding: 16px;
+                min-height: auto;
+            }
+            .procedure-card {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 12px;
+            }
+            .procedure-rating {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+            }
+            .rating-number {
+                min-width: unset;
+                text-align: left;
+            }
+            .procedure-dose {
+                justify-content: flex-start;
+                text-align: left;
+                margin-top: 4px;
+                border-top: 1px dashed var(--border-color);
+                padding-top: 6px;
+            }
+            .procedure-card:hover {
+                transform: none; /* prevent layout shifts on touch devices */
+            }
+            .copilot-toggle-trigger {
+                width: 50px;
+                height: 50px;
+                bottom: 16px;
+                right: 16px;
+            }
+            .modal-body {
+                padding: 16px;
+            }
+            .modal-footer {
+                padding: 12px 16px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .presets-grid {
+                grid-template-columns: 1fr;
+            }
+            .copilot-drawer {
+                width: 100%;
+                right: -100%;
+            }
+            .copilot-drawer.active {
+                right: 0;
+            }
+        }
+
+        pre.json-inspector {
+            max-width: 100%;
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -1798,6 +1913,8 @@
             document.querySelectorAll('.tab-bar .tab-btn').forEach(btn => {
                 if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tabId}'`)) {
                     btn.classList.add('active');
+                    // Scroll active tab button to center view
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 } else {
                     btn.classList.remove('active');
                 }
@@ -1914,6 +2031,14 @@
             // Hide placeholder, show loading
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.getElementById('loading').classList.add('active');
+
+            // Scroll to workspace on mobile/tablet viewports
+            if (window.innerWidth <= 1024) {
+                const workspaceEl = document.querySelector('.workspace');
+                if (workspaceEl) {
+                    workspaceEl.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
             
             // Set loading state
             isLoading = true;

@@ -14,8 +14,13 @@ An enterprise-ready, FHIR-native, and CDS Hooks-compliant Retrieval-Augmented Ge
     *   **Allergies** (Contrast allergy warnings)
     *   **Pregnancy status** (Radiation risk alerts)
     *   **Medication Holds** (e.g. Metformin hold rules)
+*   **Closed-Loop Safety Re-Query:** Detects hard contraindications (such as pacemakers or severe contrast allergies) and automatically re-queries the RAG engine with safety constraints to suggest alternative, non-contrast or safer imaging modalities.
+*   **Confidence Routing & Manual Review Queue:** Scenarios with low-confidence RAG matching scores (< 0.55) are automatically routed to a SQLite-based manual review queue database (`data/query_cache.db`), enabling senior radiologists to claim, review, and resolve complex clinical presentations.
+*   **Decision Support Number (DSN) Audit Trail:** Generates a tamper-evident, unique transaction identifier (`ACR-[DATE]-[HASH]`) for every clinical decision, logging the transaction to an immutable audit file (`data/logs/dsn_audit_log.jsonl`) for compliance verification.
+*   **Conversational Attending Radiology Co-Pilot:** An interactive, conversational LLM assistant chat drawer (`/v1/copilot/chat`) to discuss case presentations and clarify guidelines recommendations.
+*   **Clinical Overrides & Audit Log:** Enables clinicians to manually override guideline recommendations by logging justifications to `/v1/override` for compliance auditing.
 *   **CDS Hooks Compliant:** Implements a `/v1/cds-hook` endpoint (e.g. `order-select`) for integration directly with Electronic Health Record (EHR) platforms.
-*   **Premium CDS Dashboard:** A beautiful, responsive single-page web dashboard (`index.html`) served directly by the FastAPI backend for clinical simulation.
+*   **Premium CDS Dashboard:** A beautiful, fully mobile-responsive single-page web dashboard (`index.html`) served directly by the FastAPI backend for clinical simulation on desktop, tablet, and phone viewports.
 
 ---
 
@@ -30,7 +35,10 @@ graph TD
     API -->|3. Map Protocol| Mapper[Protocol Mapper]
     Mapper -->|Lookup| SQLite[(Procedures SQLite)]
     API -->|4. Check Risks| Safety[Safety Engine]
+    Safety -->|Contraindication Triggered| RAG
     Safety -->|Generate Cards| Output[Draft Protocol & Safety Cards]
+    API -->|Low Confidence < 0.55| RQ[(Manual Review Queue DB)]
+    API -->|Audit Trail| AL[(DSN Audit Log JSONL)]
 ```
 
 ---
@@ -41,7 +49,7 @@ graph TD
 *   **LLM & Embeddings:** Google Gemini (`gemini-2.5-flash`), `google-genai`
 *   **Vector Database:** ChromaDB
 *   **Data Store:** SQLite (for local caching and clinical protocol procedures mapping)
-*   **Static UI Frontend:** Vanilla HTML5, CSS3, & Modern Javascript (Responsive, Dark Mode, Micro-animations)
+*   **Static UI Frontend:** Vanilla HTML5, CSS3, & Modern Javascript (Desktop & mobile-optimized layouts, horizontal swipeable tabs with auto-centering, stacked mobile-friendly rating cards, full-bleed co-pilot drawer, auto-scrolling to results, Dark Mode, and micro-animations)
 *   **Cloud Hosting:** Google Cloud Run, Google Cloud Storage (GCS)
 *   **CI/CD:** GitHub Actions
 
