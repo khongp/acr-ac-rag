@@ -26,12 +26,72 @@ logger = logging.getLogger("acr-ac-rag")
 
 from fhir_converter import convert_text_to_fhir_bundle, extract_scenario_from_bundle
 from rag_engine import query_acr_guidelines, init_rag, add_clinician_override, get_clinician_overrides
-
+import hashlib
+import uuid
+from datetime import datetime
 
 # Priority 3: Eager model loading at startup
 # Eliminates the 30-40s cold-start penalty on first request
 rag_initialized = False
 rag_error = None
+
+# DSN and Review Queue Database helpers
+def generate_dsn(session_data: dict) -> str:
+    """Generate a tamper-evident Decision Support Number. Format: ACR-[DATE]-[HASH]"""
+    content = f"{session_data.get('timestamp','')}{session_data.get('scenario','')}{session_data.get('recommendation','')}"
+    content_hash = hashlib.sha256(content.encode()).hexdigest()[:12].upper()
+    date_str = datetime.now().strftime("%Y%m%d")
+    return f"ACR-{date_str}-{content_hash}"
+
+
+def log_dsn_transaction(scenario: str, recommendation: str, sources: list, confidence: float = 0.0, abstained: bool = False) -> str:
+    """Append DSN record to immutable JSONL audit log."""
+    import json as json_mod
+    os.makedirs("data/logs", exist_ok=True)
+    timestamp = datetime.now().isoformat()
+    session_data = {"timestamp": timestamp, "scenario": scenario, "recommendation": recommendation or ""}
+    dsn = generate_dsn(session_data)
+    record = {
+        "dsn": dsn,
+        "timestamp": timestamp,
+        "scenario_hash": hashlib.sha256(scenario.encode()).hexdigest()[:16],
+        "recommendation_summary": (recommendation or "")[:500],
+        "source_count": len(sources),
+        "confidence_score": confidence,
+        "abstained": abstained,
+        "api_version": "3.0.0",
+    }
+    try:
+        with open("data/logs/dsn_audit_log.jsonl", "a", encoding="utf-8") as f:
+            f.write(json_mod.dumps(record) + "\n")
+        logger.info(f"[DSN] Logged transaction {dsn}")
+    except Exception as e:
+        logger.error(f"[DSN] Failed to log transaction: {e}")
+    return dsn
+
+
+def init_review_queue_db():
+    """Ensure the manual_review_queue table exists in SQLite database."""
+    import sqlite3
+    os.makedirs("data", exist_ok=True)
+    conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS manual_review_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE NOT NULL,
+            scenario_text TEXT NOT NULL,
+            confidence_score REAL,
+            abstention_reason TEXT,
+            status TEXT DEFAULT 'pending',
+            reviewer_id TEXT,
+            reviewed_at TEXT,
+            final_recommendation TEXT,
+            created_at TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +107,7 @@ async def lifespan(app: FastAPI):
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, init_rag)
         rag_initialized = True
+        init_review_queue_db()
         logger.info("[READY] All models loaded — server ready for requests")
     except Exception as e:
         rag_error = str(e)
@@ -100,6 +161,26 @@ class OverrideRequest(BaseModel):
     override_reason: str
     clinician_notes: str = ""
 
+class AcceptMappingRequest(BaseModel):
+    institution_id: str
+    acr_scenario_text: str
+    acr_procedure_text: str
+    imaging_protocol_id: Optional[str] = None
+    ir_protocol_id: Optional[str] = None
+    confidence_score: float
+    mapping_method: str
+    accepted_by: str
+
+class ClaimReviewRequest(BaseModel):
+    session_id: str
+    reviewer_id: str
+
+class ResolveReviewRequest(BaseModel):
+    session_id: str
+    reviewer_id: str
+    final_recommendation: str
+
+
 
 @app.get("/health")
 async def health_check():
@@ -130,45 +211,92 @@ async def get_index():
 
 
 
+AMBIGUITY_THRESHOLD = 0.55
+
+def _route_to_manual_review(scenario_text: str, confidence: float):
+    """Insert a case into the manual review queue."""
+    import sqlite3
+    try:
+        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
+        conn.execute(
+            "INSERT OR IGNORE INTO manual_review_queue (session_id, scenario_text, confidence_score, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
+            (str(uuid.uuid4()), scenario_text[:2000], confidence, datetime.now().isoformat())
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to route to manual review: {e}")
+
 @app.post("/v1/analyze")
 async def analyze_scenario(req: AnalyzeRequest):
-    """
-    Analyzes a clinical scenario. Accepts either raw text or a FHIR Bundle.
-    Returns the ACR recommendation.
-    """
+    """Analyzes a clinical scenario with abstention gate, confidence routing, and DSN audit."""
     logger.info("Received request on /v1/analyze")
     if not req.text and not req.bundle:
         logger.warning("AnalyzeRequest missing both 'text' and 'bundle'")
         raise HTTPException(status_code=400, detail="Must provide either 'text' or 'bundle'.")
 
-    # 1. Standardize to FHIR Bundle format if text is provided
     if req.text:
         try:
             bundle_obj = convert_text_to_fhir_bundle(req.text)
-            bundle_dict = bundle_obj.model_dump() # Pydantic V2
+            bundle_dict = bundle_obj.model_dump()
         except Exception as e:
             logger.error("Error in Text-to-FHIR conversion", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error in Text-to-FHIR conversion: {str(e)}")
     else:
         bundle_dict = req.bundle
 
-    # 2. Extract context string for the RAG engine
     scenario_str = extract_scenario_from_bundle(bundle_dict)
 
-    # 3. Retrieve and Generate
     try:
-        result = query_acr_guidelines(scenario_str)
+        result = query_acr_guidelines(scenario_str, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")
 
-    logger.info("Successfully analyzed clinical scenario")
+    # Abstention gate
+    if result.get("abstained"):
+        dsn = log_dsn_transaction(scenario_str, None, [], abstained=True)
+        logger.info(f"Abstained on scenario — DSN: {dsn}")
+        return {
+            "status": "abstained",
+            "dsn": dsn,
+            "abstained": True,
+            "abstention_reason": result.get("abstention_reason", ""),
+            "extracted_scenario": scenario_str,
+            "recommendation": None,
+            "sources": [],
+            "confidence_score": 0.0,
+        }
+
+    confidence = result.get("confidence_score", 1.0)
+
+    # Ambiguity routing
+    if confidence < AMBIGUITY_THRESHOLD:
+        dsn = log_dsn_transaction(scenario_str, result.get("recommendation"), result.get("sources", []), confidence=confidence)
+        _route_to_manual_review(scenario_str, confidence)
+        logger.info(f"Low-confidence case routed to review — DSN: {dsn}")
+        return {
+            "status": "routed_to_review",
+            "dsn": dsn,
+            "abstained": False,
+            "confidence_score": confidence,
+            "extracted_scenario": scenario_str,
+            "recommendation": result["recommendation"],
+            "sources": result["sources"],
+            "review_note": "This case has been flagged as potentially complex or ambiguous. A senior radiologist review has been requested.",
+        }
+
+    dsn = log_dsn_transaction(scenario_str, result["recommendation"], result.get("sources", []), confidence=confidence)
+    logger.info(f"Successfully analyzed clinical scenario — DSN: {dsn}")
     return {
         "status": "success",
+        "dsn": dsn,
+        "abstained": False,
+        "confidence_score": confidence,
         "mock_bundle_used": bundle_dict if req.text else None,
         "extracted_scenario": scenario_str,
         "recommendation": result["recommendation"],
-        "sources": result["sources"]
+        "sources": result["sources"],
     }
 
 
@@ -206,7 +334,7 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
 
     # 3. Run ACR RAG Engine
     try:
-        acr_result = query_acr_guidelines(scenario_str)
+        acr_result = query_acr_guidelines(scenario_str, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")
@@ -222,8 +350,10 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
     except Exception as e:
         logger.error("Protocol mapping failed — falling back to partial success", exc_info=True)
         # Protocol mapping is additive — return ACR result even if mapping fails
+        dsn = log_dsn_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
         return {
             "status": "partial_success",
+            "dsn": dsn,
             "extracted_scenario": scenario_str,
             "fhir_bundle": bundle_dict,
             "acr_recommendation": acr_result["recommendation"],
@@ -234,9 +364,49 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
             "protocol_error": str(e),
         }
 
-    logger.info("Successfully protocoled clinical scenario")
+    # Closed-loop: if hard contraindications found, re-query for alternatives
+    if draft.safety_profile and draft.status in ("matched", "fuzzy_matched"):
+        from safety_engine import get_hard_contraindication_triggers, SafetyProfile as SP
+        try:
+            # Reconstruct SafetyProfile from dict to use the helper
+            sp = SP(data_source=draft.safety_profile.get("data_source", "synthetic"))
+            from safety_engine import SafetyFlag, LabCheckResult
+            sp.safety_flags = [SafetyFlag(**f) for f in draft.safety_profile.get("safety_flags", [])]
+            sp.lab_checks = [LabCheckResult(**lc) for lc in draft.safety_profile.get("lab_checks", [])]
+            hard_triggers = get_hard_contraindication_triggers(sp)
+            if hard_triggers:
+                contraindications = [t["message"] for t in hard_triggers]
+                alt_query = f"{scenario_str} CONSTRAINT: The following are contraindicated: {'; '.join(contraindications)}. Recommend only non-contrast or alternative modality options."
+                logger.info(f"[SAFETY LOOP] Hard contraindication detected — re-querying for alternatives")
+                try:
+                    alt_result = query_acr_guidelines(alt_query, bundle_dict)
+                    dsn = log_dsn_transaction(scenario_str, alt_result.get("recommendation"), alt_result.get("sources", []), confidence=alt_result.get("confidence_score", 1.0))
+                except Exception as e:
+                    logger.error(f"Alternative re-query failed: {e}")
+                    alt_result = None
+                    dsn = log_dsn_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
+
+                return {
+                    "status": "success_with_safety_requery",
+                    "dsn": dsn,
+                    "extracted_scenario": scenario_str,
+                    "fhir_bundle": bundle_dict,
+                    "original_recommendation_contraindicated": True,
+                    "original_acr_recommendation": acr_result["recommendation"],
+                    "contraindications": contraindications,
+                    "alternative_recommendation": alt_result["recommendation"] if alt_result else None,
+                    "alternative_sources": alt_result.get("sources", []) if alt_result else [],
+                    "acr_sources": acr_result["sources"],
+                    "draft_protocol": draft.to_dict(),
+                }
+        except Exception as e:
+            logger.error(f"Safety loop processing error: {e}", exc_info=True)
+
+    dsn = log_dsn_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
+    logger.info(f"Successfully protocoled clinical scenario — DSN: {dsn}")
     return {
         "status": "success",
+        "dsn": dsn,
         "extracted_scenario": scenario_str,
         "fhir_bundle": bundle_dict,
         "acr_recommendation": acr_result["recommendation"],
@@ -245,6 +415,7 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
         "expanded_query": acr_result.get("expanded_query"),
         "draft_protocol": draft.to_dict(),
     }
+
 
 
 @app.post("/v1/override")
@@ -265,6 +436,29 @@ async def save_override(req: OverrideRequest):
         raise HTTPException(status_code=500, detail=f"Error logging override: {str(e)}")
 
 
+@app.post("/v1/accept-mapping")
+async def accept_mapping(req: AcceptMappingRequest):
+    """Log user acceptance of a protocol mapping and perform writeback if confidence is high."""
+    logger.info(f"Received request to log mapping acceptance for '{req.acr_procedure_text}'")
+    try:
+        from protocol_db import log_mapping_acceptance
+        log_mapping_acceptance(
+            institution_id=req.institution_id,
+            acr_scenario_text=req.acr_scenario_text,
+            acr_procedure_text=req.acr_procedure_text,
+            imaging_protocol_id=req.imaging_protocol_id,
+            ir_protocol_id=req.ir_protocol_id,
+            confidence_score=req.confidence_score,
+            mapping_method=req.mapping_method,
+            accepted_by=req.accepted_by
+        )
+        return {"status": "success", "message": "Mapping acceptance logged and processed."}
+    except Exception as e:
+        logger.error("Error logging mapping acceptance", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error logging mapping acceptance: {str(e)}")
+
+
+
 @app.get("/v1/overrides")
 async def list_overrides():
     """Retrieve audit history of overrides."""
@@ -275,6 +469,128 @@ async def list_overrides():
     except Exception as e:
         logger.error("Error retrieving overrides", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving overrides: {str(e)}")
+
+
+@app.get("/v1/review/queue")
+async def get_review_queue(status: Optional[str] = None):
+    """Retrieve cases in the manual review queue."""
+    logger.info(f"Received request to retrieve review queue (status={status})")
+    import sqlite3
+    try:
+        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
+        cursor = conn.cursor()
+        if status:
+            cursor.execute(
+                "SELECT id, session_id, scenario_text, confidence_score, abstention_reason, status, reviewer_id, reviewed_at, final_recommendation, created_at FROM manual_review_queue WHERE status = ? ORDER BY id DESC",
+                (status,)
+            )
+        else:
+            cursor.execute(
+                "SELECT id, session_id, scenario_text, confidence_score, abstention_reason, status, reviewer_id, reviewed_at, final_recommendation, created_at FROM manual_review_queue ORDER BY id DESC"
+            )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        queue = []
+        for r in rows:
+            queue.append({
+                "id": r[0],
+                "session_id": r[1],
+                "scenario_text": r[2],
+                "confidence_score": r[3],
+                "abstention_reason": r[4],
+                "status": r[5],
+                "reviewer_id": r[6],
+                "reviewed_at": r[7],
+                "final_recommendation": r[8],
+                "created_at": r[9]
+            })
+        return {"status": "success", "queue": queue}
+    except Exception as e:
+        logger.error("Error retrieving review queue", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving review queue: {str(e)}")
+
+
+@app.post("/v1/review/claim")
+async def claim_review_case(req: ClaimReviewRequest):
+    """Claim a case in the manual review queue."""
+    logger.info(f"Reviewer {req.reviewer_id} claiming session {req.session_id}")
+    import sqlite3
+    try:
+        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
+        # Check if already claimed or resolved
+        row = conn.execute(
+            "SELECT status, reviewer_id FROM manual_review_queue WHERE session_id = ?",
+            (req.session_id,)
+        ).fetchone()
+        
+        if not row:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Case not found in review queue.")
+        
+        status, current_reviewer = row
+        if status == "resolved":
+            conn.close()
+            raise HTTPException(status_code=400, detail="Case has already been resolved.")
+        
+        if status == "claimed" and current_reviewer != req.reviewer_id:
+            conn.close()
+            raise HTTPException(status_code=400, detail=f"Case has already been claimed by {current_reviewer}.")
+            
+        conn.execute(
+            "UPDATE manual_review_queue SET status = 'claimed', reviewer_id = ? WHERE session_id = ?",
+            (req.reviewer_id, req.session_id)
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": f"Case claimed successfully by {req.reviewer_id}."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error claiming review case", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error claiming review case: {str(e)}")
+
+
+@app.post("/v1/review/resolve")
+async def resolve_review_case(req: ResolveReviewRequest):
+    """Resolve a case in the manual review queue."""
+    logger.info(f"Reviewer {req.reviewer_id} resolving session {req.session_id}")
+    import sqlite3
+    try:
+        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
+        # Check if exists and check claim status
+        row = conn.execute(
+            "SELECT status, reviewer_id FROM manual_review_queue WHERE session_id = ?",
+            (req.session_id,)
+        ).fetchone()
+        
+        if not row:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Case not found in review queue.")
+            
+        status, current_reviewer = row
+        if status == "claimed" and current_reviewer != req.reviewer_id:
+            conn.close()
+            raise HTTPException(status_code=400, detail=f"Case was claimed by {current_reviewer}. Only the claimant can resolve it.")
+            
+        reviewed_at = datetime.now().isoformat()
+        conn.execute(
+            "UPDATE manual_review_queue SET status = 'resolved', reviewer_id = ?, reviewed_at = ?, final_recommendation = ? WHERE session_id = ?",
+            (req.reviewer_id, reviewed_at, req.final_recommendation, req.session_id)
+        )
+        conn.commit()
+        conn.close()
+        return {
+            "status": "success", 
+            "message": "Case resolved successfully.",
+            "reviewed_at": reviewed_at,
+            "final_recommendation": req.final_recommendation
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error resolving review case", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error resolving review case: {str(e)}")
 
 
 class CoPilotChatRequest(BaseModel):
@@ -379,7 +695,7 @@ async def cds_hook(request: Request):
         
     # 3. Query ACR guidelines
     try:
-        acr_result = query_acr_guidelines(scenario_str)
+        acr_result = query_acr_guidelines(scenario_str, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval during CDS hook", exc_info=True)
         # Fall back to a default error card

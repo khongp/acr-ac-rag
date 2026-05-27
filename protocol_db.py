@@ -219,6 +219,20 @@ CREATE TABLE IF NOT EXISTS acr_protocol_map (
     CHECK (imaging_protocol_id IS NOT NULL OR ir_protocol_id IS NOT NULL)
 );
 
+CREATE TABLE IF NOT EXISTS mapping_acceptance_log (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    institution_id      TEXT NOT NULL REFERENCES institution(id),
+    acr_scenario_text   TEXT NOT NULL,
+    acr_procedure_text  TEXT NOT NULL,
+    imaging_protocol_id TEXT REFERENCES imaging_protocol(id),
+    ir_protocol_id      TEXT REFERENCES ir_protocol(id),
+    confidence_score    REAL,
+    mapping_method      TEXT,
+    accepted_by         TEXT NOT NULL,
+    accepted_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    writeback_status    TEXT DEFAULT 'pending' CHECK(writeback_status IN ('pending','completed','skipped','failed'))
+);
+
 -- Indexes for fast lookups
 CREATE INDEX IF NOT EXISTS idx_acr_map_scenario ON acr_protocol_map(acr_scenario_text);
 CREATE INDEX IF NOT EXISTS idx_acr_map_procedure ON acr_protocol_map(acr_procedure_text);
@@ -229,6 +243,7 @@ CREATE INDEX IF NOT EXISTS idx_ir_protocol_institution ON ir_protocol(institutio
 CREATE INDEX IF NOT EXISTS idx_contrast_rule_protocol ON contrast_rule(protocol_id);
 CREATE INDEX IF NOT EXISTS idx_ir_lab_protocol ON ir_lab_threshold(ir_protocol_id);
 CREATE INDEX IF NOT EXISTS idx_ir_med_protocol ON ir_med_hold(ir_protocol_id);
+CREATE INDEX IF NOT EXISTS idx_mapping_accept_inst ON mapping_acceptance_log(institution_id);
 """
 
 
@@ -453,8 +468,100 @@ def search_protocols_fulltext(
 
 
 # ─────────────────────────────────────────────
-# CLI Entry Point
+# Self-Learning Write-Back Function
 # ─────────────────────────────────────────────
+
+def log_mapping_acceptance(
+    institution_id: str,
+    acr_scenario_text: str,
+    acr_procedure_text: str,
+    imaging_protocol_id: Optional[str],
+    ir_protocol_id: Optional[str],
+    confidence_score: float,
+    mapping_method: str,
+    accepted_by: str,
+    db_path: Optional[str] = None
+):
+    """
+    Log user acceptance of a protocol mapping, and if confidence >= 0.85,
+    automatically write it back to acr_protocol_map so it is matched directly next time.
+    """
+    with get_connection(db_path) as conn:
+        # 1. Log acceptance
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO mapping_acceptance_log 
+            (institution_id, acr_scenario_text, acr_procedure_text, imaging_protocol_id, ir_protocol_id, confidence_score, mapping_method, accepted_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            institution_id, 
+            acr_scenario_text, 
+            acr_procedure_text, 
+            imaging_protocol_id, 
+            ir_protocol_id, 
+            confidence_score, 
+            mapping_method, 
+            accepted_by
+        ))
+        log_id = cursor.lastrowid
+        
+        # 2. Self-learning write-back for high confidence (>= 0.85)
+        if confidence_score >= 0.85 and (imaging_protocol_id or ir_protocol_id):
+            try:
+                # Check if mapping already exists to avoid duplicates
+                existing = conn.execute("""
+                    SELECT id FROM acr_protocol_map 
+                    WHERE institution_id = ? AND acr_scenario_text = ? AND acr_procedure_text = ?
+                """, (institution_id, acr_scenario_text, acr_procedure_text)).fetchone()
+                
+                if not existing:
+                    if imaging_protocol_id:
+                        conn.execute("""
+                            INSERT INTO acr_protocol_map 
+                            (institution_id, acr_scenario_text, acr_procedure_text, imaging_protocol_id, match_confidence, mapping_method, mapped_by)
+                            VALUES (?, ?, ?, ?, ?, 'llm_assisted', ?)
+                        """, (
+                            institution_id,
+                            acr_scenario_text,
+                            acr_procedure_text,
+                            imaging_protocol_id,
+                            confidence_score,
+                            f"self_learning_from_{accepted_by}"
+                        ))
+                    else:
+                        conn.execute("""
+                            INSERT INTO acr_protocol_map 
+                            (institution_id, acr_scenario_text, acr_procedure_text, ir_protocol_id, match_confidence, mapping_method, mapped_by)
+                            VALUES (?, ?, ?, ?, ?, 'llm_assisted', ?)
+                        """, (
+                            institution_id,
+                            acr_scenario_text,
+                            acr_procedure_text,
+                            ir_protocol_id,
+                            confidence_score,
+                            f"self_learning_from_{accepted_by}"
+                        ))
+                    
+                cursor.execute("""
+                    UPDATE mapping_acceptance_log 
+                    SET writeback_status = 'completed' 
+                    WHERE id = ?
+                """, (log_id,))
+                print(f"[SELF-LEARNING] Successfully wrote back high-confidence mapping for '{acr_procedure_text}'")
+            except Exception as e:
+                print(f"[SELF-LEARNING ERROR] Failed write-back: {e}")
+                cursor.execute("""
+                    UPDATE mapping_acceptance_log 
+                    SET writeback_status = 'failed' 
+                    WHERE id = ?
+                """, (log_id,))
+        else:
+            cursor.execute("""
+                UPDATE mapping_acceptance_log 
+                SET writeback_status = 'skipped' 
+                WHERE id = ?
+            """, (log_id,))
+
 
 if __name__ == "__main__":
     import sys

@@ -17,7 +17,7 @@ scenario = "78 yo male with acute onset of severe headache, worst headache of li
 print("Warming up models by running first query...")
 query_acr_guidelines(scenario)
 
-scenario2 = "45yo female with sudden onset of chest pain, shortness of breath, elevated D-dimer"
+scenario2 = "35yo male with sharp chest pain radiating to back, suspected aortic dissection"
 print(f"\nQuerying RAG pipeline (cache miss) with: '{scenario2}'...\n")
 
 t0 = time.time()

@@ -6,6 +6,7 @@ and context retrieved from the ACR Appropriateness Criteria database.
 """
 
 import os
+import re
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from google import genai
@@ -15,6 +16,61 @@ from dotenv import load_dotenv
 from rag_engine import query_acr_guidelines, redact_phi
 
 load_dotenv()
+
+# ---------------------------------------------------------------------------
+# Prompt-injection guard
+# ---------------------------------------------------------------------------
+_INJECTION_PATTERNS = [
+    re.compile(r"ignore\s+(previous|all|prior|above)\s+instructions", re.IGNORECASE),
+    re.compile(r"disregard\s+(your|all|the)\s+(system|previous|prior)", re.IGNORECASE),
+    re.compile(r"you\s+are\s+now", re.IGNORECASE),
+    re.compile(r"new\s+instruction", re.IGNORECASE),
+    re.compile(r"forget\s+(everything|all|your\s+instructions)", re.IGNORECASE),
+    re.compile(r"act\s+as\s+(a\s+|an\s+)?(different|new|unrestricted)", re.IGNORECASE),
+    re.compile(r"<\s*(script|iframe|object|embed)", re.IGNORECASE),
+]
+
+_MAX_INPUT_LENGTH = 4000
+
+
+def sanitize_clinical_input(text: str) -> str:
+    """Sanitize free-text clinical input before it reaches the LLM.
+
+    1. Checks *text* against known prompt-injection patterns and raises
+       ``ValueError`` if any match is found.
+    2. Truncates the input to a maximum of 4 000 characters.
+    3. Wraps the (possibly truncated) text in sentinel boundary tags so the
+       model can distinguish clinical data from instructions.
+
+    Parameters
+    ----------
+    text : str
+        Raw clinical scenario text supplied by the user.
+
+    Returns
+    -------
+    str
+        The sanitized and tagged text.
+
+    Raises
+    ------
+    ValueError
+        If the input matches a known prompt-injection pattern.
+    """
+    for pattern in _INJECTION_PATTERNS:
+        if pattern.search(text):
+            raise ValueError(
+                "Input rejected: the clinical scenario text contains language "
+                "that resembles a prompt-injection attempt "
+                f"(matched pattern: {pattern.pattern!r}). "
+                "Please provide genuine clinical information only."
+            )
+
+    # Truncate overly long inputs
+    text = text[:_MAX_INPUT_LENGTH]
+
+    # Wrap in boundary tags so the LLM can distinguish data from instructions
+    return f"[PATIENT_CLINICAL_DATA_START]\n{text}\n[PATIENT_CLINICAL_DATA_END]"
 
 class ChatMessage(BaseModel):
     role: str                   # "user" or "model" / "assistant"
@@ -36,6 +92,12 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
     Generate a conversational response from the perspective of an Attending Radiologist
     using the patient context, current RAG guidelines, and chat history.
     """
+    # Sanitize clinical scenario text to guard against prompt injection
+    try:
+        sanitized_scenario = sanitize_clinical_input(req.scenario_text)
+    except ValueError as e:
+        return str(e)
+
     client = get_gemini_client()
     
     # 1. Retrieve the ACR Guidelines for the current patient context
@@ -69,7 +131,7 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
 
     # Compile the prompt including patient context and guidelines details
     prompt = (
-        f"PATIENT CLINICAL PRESENTATION:\n{req.scenario_text}\n\n"
+        f"PATIENT CLINICAL PRESENTATION:\n{sanitized_scenario}\n\n"
         f"ACR GUIDELINE RECOMMENDATION (SUMMARY):\n{acr_recommendation}\n\n"
         f"RELEVANT GUIDELINES NARRATIVE EXCERPTS:\n{guidelines_context}\n\n"
         f"CONVERSATION HISTORY:\n"

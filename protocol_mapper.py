@@ -38,7 +38,7 @@ load_dotenv()
 
 # Default institution — override via INSTITUTION_ID env var
 DEFAULT_INSTITUTION = os.environ.get("INSTITUTION_ID", "skyridge")
-ENABLE_LLM_FUZZY_MATCH = os.environ.get("ENABLE_LLM_FUZZY_MATCH", "true").strip().lower() == "true"
+ENABLE_LLM_FUZZY_MATCH = os.environ.get("ENABLE_LLM_FUZZY_MATCH", "false").strip().lower() == "true"
 
 
 @dataclass
@@ -102,6 +102,24 @@ def get_draft_protocol(
     
     # Step 1: Extract ACR procedure and scenario from RAG output
     acr_procedure, acr_scenario = _extract_acr_identifiers(acr_result)
+    
+    # Prioritize ordered procedure from FHIR bundle for mapping and safety evaluation
+    if fhir_bundle:
+        for entry in fhir_bundle.get("entry", []):
+            resource = entry.get("resource", {})
+            if resource.get("resourceType") == "ServiceRequest":
+                code_obj = resource.get("code", {})
+                ordered_procedure = code_obj.get("text")
+                if not ordered_procedure:
+                    concept_obj = code_obj.get("concept", {})
+                    ordered_procedure = concept_obj.get("text")
+                    if not ordered_procedure:
+                        codings = concept_obj.get("coding", []) or code_obj.get("coding", [])
+                        if codings:
+                            ordered_procedure = codings[0].get("display")
+                if ordered_procedure:
+                    acr_procedure = ordered_procedure
+                    break
     
     # Step 2: Look up protocol in the bridge table
     matches = []

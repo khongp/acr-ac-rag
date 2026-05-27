@@ -11,6 +11,7 @@ import json
 import time
 import hashlib
 import sqlite3
+from datetime import datetime, timezone
 from typing import List, Optional
 from dotenv import load_dotenv
 from google import genai
@@ -169,18 +170,38 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
         return emb
 
 
+def get_guideline_version(source_path: str) -> str:
+    """Compute a content-based MD5 hash (first 8 chars) of a file for version tracking."""
+    h = hashlib.md5()
+    with open(source_path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()[:8]
+
+
 def load_variants_from_json(json_path):
-    """Load structured ACR variant table data as unique topic-scenario documents.
-    This avoids massive redundancy of embedding the same scenario for each procedure row."""
+    """Load structured ACR variant table data with hierarchical chunking.
+
+    Level 1 (Variant Summary): One chunk per unique (topic, scenario) pair
+    listing ALL procedures for that scenario.
+
+    Level 2 (Per-Procedure): One chunk per individual procedure row with
+    full parent context inherited.
+    """
     docs = []
     if not os.path.exists(json_path):
         print(f"JSON file {json_path} not found. Skipping table ingestion.")
         return docs
-        
+
+    guideline_version = get_guideline_version(json_path)
+    ingested_at = datetime.now(timezone.utc).isoformat()
+
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    
-    seen_pairs = set()
+
+    # Group all procedure rows by (topic, scenario)
+    from collections import defaultdict
+    scenario_procedures = defaultdict(list)
     for topic in data:
         topic_name = topic.get("topicName", "")
         for variant in topic.get("variantData", []):
@@ -188,23 +209,76 @@ def load_variants_from_json(json_path):
             if not scenario:
                 continue
             pair_key = (topic_name.strip(), scenario.strip())
-            if pair_key in seen_pairs:
-                continue
-            seen_pairs.add(pair_key)
-            
-            content = f"ACR Appropriateness Table Data:\n"
-            content += f"Topic: {topic_name}\n"
-            content += f"Clinical Scenario (Variant): {scenario}"
-            
+            scenario_procedures[pair_key].append(variant)
+
+    for (topic_name, scenario), procedures in scenario_procedures.items():
+        # ── Level 1: Variant Summary ──
+        bullet_lines = []
+        for proc in procedures:
+            name = proc.get("Procedure", "N/A")
+            approp = proc.get("Appropriateness Category", "N/A")
+            rrl = proc.get("RRL", proc.get("Adult RRL", "N/A"))
+            bullet_lines.append(f"- {name} | {approp} | RRL: {rrl}")
+
+        summary_content = (
+            f"ACR Appropriateness Table Data:\n"
+            f"Topic: {topic_name}\n"
+            f"Clinical Scenario (Variant): {scenario}\n"
+            f"Procedures:\n" + "\n".join(bullet_lines)
+        )
+
+        docs.append(Document(
+            page_content=summary_content,
+            metadata={
+                "source": "acr_variant_tables.json",
+                "type": "variant_table",
+                "topic": topic_name,
+                "scenario": scenario,
+                "level": "variant_summary",
+                "guideline_version": guideline_version,
+                "ingested_at": ingested_at,
+                "chunk_type": "structured_table",
+            }
+        ))
+
+        # ── Level 2: Per-Procedure ──
+        for proc in procedures:
+            proc_name = proc.get("Procedure", "N/A")
+            approp = proc.get("Appropriateness Category", "N/A")
+            adult_rrl = proc.get("Adult RRL", proc.get("RRL", "N/A"))
+            peds_rrl = proc.get("Peds RRL", proc.get("Pediatric RRL", ""))
+
+            proc_content = (
+                f"ACR Appropriateness Table Data:\n"
+                f"Topic: {topic_name}\n"
+                f"Clinical Scenario (Variant): {scenario}\n"
+                f"Procedure: {proc_name}\n"
+                f"Appropriateness Category: {approp}\n"
+                f"Adult RRL: {adult_rrl}\n"
+                f"Pediatric RRL: {peds_rrl if peds_rrl else 'N/A'}"
+            )
+
+            is_pediatric = bool(peds_rrl and peds_rrl.strip().upper() != "N/A")
+
             docs.append(Document(
-                page_content=content,
+                page_content=proc_content,
                 metadata={
                     "source": "acr_variant_tables.json",
                     "type": "variant_table",
                     "topic": topic_name,
+                    "scenario": scenario,
+                    "procedure": proc_name,
+                    "appropriateness": approp,
+                    "adult_rrl": adult_rrl,
+                    "peds_rrl": peds_rrl if peds_rrl else "N/A",
+                    "level": "procedure",
+                    "guideline_version": guideline_version,
+                    "ingested_at": ingested_at,
+                    "chunk_type": "structured_table",
+                    "is_pediatric": is_pediatric,
                 }
             ))
-            
+
     return docs
 
 
@@ -273,6 +347,14 @@ def chunk_pdf_documents(documents: list) -> list:
                 if sec_content:
                     sections.append((sec_name, sec_content))
 
+        # Compute guideline version for this PDF source
+        pdf_path = os.path.join(RAW_DIR, src)
+        if os.path.exists(pdf_path):
+            pdf_version = get_guideline_version(pdf_path)
+        else:
+            pdf_version = "unknown"
+        pdf_ingested_at = datetime.now(timezone.utc).isoformat()
+
         # Chunk each section and build final Document objects
         for sec_name, sec_text in sections:
             sub_texts = sub_splitter.split_text(sec_text)
@@ -285,7 +367,9 @@ def chunk_pdf_documents(documents: list) -> list:
                         "source": src,
                         "type": "narrative",
                         "section": sec_name,
-                        "chunk_index": idx
+                        "chunk_index": idx,
+                        "guideline_version": pdf_version,
+                        "ingested_at": pdf_ingested_at,
                     }
                 ))
 

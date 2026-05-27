@@ -818,7 +818,7 @@ def evaluate_safety(
         implants = patient_data.get("implants", [])
         if "pacemaker" in implants:
             flag = SafetyFlag(
-                rule_type="mri_safety",
+                rule_type="mri_safety_pacemaker",
                 severity="hard_stop",
                 message="🚫 Pacemaker Detected: Cardiac device is an absolute contraindication for standard MRI. Confirm if MR-conditional and follow cardiology prep.",
                 triggered=True,
@@ -828,7 +828,7 @@ def evaluate_safety(
             profile.safety_flags.append(flag)
         elif "metallic implant" in implants:
             flag = SafetyFlag(
-                rule_type="mri_safety",
+                rule_type="mri_safety_metallic_implant",
                 severity="warning",
                 message="⚠️ Metallic Implant Detected: Review clinical records to verify MR compatibility of implant/foreign body prior to MRI scan.",
                 triggered=True,
@@ -839,7 +839,7 @@ def evaluate_safety(
             
         if patient_data.get("claustrophobia"):
             flag = SafetyFlag(
-                rule_type="mri_safety",
+                rule_type="mri_safety_claustrophobia",
                 severity="info",
                 message="ℹ️ Patient Claustrophobia: Consider ordering mild oral sedation (e.g. Diazepam) or scheduling on an open-bore scanner.",
                 triggered=True,
@@ -863,3 +863,38 @@ def evaluate_safety(
     profile.compute_overall_status()
     
     return profile
+
+
+def get_hard_contraindication_triggers(safety_profile: SafetyProfile) -> list[dict]:
+    """
+    Extract hard contraindication triggers from a completed SafetyProfile.
+    Used by main.py to decide whether to re-query RAG for alternative modalities.
+    
+    Returns a list of dicts with keys: rule_type, message, severity, action
+    """
+    triggers = []
+    
+    # Hard-stop safety flags
+    for flag in safety_profile.safety_flags:
+        if flag.triggered and flag.severity == "hard_stop":
+            triggers.append({
+                "rule_type": flag.rule_type,
+                "message": flag.message,
+                "severity": flag.severity,
+                "action": flag.action,
+                "details": flag.to_dict() if hasattr(flag, "to_dict") else vars(flag),
+            })
+    
+    # Critical lab failures
+    for lab in safety_profile.lab_checks:
+        if not lab.is_met and lab.action_if_not_met == "hard_stop":
+            triggers.append({
+                "rule_type": f"lab_{lab.lab_name}",
+                "message": f"{lab.lab_name} value {lab.patient_value} does not meet threshold ({lab.required_operator} {lab.required_value})",
+                "severity": "hard_stop",
+                "action": "hard_stop",
+                "details": lab.to_dict() if hasattr(lab, "to_dict") else vars(lab),
+            })
+    
+    return triggers
+

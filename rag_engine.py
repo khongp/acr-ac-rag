@@ -29,6 +29,8 @@ load_dotenv()
 EMBEDDING_MODE = os.getenv("EMBEDDING_MODE", "local").strip().lower()
 ENABLE_NLP_EXPANSION = os.getenv("ENABLE_NLP_EXPANSION", "false").strip().lower() == "true"
 ENABLE_LLM_RERANK = os.getenv("ENABLE_LLM_RERANK", "false").strip().lower() == "true"
+ENABLE_COLBERT_RERANK = os.getenv("ENABLE_COLBERT_RERANK", "false").strip().lower() == "true"
+MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "3"))
 
 # Support overriding paths via environment variables for GCS mount compatibility
 if EMBEDDING_MODE == "gemini":
@@ -322,6 +324,39 @@ def reciprocal_rank_fusion(doc_lists: List[List[Document]], k: int = 60) -> List
     return [doc_by_id[doc_id] for doc_id in sorted_docs]
 
 
+def rerank_with_colbert(query: str, docs: List[Document], top_k: int = 5) -> List[Document]:
+    """
+    Re-rank RRF-fused results using ColBERT late-interaction scoring.
+    Attempts to import ragatouille. If not available, falls back to input ranking.
+    """
+    if not docs:
+        return []
+    
+    try:
+        from ragatouille import RAGPretrainedModel
+        print(f"[COLBERT] Loading pretrained ColBERTv2 model to rerank {len(docs)} documents...")
+        colbert = RAGPretrainedModel.from_pretrained("colbert-ir/colbertv2.0")
+        
+        passages = [doc.page_content for doc in docs]
+        results = colbert.rerank(query=query, documents=passages, k=top_k)
+        
+        reranked_docs = []
+        for res in results:
+            content = res["content"]
+            for doc in docs:
+                if doc.page_content == content:
+                    doc.metadata["colbert_score"] = res["score"]
+                    reranked_docs.append(doc)
+                    break
+        return reranked_docs
+    except ImportError:
+        print("[WARN] ragatouille package not installed. Skipping ColBERT reranking.")
+        return docs[:top_k]
+    except Exception as e:
+        print(f"[WARN] ColBERT reranking failed: {e}. Falling back.")
+        return docs[:top_k]
+
+
 def load_bm25_retriever():
     """Loads the pre-built BM25 index from disk with fallbacks."""
     bm25_path = "data/bm25_retriever.pkl"
@@ -354,11 +389,11 @@ def load_bm25_retriever():
 def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
     """
     Uses Gemini to rerank candidate topics and scenarios based on clinical relevance.
-    Returns the top 3 most clinically relevant candidate scenarios.
+    Returns the top MAX_CANDIDATES most clinically relevant candidate scenarios.
     """
     if not candidates:
         return []
-    if len(candidates) <= 3:
+    if len(candidates) <= MAX_CANDIDATES:
         return candidates
         
     try:
@@ -406,13 +441,13 @@ def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
                 
         if not selected:
             print("[WARN] LLM reranker failed to match any candidates. Falling back to default order.")
-            return candidates[:3]
+            return candidates[:MAX_CANDIDATES]
             
-        return selected[:3]
+        return selected[:MAX_CANDIDATES]
         
     except Exception as e:
         print(f"[WARN] LLM reranker failed: {e}. Falling back to default vector/BM25 rank.")
-        return candidates[:3]
+        return candidates[:MAX_CANDIDATES]
 
 
 class CombinedTypeRetriever(BaseRetriever):
@@ -420,7 +455,7 @@ class CombinedTypeRetriever(BaseRetriever):
     embeddings: Any
     bm25_retriever: Any = None
     k_tables: int = 30
-    k_narrative: int = 5
+    k_narrative: int = 3
 
     class Config:
         arbitrary_types_allowed = True
@@ -464,6 +499,9 @@ class CombinedTypeRetriever(BaseRetriever):
         # Reciprocal Rank Fusion
         fused_tables = reciprocal_rank_fusion([vector_tables, bm25_tables])
 
+        if ENABLE_COLBERT_RERANK:
+            fused_tables = rerank_with_colbert(query, fused_tables, top_k=15)
+
         # ── Step 3: Scenario detection ──
         unique_candidates = []
         for doc in fused_tables:
@@ -480,8 +518,8 @@ class CombinedTypeRetriever(BaseRetriever):
             best_candidates = _rerank_scenarios_llm(query, unique_candidates)
             print(f"[RERANK] Selected top {len(best_candidates)} candidates.")
         else:
-            print(f"[RERANK] LLM reranking is disabled. Using top {min(3, len(unique_candidates))} candidates from hybrid search.")
-            best_candidates = unique_candidates[:3]
+            print(f"[RERANK] LLM reranking is disabled. Using top {min(MAX_CANDIDATES, len(unique_candidates))} candidates from hybrid search.")
+            best_candidates = unique_candidates[:MAX_CANDIDATES]
         
         scenario_tables = []
         if best_candidates:
@@ -559,7 +597,10 @@ class CombinedTypeRetriever(BaseRetriever):
                 print(f"[WARN] BM25 narrative query failed: {e}")
                 
         fused_narratives = reciprocal_rank_fusion([vector_narratives, bm25_narratives])
-        best_narratives = fused_narratives[:self.k_narrative]
+        if ENABLE_COLBERT_RERANK:
+            best_narratives = rerank_with_colbert(query, fused_narratives, top_k=self.k_narrative)
+        else:
+            best_narratives = fused_narratives[:self.k_narrative]
 
         return scenario_tables + best_narratives
 
@@ -582,7 +623,7 @@ def get_retriever():
         embeddings=embeddings,
         bm25_retriever=_bm25_retriever,
         k_tables=30,
-        k_narrative=5,
+        k_narrative=3,
     )
 
 
@@ -603,6 +644,7 @@ IMPORTANT:
 1. If the context contains 'ACR Appropriateness Table Data' that matches the user's clinical presentation, strictly list the imaging modalities that are "Usually appropriate" (Ratings 7-9) followed by "May be appropriate" (Ratings 4-6). Always include the Radiation Dose (RRL).
 2. If the context DOES NOT contain the exact table data, but DOES contain narrative text or guidelines relevant to the clinical scenario, you MUST summarize that narrative guidance. Do not simply refuse to answer.
 3. Then, use any narrative text provided to add a brief 'Clinical Rationale / FYI' section explaining why.
+4. Keep the output extremely concise and direct. Avoid verbose explanations or conversational filler. Be as brief as possible while providing the required information.
 
 Context:
 {context}
@@ -635,6 +677,9 @@ def init_rag():
     """Initialize all RAG components (embedding model, vector store, LLM).
     Safe to call multiple times — uses singleton pattern."""
     global _retriever, _llm, _chain, _bm25_retriever
+    
+    if _retriever is not None and _llm is not None and _chain is not None:
+        return
     
     # 1. Copy database files from GCS source mounts to fast local /tmp storage on Cloud Run
     if CHROMA_SOURCE_PATH and os.path.exists(CHROMA_SOURCE_PATH):
@@ -699,7 +744,99 @@ def _expand_clinical_query(query: str) -> str:
         return query
 
 
-def query_acr_guidelines(clinical_scenario: str) -> dict:
+# ── RAG Input Sanitization and Completeness (Abstention Gate) ──
+
+_INJECTION_PATTERNS = [
+    re.compile(r"ignore\s+(previous|all|prior|above)\s+instructions", re.IGNORECASE),
+    re.compile(r"disregard\s+(your|all|the)\s+(system|previous|prior)", re.IGNORECASE),
+    re.compile(r"you\s+are\s+now", re.IGNORECASE),
+    re.compile(r"new\s+instruction", re.IGNORECASE),
+    re.compile(r"forget\s+(everything|all|your\s+instructions)", re.IGNORECASE),
+    re.compile(r"act\s+as\s+(a\s+|an\s+)?(different|new|unrestricted)", re.IGNORECASE),
+    re.compile(r"<\s*(script|iframe|object|embed)", re.IGNORECASE),
+]
+
+def evaluate_input_completeness(clinical_text: str, fhir_bundle: dict = None) -> tuple[bool, str]:
+    """
+    Evaluate if the clinical text has enough detail (anatomy, symptoms/condition) to search guidelines.
+    Returns (should_abstain, reason_text).
+    """
+    stripped_text = clinical_text.strip()
+    if len(stripped_text) < 10:
+        return True, "Clinical scenario description is too short to evaluate (must be at least 10 characters)."
+
+    # Map the required 30 body regions / organ systems to common clinical terms, substrings, and synonyms
+    body_regions_map = {
+        "head": ["head", "skull", "brain", "cerebral", "cerebro", "stroke", "seizure", "neurolog", "dementia", "cognitive", "acoustic", "migraine", "cephaly", "mental"],
+        "brain": ["brain", "cerebral", "cerebro", "stroke", "seizure", "neurolog", "dementia", "cognitive", "acoustic"],
+        "chest": ["chest", "pleuritic", "rib", "lung", "pulmonary", "bronch", "hilar", "dyspnea", "asbestos", "cough", "cardiac", "heart", "coronary", "aort", "pericarditis", "pneumo"],
+        "lung": ["lung", "pulmonary", "bronch", "hilar", "dyspnea", "asbestos", "cough"],
+        "abdomen": ["abdomen", "abdominal", "epigastr", "flank", "belly", "gastric", "mesenteric", "cholecystitis", "gallbladder", "jaundice", "biliary", "colic", "ascites", "liver", "hepatic", "pancreas", "pancreatic", "bowel", "intestin", "gut", "rectal", "diverticulitis", "crohn", "perforated"],
+        "pelvis": ["pelvis", "pelvic", "adnexal", "testi", "scrot", "groin", "adnexa", "ovary", "ovarian", "uterus", "uterine", "prostate", "prostatic", "endometriosis"],
+        "spine": ["spine", "spinal", "back", "radiculopathy", "cervical", "thoracic", "lumbar"],
+        "cervical": ["cervical"],
+        "thoracic": ["thoracic"],
+        "lumbar": ["lumbar"],
+        "extremity": ["extremity", "limb", "leg", "arm", "hand", "foot", "finger", "toe", "gout", "claudication", "hip", "knee", "shoulder", "ankle", "wrist", "scaphoid", "malleolus", "patella", "joint", "bone", "fracture"],
+        "breast": ["breast", "mammogr"],
+        "cardiac": ["cardiac", "heart", "coronary", "pericarditis", "myocard", "valvular", "echo"],
+        "vascular": ["vascular", "artery", "arterial", "vein", "venous", "dvt", "carotid", "aort", "renovascular", "stenosis", "claudication", "embolism", "thrombosis", "bleed", "hemorrhage", "ischemia"],
+        "hip": ["hip"],
+        "knee": ["knee"],
+        "shoulder": ["shoulder"],
+        "ankle": ["ankle"],
+        "wrist": ["wrist"],
+        "neck": ["neck", "thyroid", "cervical"],
+        "liver": ["liver", "hepatic", "biliary", "jaundice", "cholecystitis"],
+        "kidney": ["kidney", "renal", "nephro", "urolithiasis", "colic"],
+        "pancreas": ["pancreas", "pancreatic"],
+        "bowel": ["bowel", "intestin", "gut", "rectal", "diverticulitis", "crohn", "perforated"],
+        "colon": ["colon", "colorectal"],
+        "bladder": ["bladder", "cystitis"],
+        "prostate": ["prostate", "prostatic"],
+        "uterus": ["uterus", "uterine"],
+        "ovary": ["ovary", "ovarian"]
+    }
+    
+    text_lower = stripped_text.lower()
+    has_body_region = False
+    for region, patterns in body_regions_map.items():
+        if any(pat in text_lower for pat in patterns):
+            has_body_region = True
+            break
+
+    has_condition = False
+    if fhir_bundle:
+        for entry in fhir_bundle.get("entry", []):
+            resource = entry.get("resource", {})
+            res_type = resource.get("resourceType")
+            if res_type == "Condition":
+                has_condition = True
+                break
+
+    if not has_body_region and not has_condition:
+        return True, "Insufficient clinical detail: No identifiable anatomical region, body part, or clinical condition was specified."
+
+    return False, ""
+
+
+def sanitize_rag_input(text: str) -> str:
+    """
+    Strips prompt injection patterns from clinical text before it reaches the RAG pipeline.
+    """
+    if not text:
+        return ""
+    
+    cleaned = text
+    for pattern in _INJECTION_PATTERNS:
+        if pattern.search(cleaned):
+            print(f"[WARN] Prompt injection pattern matched in RAG input: {pattern.pattern}. Stripping.")
+            cleaned = pattern.sub("", cleaned)
+            
+    return cleaned[:4000]
+
+
+def query_acr_guidelines(clinical_scenario: str, fhir_bundle: dict = None) -> dict:
     """
     Executes the PEA prompt against the vector database for a given clinical scenario.
     Returns the generated response and the source documents.
@@ -710,34 +847,61 @@ def query_acr_guidelines(clinical_scenario: str) -> dict:
     # Redact PHI from input scenario before database lookup or logging
     redacted_scenario = redact_phi(clinical_scenario)
     
-    # Check SQLite cache
-    cached = get_cached_query(redacted_scenario)
-    if cached:
-        print(f"[CACHE HIT] Scenario: '{redacted_scenario}' (SQLite)")
-        return cached
+    # Sanitize RAG input to strip prompt injection patterns
+    sanitized_scenario = sanitize_rag_input(redacted_scenario)
+    
+    # Evaluate input completeness (abstention gate)
+    should_abstain, reason = evaluate_input_completeness(sanitized_scenario, fhir_bundle)
+    if should_abstain:
+        print(f"[ABSTENTION GATE] Abstaining from RAG query. Reason: {reason}")
+        return {
+            "abstained": True,
+            "abstention_reason": reason,
+            "recommendation": f"I cannot answer this based on the provided ACR guidelines. (Reason: {reason})",
+            "sources": [],
+            "raw_query": redacted_scenario,
+            "expanded_query": sanitized_scenario
+        }
         
-    print(f"[CACHE MISS] Executing RAG query for scenario: '{redacted_scenario}'")
+    # Check SQLite cache
+    cached = get_cached_query(sanitized_scenario)
+    if cached:
+        print(f"[CACHE HIT] Scenario: '{sanitized_scenario}' (SQLite)")
+        if isinstance(cached, dict):
+            cached["abstained"] = False
+            if "confidence_score" not in cached:
+                scores = [src.get("metadata", {}).get("score", 1.0) for src in cached.get("sources", [])]
+                cached["confidence_score"] = round(sum(scores[:3]) / len(scores[:3]), 4) if scores else 1.0
+            return cached
+        
+    print(f"[CACHE MISS] Executing RAG query for scenario: '{sanitized_scenario}'")
     
     # Expand query before calling retriever to resolve medical jargon (if enabled)
     if ENABLE_NLP_EXPANSION:
-        expanded_scenario = _expand_clinical_query(redacted_scenario)
+        expanded_scenario = _expand_clinical_query(sanitized_scenario)
         print(f"[NLP-EXPANSION] Expanded query: '{expanded_scenario}'")
     else:
         print("[NLP-EXPANSION] Clinical NLP query expansion is disabled. Using raw redacted query.")
-        expanded_scenario = redacted_scenario
+        expanded_scenario = sanitized_scenario
     
     docs = _retriever.invoke(expanded_scenario)
     context = format_docs(docs)
     
-    response = _chain.invoke({"context": context, "question": redacted_scenario})
+    response = _chain.invoke({"context": context, "question": sanitized_scenario})
+    
+    # Compute confidence score as the average similarity score of the top-3 retrieved docs
+    scores = [doc.metadata.get("score", 1.0) for doc in docs[:3]]
+    confidence = sum(scores) / len(scores) if scores else 1.0
     
     result = {
         "recommendation": response,
         "sources": [{"content": d.page_content, "metadata": d.metadata} for d in docs],
         "raw_query": redacted_scenario,
-        "expanded_query": expanded_scenario
+        "expanded_query": expanded_scenario,
+        "abstained": False,
+        "confidence_score": round(confidence, 4)
     }
     
     # Save to SQLite cache
-    set_cached_query(redacted_scenario, result)
+    set_cached_query(sanitized_scenario, result)
     return result

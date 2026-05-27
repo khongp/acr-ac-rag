@@ -130,7 +130,7 @@ def test_safety_pediatric():
     
     pediatric_card_found = False
     for card in cards:
-        if "pediatric" in card.get("summary", "").lower() or "pediatric" in card.get("detail", "").lower():
+        if card.get("summary") == "Patient Safety Flag: Pediatric Dosing":
             print("Triggered Card Details:", card.get("detail"))
             assert "50.0 mL" in card.get("detail") or "50 ml" in card.get("detail").lower(), "Calculated volume should be 2 mL * 25 kg = 50 mL"
             pediatric_card_found = True
@@ -334,6 +334,78 @@ def test_copilot_chat():
     print("Success: Co-Pilot chat response generated successfully!")
 
 
+def test_review_queue():
+    """Verify Mayo-Style review queue (retrieve, claim, resolve)."""
+    print("\n--- Testing Mayo-Style Review Queue ---")
+    import sqlite3
+    import uuid
+    from datetime import datetime
+    from main import init_review_queue_db
+    
+    # Initialize the database table first
+    init_review_queue_db()
+    
+    # 1. Manually insert a pending case
+    session_id = str(uuid.uuid4())
+    scenario_text = "Test scenario with very low confidence routing"
+    confidence_score = 0.42
+    
+    conn = sqlite3.connect("data/query_cache.db")
+    conn.execute(
+        "INSERT INTO manual_review_queue (session_id, scenario_text, confidence_score, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
+        (session_id, scenario_text, confidence_score, datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+    
+    # 2. Retrieve the queue and verify our case is there
+    response = client.get("/v1/review/queue")
+    assert response.status_code == 200, f"Error: {response.text}"
+    queue = response.json().get("queue", [])
+    assert len(queue) > 0, "Queue should not be empty"
+    
+    case = next((c for c in queue if c["session_id"] == session_id), None)
+    assert case is not None, "Our inserted case should be in the queue"
+    assert case["status"] == "pending", "Case should be pending"
+    assert case["confidence_score"] == confidence_score
+    
+    # 3. Claim the case
+    response = client.post(
+        "/v1/review/claim",
+        json={"session_id": session_id, "reviewer_id": "dr_watson"}
+    )
+    assert response.status_code == 200, f"Error: {response.text}"
+    
+    # 4. Verify status is claimed
+    response = client.get("/v1/review/queue?status=claimed")
+    assert response.status_code == 200
+    claimed_queue = response.json().get("queue", [])
+    claimed_case = next((c for c in claimed_queue if c["session_id"] == session_id), None)
+    assert claimed_case is not None
+    assert claimed_case["reviewer_id"] == "dr_watson"
+    
+    # 5. Resolve the case
+    response = client.post(
+        "/v1/review/resolve",
+        json={
+            "session_id": session_id,
+            "reviewer_id": "dr_watson",
+            "final_recommendation": "MRI Brain Without Contrast - Approved manually"
+        }
+    )
+    assert response.status_code == 200
+    
+    # 6. Verify status is resolved
+    response = client.get("/v1/review/queue?status=resolved")
+    assert response.status_code == 200
+    resolved_queue = response.json().get("queue", [])
+    resolved_case = next((c for c in resolved_queue if c["session_id"] == session_id), None)
+    assert resolved_case is not None
+    assert resolved_case["final_recommendation"] == "MRI Brain Without Contrast - Approved manually"
+    
+    print("Success: Mayo-Style Review Queue workflow passed successfully!")
+
+
 if __name__ == "__main__":
     print("Running system upgrade tests...")
     test_multi_institution_protocol()
@@ -341,4 +413,5 @@ if __name__ == "__main__":
     test_safety_pacemaker()
     test_safety_radiation()
     test_copilot_chat()
+    test_review_queue()
     print("\nAll system upgrade tests passed successfully!")
