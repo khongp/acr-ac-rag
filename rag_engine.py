@@ -707,30 +707,69 @@ def init_rag():
     
     if _retriever is not None and _llm is not None and _chain is not None:
         return
-    
+        
     # 1. Copy database files from GCS source mounts to fast local /tmp storage on Cloud Run
     if CHROMA_SOURCE_PATH and os.path.exists(CHROMA_SOURCE_PATH):
         if not os.path.exists(CHROMA_PATH):
-            print(f"[STARTUP] Copying ChromaDB from GCS mount {CHROMA_SOURCE_PATH} to local /tmp storage {CHROMA_PATH}...")
             import shutil
-            shutil.copytree(CHROMA_SOURCE_PATH, CHROMA_PATH)
-            print("[STARTUP] ChromaDB copy completed.")
+            import uuid
+            temp_chroma_path = f"{CHROMA_PATH}_tmp_{uuid.uuid4().hex}"
+            print(f"[STARTUP] Copying ChromaDB from GCS mount {CHROMA_SOURCE_PATH} to temp storage {temp_chroma_path}...")
+            try:
+                shutil.copytree(CHROMA_SOURCE_PATH, temp_chroma_path)
+                os.rename(temp_chroma_path, CHROMA_PATH)
+                print("[STARTUP] ChromaDB copy completed atomically.")
+            except (FileExistsError, OSError):
+                print(f"[STARTUP] Another worker already created {CHROMA_PATH}. Cleaning up temp copy.")
+                shutil.rmtree(temp_chroma_path, ignore_errors=True)
+            except Exception as e:
+                shutil.rmtree(temp_chroma_path, ignore_errors=True)
+                if not os.path.exists(CHROMA_PATH):
+                    raise e
             
     if PROCEDURES_SOURCE_PATH and os.path.exists(PROCEDURES_SOURCE_PATH):
         if not os.path.exists(PROCEDURES_DB_PATH):
-            print(f"[STARTUP] Copying procedures DB from {PROCEDURES_SOURCE_PATH} to {PROCEDURES_DB_PATH}...")
-            os.makedirs(os.path.dirname(PROCEDURES_DB_PATH), exist_ok=True)
             import shutil
-            shutil.copy2(PROCEDURES_SOURCE_PATH, PROCEDURES_DB_PATH)
-            print("[STARTUP] Procedures DB copy completed.")
+            import uuid
+            temp_db_path = f"{PROCEDURES_DB_PATH}_tmp_{uuid.uuid4().hex}"
+            print(f"[STARTUP] Copying procedures DB from {PROCEDURES_SOURCE_PATH} to temp {temp_db_path}...")
+            try:
+                os.makedirs(os.path.dirname(temp_db_path), exist_ok=True)
+                shutil.copy2(PROCEDURES_SOURCE_PATH, temp_db_path)
+                os.makedirs(os.path.dirname(PROCEDURES_DB_PATH), exist_ok=True)
+                os.rename(temp_db_path, PROCEDURES_DB_PATH)
+                print("[STARTUP] Procedures DB copy completed atomically.")
+            except (FileExistsError, OSError):
+                print(f"[STARTUP] Another worker already created {PROCEDURES_DB_PATH}. Cleaning up temp copy.")
+                if os.path.exists(temp_db_path):
+                    os.remove(temp_db_path)
+            except Exception as e:
+                if os.path.exists(temp_db_path):
+                    os.remove(temp_db_path)
+                if not os.path.exists(PROCEDURES_DB_PATH):
+                    raise e
 
     if CACHE_SOURCE_PATH and os.path.exists(CACHE_SOURCE_PATH):
         if not os.path.exists(CACHE_DB_PATH):
-            print(f"[STARTUP] Copying query cache DB from {CACHE_SOURCE_PATH} to {CACHE_DB_PATH}...")
-            os.makedirs(os.path.dirname(CACHE_DB_PATH), exist_ok=True)
             import shutil
-            shutil.copy2(CACHE_SOURCE_PATH, CACHE_DB_PATH)
-            print("[STARTUP] Query cache DB copy completed.")
+            import uuid
+            temp_cache_path = f"{CACHE_DB_PATH}_tmp_{uuid.uuid4().hex}"
+            print(f"[STARTUP] Copying query cache DB from {CACHE_SOURCE_PATH} to temp {temp_cache_path}...")
+            try:
+                os.makedirs(os.path.dirname(temp_cache_path), exist_ok=True)
+                shutil.copy2(CACHE_SOURCE_PATH, temp_cache_path)
+                os.makedirs(os.path.dirname(CACHE_DB_PATH), exist_ok=True)
+                os.rename(temp_cache_path, CACHE_DB_PATH)
+                print("[STARTUP] Query cache DB copy completed atomically.")
+            except (FileExistsError, OSError):
+                print(f"[STARTUP] Another worker already created {CACHE_DB_PATH}. Cleaning up temp copy.")
+                if os.path.exists(temp_cache_path):
+                    os.remove(temp_cache_path)
+            except Exception as e:
+                if os.path.exists(temp_cache_path):
+                    os.remove(temp_cache_path)
+                if not os.path.exists(CACHE_DB_PATH):
+                    raise e
 
     init_cache_db()
     init_procedures_db()
