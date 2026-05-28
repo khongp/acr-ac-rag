@@ -22,23 +22,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-base: #f8fafc;
-            --bg-surface: #ffffff;
-            --bg-card: #f1f5f9;
-            --bg-hover: #e2e8f0;
-            --border-color: #cbd5e1;
+            --bg-base: #0f172a;
+            --bg-surface: #1e293b;
+            --bg-card: #334155;
+            --bg-hover: #475569;
+            --border-color: #475569;
+            --bg-main: var(--bg-base);
             
-            --color-primary: #0f172a;
-            --color-primary-hover: #1e293b;
+            --color-primary: #f1f5f9;
+            --color-primary-hover: #e2e8f0;
             
-            --color-success: #059669;
-            --color-warning: #d97706;
-            --color-danger: #dc2626;
-            --color-info: #0284c7;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-info: #38bdf8;
             
-            --text-main: #0f172a;
-            --text-muted: #475569;
-            --text-inverse: #ffffff;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-inverse: #0f172a;
             
             --font-main: 'Outfit', sans-serif;
             --font-mono: 'Fira Code', monospace;
@@ -94,8 +95,8 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            background: #ecfdf5;
-            border: 1px solid #d1fae5;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
             padding: 6px 12px;
             border-radius: var(--radius-md);
             font-size: 12px;
@@ -128,13 +129,13 @@
         /* CDS Info Banner */
         .info-banner {
             grid-column: 1 / -1;
-            background: #f0f9ff;
-            border: 1px solid #e0f2fe;
-            border-left: 4px solid #0284c7;
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-left: 4px solid var(--color-info);
             padding: 12px 16px;
             border-radius: var(--radius-md);
             font-size: 13.5px;
-            color: #0369a1;
+            color: var(--color-info);
             display: flex;
             align-items: flex-start;
             gap: 12px;
@@ -143,7 +144,7 @@
 
         .info-banner-icon {
             font-size: 20px;
-            color: var(--color-primary);
+            color: var(--color-info);
             margin-top: 2px;
         }
 
@@ -290,6 +291,7 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
+            min-width: 0;
         }
 
         /* Tabs Interface */
@@ -753,7 +755,7 @@
 
         /* JSON Inspector */
         pre.json-inspector {
-            background-color: #f8fafc;
+            background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
             padding: 20px;
@@ -761,7 +763,10 @@
             overflow-y: auto;
             font-family: var(--font-mono);
             font-size: 13px;
-            color: #0f172a;
+            color: var(--text-main);
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-width: 100%;
         }
 
         /* Copy Button */
@@ -982,15 +987,14 @@
         }
         .copilot-close-btn:hover {
             opacity: 1;
-        }
-        .copilot-chat-messages {
+               .copilot-chat-messages {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background-color: #f8fafc;
+            background-color: var(--bg-base);
         }
         .chat-bubble {
             max-width: 85%;
@@ -1001,13 +1005,13 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .chat-bubble.user {
-            background-color: #0f172a;
-            color: white;
+            background-color: var(--color-info);
+            color: var(--bg-base);
             align-self: flex-end;
             border-bottom-right-radius: 2px;
         }
         .chat-bubble.attending {
-            background-color: white;
+            background-color: var(--bg-card);
             color: var(--text-main);
             align-self: flex-start;
             border-bottom-left-radius: 2px;
@@ -1031,10 +1035,11 @@
             border: 1px solid var(--border-color);
             outline: none;
             background-color: var(--bg-card);
+            color: var(--text-main);
         }
         .copilot-send-btn {
             background-color: var(--color-primary);
-            color: white;
+            color: var(--bg-base);
             border: none;
             padding: 0 16px;
             border-radius: var(--radius-md);
@@ -1050,8 +1055,8 @@
             position: fixed;
             bottom: 30px;
             right: 30px;
-            background-color: #0f172a;
-            color: white;
+            background-color: var(--color-primary);
+            color: var(--bg-base);
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -1062,6 +1067,7 @@
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
             z-index: 1000;
             transition: transform 0.2s;
+            border: none;
         }
         .copilot-toggle-trigger:hover {
             transform: scale(1.05);
@@ -1071,26 +1077,26 @@
             flex-wrap: wrap;
             gap: 8px;
             padding: 10px 15px;
-            background-color: #f8fafc;
+            background-color: var(--bg-base);
             border-top: 1px solid var(--border-color);
         }
         .suggested-q-btn {
-            background-color: white;
+            background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 6px 12px;
             font-size: 11px;
             cursor: pointer;
-            color: var(--text-muted);
+            color: var(--text-main);
             transition: var(--transition-smooth);
             text-align: left;
         }
         .suggested-q-btn:hover {
-            border-color: #3b82f6;
-            color: #3b82f6;
-            background-color: rgba(59, 130, 246, 0.02);
+            border-color: var(--color-info);
+            color: var(--color-info);
+            background-color: rgba(56, 189, 248, 0.04);
         }
-
+ 
         /* CDS Hooks Simulator Styles */
         .cds-hooks-grid {
             display: grid;
@@ -1103,14 +1109,25 @@
                 grid-template-columns: 1fr;
             }
         }
+        .diag-query-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 768px) {
+            .diag-query-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         .cds-hooks-column {
             display: flex;
             flex-direction: column;
             gap: 15px;
             height: 100%;
+            min-width: 0;
         }
         .cds-card {
-            background-color: white;
+            background-color: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-premium);
@@ -1143,14 +1160,14 @@
         .cds-card-footer {
             padding: 10px 16px;
             border-top: 1px solid var(--border-color);
-            background-color: #f8fafc;
+            background-color: var(--bg-base);
             display: flex;
             justify-content: flex-end;
             gap: 10px;
         }
         .cds-action-btn {
-            background-color: #0f172a;
-            color: white;
+            background-color: var(--color-primary);
+            color: var(--text-inverse);
             border: none;
             padding: 8px 14px;
             border-radius: var(--radius-md);
@@ -1160,7 +1177,7 @@
             transition: var(--transition-smooth);
         }
         .cds-action-btn:hover {
-            background-color: #1e293b;
+            background-color: var(--color-primary-hover);
         }
         .cds-dismiss-btn {
             background: none;
@@ -1384,54 +1401,7 @@
             transform: translateY(0);
         }
 
-        /* Dark Theme Variables Override */
-        @media (prefers-color-scheme: dark) {
-            :root:not(.light-theme) {
-                --bg-base: #0f172a;
-                --bg-surface: #1e293b;
-                --bg-card: #334155;
-                --bg-hover: #475569;
-                --border-color: #475569;
-                
-                --color-primary: #f1f5f9;
-                --color-primary-hover: #e2e8f0;
-                
-                --color-success: #10b981;
-                --color-warning: #f59e0b;
-                --color-danger: #ef4444;
-                --color-info: #38bdf8;
-                
-                --text-main: #f8fafc;
-                --text-muted: #94a3b8;
-                --text-inverse: #0f172a;
-            }
-        }
-
-        body.dark-theme {
-            --bg-base: #0f172a;
-            --bg-surface: #1e293b;
-            --bg-card: #334155;
-            --bg-hover: #475569;
-            --border-color: #475569;
-            
-            --color-primary: #f1f5f9;
-            --color-primary-hover: #e2e8f0;
-            
-            --color-success: #10b981;
-            --color-warning: #f59e0b;
-            --color-danger: #ef4444;
-            --color-info: #38bdf8;
-            
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-inverse: #0f172a;
-        }
-
         /* Focus rings for Accessibility */
-        .theme-toggle-btn:focus, .theme-toggle-btn:focus-visible {
-            outline: 2px solid var(--color-info);
-            outline-offset: 2px;
-        }
         .copilot-toggle-trigger:focus, .copilot-toggle-trigger:focus-visible {
             outline: 2px solid var(--color-info);
             outline-offset: 2px;
@@ -1446,9 +1416,6 @@
             <p>Appropriateness Criteria &amp; Intelligent Radiology Protocoling</p>
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
-            <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Theme" style="background: none; border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; font-size: 14px; font-weight: 500; transition: var(--transition-smooth); display: flex; align-items: center; gap: 6px;">
-                <span id="theme-toggle-icon">🌙</span> <span id="theme-toggle-text">Dark Mode</span>
-            </button>
             <div class="status-badge">
                 <span class="status-indicator"></span>
                 <span>FHIR Connected</span>
@@ -1828,7 +1795,7 @@
                         <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 700; color: var(--color-info);">
                             🔍 Clinical Query Expansion (NLP Processing)
                         </h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="diag-query-grid">
                             <div style="background: var(--bg-main); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
                                 <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Raw Scenario Input</div>
                                 <div id="diag-raw-query" style="font-size: 13.5px; font-weight: 500; font-family: monospace; white-space: pre-wrap; overflow-wrap: break-word; color: var(--text-main);">N/A</div>
@@ -1883,34 +1850,7 @@
             }, duration);
         }
 
-        // ==========================================
-        // Dark Theme System & Storage (Item 11)
-        // ==========================================
-        function toggleTheme() {
-            const body = document.body;
-            body.classList.toggle('dark-theme');
-            const isDark = body.classList.contains('dark-theme');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            updateThemeUI(isDark);
-        }
 
-        function updateThemeUI(isDark) {
-            const iconEl = document.getElementById('theme-toggle-icon');
-            const textEl = document.getElementById('theme-toggle-text');
-            if (iconEl) iconEl.innerText = isDark ? '☀️' : '🌙';
-            if (textEl) textEl.innerText = isDark ? 'Light Mode' : 'Dark Mode';
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.body.classList.add('dark-theme');
-                updateThemeUI(true);
-            } else {
-                updateThemeUI(false);
-            }
-        });
 
         // ==========================================
         // Accessibility Focus Trapping (Item 5)
@@ -2795,7 +2735,7 @@
             const finalBox = document.getElementById('guidelines-final-box');
             if (pea.final) {
                 finalBox.innerHTML = `
-                    <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); border: 1px solid var(--border-color); border-left: 5px solid var(--color-info); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-premium);">
+                    <div style="background: linear-gradient(135deg, var(--bg-surface), var(--bg-card)); border: 1px solid var(--border-color); border-left: 5px solid var(--color-info); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-premium);">
                         <h4 style="font-size: 13.5px; color: var(--color-primary); font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
                             <span>🎯</span> ACR Appropriateness Recommendation
                         </h4>
