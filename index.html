@@ -66,13 +66,25 @@
         }
 
         header {
+            position: sticky;
+            top: 0;
             background: var(--bg-surface);
             border-bottom: 1px solid var(--border-color);
             padding: 16px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 900;
+        }
+
+        .logo-section {
+            cursor: pointer;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .logo-section:hover {
+            opacity: 0.9;
         }
 
         .logo-section h1 {
@@ -997,7 +1009,8 @@
         }
         .copilot-close-btn:hover {
             opacity: 1;
-               .copilot-chat-messages {
+        }
+        .copilot-chat-messages {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
@@ -1081,6 +1094,40 @@
         }
         .copilot-toggle-trigger:hover {
             transform: scale(1.05);
+        }
+        /* Back to Top Floating Button */
+        .back-to-top-btn {
+            position: fixed;
+            bottom: 105px;
+            right: 30px;
+            background-color: var(--bg-surface);
+            color: var(--color-primary);
+            border: 1px solid var(--border-color);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            z-index: 1000;
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            outline: none;
+        }
+        .back-to-top-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .back-to-top-btn:hover {
+            transform: scale(1.05);
+            background-color: var(--bg-hover);
+        }
+        .back-to-top-btn:focus, .back-to-top-btn:focus-visible {
+            outline: 2px solid var(--color-info);
+            outline-offset: 2px;
         }
         .copilot-suggested-questions {
             display: flex;
@@ -1279,6 +1326,12 @@
                 outline: none;
                 padding: 0;
             }
+            .back-to-top-btn {
+                width: 50px;
+                height: 50px;
+                bottom: 76px;
+                right: 16px;
+            }
             .modal-body {
                 padding: 16px;
             }
@@ -1411,7 +1464,7 @@
 <body>
 
     <header>
-        <div class="logo-section">
+        <div class="logo-section" onclick="window.location.reload()" title="Click to refresh page">
             <h1>ACR-AC RAG Clinical Hub</h1>
             <p>Appropriateness Criteria &amp; Intelligent Radiology Protocoling</p>
         </div>
@@ -3760,7 +3813,31 @@
                 });
             }
         });
+
+        // Back to Top Scrolling Logic
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('back-to-top');
+            if (btn) {
+                if (window.scrollY > 300) {
+                    btn.classList.add('visible');
+                } else {
+                    btn.classList.remove('visible');
+                }
+            }
+        });
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
     </script>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top-btn" onclick="scrollToTop()" aria-label="Scroll back to top">
+        <span style="font-size: 18px; pointer-events: none;">↑</span>
+    </button>
 
     <!-- Attending Co-Pilot Chat Toggle Button -->
     <button id="copilot-toggle" class="copilot-toggle-trigger" onclick="toggleCopilot()" aria-label="Toggle Attending Radiology Co-Pilot">
