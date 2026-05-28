@@ -39,6 +39,7 @@ load_dotenv()
 # Default institution — override via INSTITUTION_ID env var
 DEFAULT_INSTITUTION = os.environ.get("INSTITUTION_ID", "skyridge")
 ENABLE_LLM_FUZZY_MATCH = os.environ.get("ENABLE_LLM_FUZZY_MATCH", "false").strip().lower() == "true"
+_llm = None
 
 
 @dataclass
@@ -340,11 +341,17 @@ def _llm_fuzzy_match(
     )
     
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
+        from llm_router import get_llm
+        from tenacity import retry, stop_after_attempt, wait_exponential
         
-        model_name = os.getenv("FUZZY_MATCH_MODEL", "gemini-2.5-flash")
-        llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.0)
-        
+        global _llm
+        if _llm is None:
+            _llm = get_llm(temperature=0.0)
+            
+        @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10), reraise=True)
+        def _invoke_with_retry(llm_inst, prompt_str):
+            return llm_inst.invoke(prompt_str)
+            
         prompt = f"""You are a radiology protocol matching assistant.
 
 Given an ACR Appropriateness Criteria recommendation, match it to the most appropriate 
@@ -369,7 +376,7 @@ Rules:
 - Return null for matched_id if no protocol is a reasonable match
 """
         
-        response = llm.invoke(prompt)
+        response = _invoke_with_retry(_llm, prompt)
         content = response.content
         if isinstance(content, list):
             response_text = "".join(

@@ -3,11 +3,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
 import os
 import logging
 from logging.handlers import RotatingFileHandler
+import time
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Ensure data directory exists for log storage
 os.makedirs("data", exist_ok=True)
@@ -75,22 +79,24 @@ def init_review_queue_db():
     import sqlite3
     os.makedirs("data", exist_ok=True)
     conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS manual_review_queue (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id TEXT UNIQUE NOT NULL,
-            scenario_text TEXT NOT NULL,
-            confidence_score REAL,
-            abstention_reason TEXT,
-            status TEXT DEFAULT 'pending',
-            reviewer_id TEXT,
-            reviewed_at TEXT,
-            final_recommendation TEXT,
-            created_at TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS manual_review_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT UNIQUE NOT NULL,
+                scenario_text TEXT NOT NULL,
+                confidence_score REAL,
+                abstention_reason TEXT,
+                status TEXT DEFAULT 'pending',
+                reviewer_id TEXT,
+                reviewed_at TEXT,
+                final_recommendation TEXT,
+                created_at TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 @asynccontextmanager
@@ -117,14 +123,17 @@ async def lifespan(app: FastAPI):
     # Shutdown: nothing to clean up
 
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title="ACR-AC-RAG Headless API",
     description="FHIR and CDS Hooks compliant backend for ACR guidelines retrieval and protocoling assistance.",
-    version="2.1.0",
+    version="3.0.0",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Permissive CORS origins setup to prevent connection errors across environments
+# CORS origins setup
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
 if allowed_origins_env:
     allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
@@ -136,21 +145,44 @@ if allowed_origins_env:
         allow_headers=["*"],
     )
 else:
-    # If not explicitly configured, fall back to permissive matching for easy cross-origin connection
+    # Restrict to standard local development origins for safety when not configured
+    default_dev_origins = [
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173"
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origin_regex=r"https?://.*",
+        allow_origins=default_dev_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
+@app.middleware("http")
+async def add_request_id_and_latency_tracking(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    start_time = time.perf_counter()
+    
+    # Store request id in state
+    request.state.request_id = request_id
+    response = await call_next(request)
+    
+    latency = time.perf_counter() - start_time
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time"] = f"{latency:.4f}s"
+    logger.info(f"[{request_id}] {request.method} {request.url.path} completed in {latency:.4f}s with status {response.status_code}")
+    return response
+
 class AnalyzeRequest(BaseModel):
-    text: Optional[str] = None
+    text: Optional[str] = Field(None, max_length=4000)
     bundle: Optional[Dict[str, Any]] = None
 
 class ProtocolRequest(BaseModel):
-    text: Optional[str] = None
+    text: Optional[str] = Field(None, max_length=4000)
     bundle: Optional[Dict[str, Any]] = None
     institution_id: Optional[str] = None   # Override default institution
 
@@ -210,25 +242,47 @@ async def get_index():
     return HTMLResponse(content="<h1>Frontend index.html not found</h1>", status_code=404)
 
 
+@app.get("/manifest.json")
+async def get_manifest():
+    return {
+        "name": "ACR-AC RAG Clinical Hub",
+        "short_name": "ACR-AC Hub",
+        "description": "Appropriateness Criteria & Intelligent Radiology Protocoling Hub",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#f8fafc",
+        "theme_color": "#0f172a",
+        "icons": [
+            {
+                "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>",
+                "sizes": "192x192 512x512",
+                "type": "image/svg+xml"
+            }
+        ]
+    }
+
+
 
 AMBIGUITY_THRESHOLD = 0.55
 
 def _route_to_manual_review(scenario_text: str, confidence: float):
     """Insert a case into the manual review queue."""
     import sqlite3
+    conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
     try:
-        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
         conn.execute(
             "INSERT OR IGNORE INTO manual_review_queue (session_id, scenario_text, confidence_score, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
             (str(uuid.uuid4()), scenario_text[:2000], confidence, datetime.now().isoformat())
         )
         conn.commit()
-        conn.close()
     except Exception as e:
         logger.error(f"Failed to route to manual review: {e}")
+    finally:
+        conn.close()
 
 @app.post("/v1/analyze")
-async def analyze_scenario(req: AnalyzeRequest):
+@limiter.limit("30/minute")
+async def analyze_scenario(request: Request, req: AnalyzeRequest):
     """Analyzes a clinical scenario with abstention gate, confidence routing, and DSN audit."""
     logger.info("Received request on /v1/analyze")
     if not req.text and not req.bundle:
@@ -248,7 +302,7 @@ async def analyze_scenario(req: AnalyzeRequest):
     scenario_str = extract_scenario_from_bundle(bundle_dict)
 
     try:
-        result = query_acr_guidelines(scenario_str, bundle_dict)
+        result = await asyncio.to_thread(query_acr_guidelines, scenario_str, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")
@@ -301,7 +355,8 @@ async def analyze_scenario(req: AnalyzeRequest):
 
 
 @app.post("/v1/protocol")
-async def get_draft_protocol_endpoint(req: ProtocolRequest):
+@limiter.limit("30/minute")
+async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
     """
     The Protocoling Assistant endpoint.
     
@@ -334,7 +389,7 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
 
     # 3. Run ACR RAG Engine
     try:
-        acr_result = query_acr_guidelines(scenario_str, bundle_dict)
+        acr_result = await asyncio.to_thread(query_acr_guidelines, scenario_str, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")
@@ -342,10 +397,11 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
     # 4. Run Protocol Mapper (Service C)
     try:
         from protocol_mapper import get_draft_protocol
-        draft = get_draft_protocol(
-            acr_result=acr_result,
-            fhir_bundle=bundle_dict,
-            institution_id=req.institution_id,
+        draft = await asyncio.to_thread(
+            get_draft_protocol,
+            acr_result,
+            bundle_dict,
+            req.institution_id,
         )
     except Exception as e:
         logger.error("Protocol mapping failed — falling back to partial success", exc_info=True)
@@ -379,7 +435,7 @@ async def get_draft_protocol_endpoint(req: ProtocolRequest):
                 alt_query = f"{scenario_str} CONSTRAINT: The following are contraindicated: {'; '.join(contraindications)}. Recommend only non-contrast or alternative modality options."
                 logger.info(f"[SAFETY LOOP] Hard contraindication detected — re-querying for alternatives")
                 try:
-                    alt_result = query_acr_guidelines(alt_query, bundle_dict)
+                    alt_result = await asyncio.to_thread(query_acr_guidelines, alt_query, bundle_dict)
                     dsn = log_dsn_transaction(scenario_str, alt_result.get("recommendation"), alt_result.get("sources", []), confidence=alt_result.get("confidence_score", 1.0))
                 except Exception as e:
                     logger.error(f"Alternative re-query failed: {e}")
@@ -476,8 +532,8 @@ async def get_review_queue(status: Optional[str] = None):
     """Retrieve cases in the manual review queue."""
     logger.info(f"Received request to retrieve review queue (status={status})")
     import sqlite3
+    conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
     try:
-        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
         cursor = conn.cursor()
         if status:
             cursor.execute(
@@ -489,7 +545,6 @@ async def get_review_queue(status: Optional[str] = None):
                 "SELECT id, session_id, scenario_text, confidence_score, abstention_reason, status, reviewer_id, reviewed_at, final_recommendation, created_at FROM manual_review_queue ORDER BY id DESC"
             )
         rows = cursor.fetchall()
-        conn.close()
         
         queue = []
         for r in rows:
@@ -509,6 +564,8 @@ async def get_review_queue(status: Optional[str] = None):
     except Exception as e:
         logger.error("Error retrieving review queue", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving review queue: {str(e)}")
+    finally:
+        conn.close()
 
 
 @app.post("/v1/review/claim")
@@ -516,8 +573,8 @@ async def claim_review_case(req: ClaimReviewRequest):
     """Claim a case in the manual review queue."""
     logger.info(f"Reviewer {req.reviewer_id} claiming session {req.session_id}")
     import sqlite3
+    conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
     try:
-        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
         # Check if already claimed or resolved
         row = conn.execute(
             "SELECT status, reviewer_id FROM manual_review_queue WHERE session_id = ?",
@@ -525,16 +582,13 @@ async def claim_review_case(req: ClaimReviewRequest):
         ).fetchone()
         
         if not row:
-            conn.close()
             raise HTTPException(status_code=404, detail="Case not found in review queue.")
         
         status, current_reviewer = row
         if status == "resolved":
-            conn.close()
             raise HTTPException(status_code=400, detail="Case has already been resolved.")
         
         if status == "claimed" and current_reviewer != req.reviewer_id:
-            conn.close()
             raise HTTPException(status_code=400, detail=f"Case has already been claimed by {current_reviewer}.")
             
         conn.execute(
@@ -542,13 +596,14 @@ async def claim_review_case(req: ClaimReviewRequest):
             (req.reviewer_id, req.session_id)
         )
         conn.commit()
-        conn.close()
         return {"status": "success", "message": f"Case claimed successfully by {req.reviewer_id}."}
     except HTTPException:
         raise
     except Exception as e:
         logger.error("Error claiming review case", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error claiming review case: {str(e)}")
+    finally:
+        conn.close()
 
 
 @app.post("/v1/review/resolve")
@@ -556,8 +611,8 @@ async def resolve_review_case(req: ResolveReviewRequest):
     """Resolve a case in the manual review queue."""
     logger.info(f"Reviewer {req.reviewer_id} resolving session {req.session_id}")
     import sqlite3
+    conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
     try:
-        conn = sqlite3.connect("data/query_cache.db", timeout=30.0)
         # Check if exists and check claim status
         row = conn.execute(
             "SELECT status, reviewer_id FROM manual_review_queue WHERE session_id = ?",
@@ -565,12 +620,10 @@ async def resolve_review_case(req: ResolveReviewRequest):
         ).fetchone()
         
         if not row:
-            conn.close()
             raise HTTPException(status_code=404, detail="Case not found in review queue.")
             
         status, current_reviewer = row
         if status == "claimed" and current_reviewer != req.reviewer_id:
-            conn.close()
             raise HTTPException(status_code=400, detail=f"Case was claimed by {current_reviewer}. Only the claimant can resolve it.")
             
         reviewed_at = datetime.now().isoformat()
@@ -579,7 +632,6 @@ async def resolve_review_case(req: ResolveReviewRequest):
             (req.reviewer_id, reviewed_at, req.final_recommendation, req.session_id)
         )
         conn.commit()
-        conn.close()
         return {
             "status": "success", 
             "message": "Case resolved successfully.",
@@ -591,6 +643,8 @@ async def resolve_review_case(req: ResolveReviewRequest):
     except Exception as e:
         logger.error("Error resolving review case", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error resolving review case: {str(e)}")
+    finally:
+        conn.close()
 
 
 class CoPilotChatRequest(BaseModel):
@@ -600,7 +654,8 @@ class CoPilotChatRequest(BaseModel):
 
 
 @app.post("/v1/copilot/chat")
-async def copilot_chat(req: CoPilotChatRequest):
+@limiter.limit("30/minute")
+async def copilot_chat(request: Request, req: CoPilotChatRequest):
     """Conversational Attending Radiology Co-Pilot endpoint."""
     logger.info("Received request on /v1/copilot/chat")
     try:
@@ -616,7 +671,7 @@ async def copilot_chat(req: CoPilotChatRequest):
             chat_history=history,
             message=req.message
         )
-        response_text = generate_copilot_response(engine_req)
+        response_text = await asyncio.to_thread(generate_copilot_response, engine_req)
         return {"status": "success", "response": response_text}
     except Exception as e:
         logger.error("Error generating co-pilot response", exc_info=True)
@@ -669,6 +724,7 @@ def fhir_bundle_from_cds_hook_payload(payload: dict) -> dict:
 
 
 @app.post("/v1/cds-hook")
+@limiter.limit("30/minute")
 async def cds_hook(request: Request):
     """
     Dynamic CDS Hooks implementation (order-select / order-sign).
@@ -695,7 +751,7 @@ async def cds_hook(request: Request):
         
     # 3. Query ACR guidelines
     try:
-        acr_result = query_acr_guidelines(scenario_str, bundle_dict)
+        acr_result = await asyncio.to_thread(query_acr_guidelines, scenario_str, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval during CDS hook", exc_info=True)
         # Fall back to a default error card
@@ -714,10 +770,11 @@ async def cds_hook(request: Request):
     draft_protocol = None
     try:
         from protocol_mapper import get_draft_protocol
-        draft_protocol = get_draft_protocol(
-            acr_result=acr_result,
-            fhir_bundle=bundle_dict,
-            institution_id=institution_id
+        draft_protocol = await asyncio.to_thread(
+            get_draft_protocol,
+            acr_result,
+            bundle_dict,
+            institution_id
         )
     except Exception as e:
         logger.error(f"Error mapping protocol during CDS hook: {e}", exc_info=True)

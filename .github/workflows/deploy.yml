@@ -15,8 +15,36 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    name: Run Python Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Syntax and Compile Checks
+        run: |
+          python -m py_compile main.py fhir_converter.py rag_engine.py safety_engine.py protocol_mapper.py llm_router.py
+
+      - name: Run Pytest
+        run: |
+          pip install pytest
+          pytest test_safety_security.py
+
   deploy:
     name: Deploy to Cloud Run
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

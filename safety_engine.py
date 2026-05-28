@@ -13,6 +13,7 @@ pre-medication requirements that are displayed alongside the Draft Protocol.
 """
 
 import json
+import re
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field, asdict
@@ -342,7 +343,7 @@ def _extract_procedure(resource: dict, data: dict):
         modality = "CT"
     elif "mri" in code_text or "magnetic resonance" in code_text:
         modality = "MRI"
-    elif "us" in code_text or "ultrasound" in code_text:
+    elif re.search(r"\bus\b", code_text) or "ultrasound" in code_text:
         modality = "US"
     elif "xray" in code_text or "radiograph" in code_text or "x-ray" in code_text:
         modality = "XRAY"
@@ -419,6 +420,18 @@ def _check_egfr(condition: dict, patient_data: dict) -> tuple:
         return False, {"status": "no_data", "note": "No eGFR on file — manual check required"}
     
     value = egfr_data["value"]
+    numeric_value = None
+    if isinstance(value, (int, float)):
+        numeric_value = value
+    elif isinstance(value, str):
+        # Extract the first float-like or integer-like number (e.g. ">60", "<15")
+        matches = re.findall(r"\d+\.?\d*", value)
+        if matches:
+            try:
+                numeric_value = float(matches[0])
+            except ValueError:
+                pass
+                
     details = {"patient_egfr": value, "threshold": min_egfr}
     
     # Check staleness
@@ -433,7 +446,7 @@ def _check_egfr(condition: dict, patient_data: dict) -> tuple:
         except (ValueError, TypeError):
             pass
     
-    triggered = isinstance(value, (int, float)) and value < min_egfr
+    triggered = numeric_value is not None and numeric_value < min_egfr
     return triggered, details
 
 

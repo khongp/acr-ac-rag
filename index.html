@@ -3,6 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:;">
+    <meta name="description" content="ACR-AC RAG Clinical Decision Support Hub - Clinical Appropriateness Criteria & Intelligent Radiology Protocoling.">
+    <meta name="theme-color" content="#0f172a">
+    <!-- PWA primary tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ACR-AC Hub">
+    <!-- Open Graph tags for premium sharing presentation -->
+    <meta property="og:title" content="ACR-AC RAG Clinical Decision Support Hub">
+    <meta property="og:description" content="Intelligent Radiology Protocoling and Appropriateness Criteria lookup powered by RAG.">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="manifest" href="/manifest.json">
     <title>ACR Appropriateness Criteria - Clinical Decision Support Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1245,12 +1258,53 @@
                 height: 50px;
                 bottom: 16px;
                 right: 16px;
+                border: none;
+                outline: none;
+                padding: 0;
             }
             .modal-body {
                 padding: 16px;
             }
             .modal-footer {
                 padding: 12px 16px;
+            }
+            
+            /* Touch target optimization (Item 7) */
+            .suggested-q-btn {
+                padding: 10px 14px !important;
+                min-height: 44px !important;
+                font-size: 13.5px !important;
+            }
+            .cds-action-btn, .cds-dismiss-btn {
+                padding: 12px 18px !important;
+                min-height: 48px !important;
+                font-size: 13.5px !important;
+            }
+            .sidebar-section label[style*="display: flex"] {
+                padding: 8px 12px !important;
+                background: var(--bg-card);
+                border-radius: 6px;
+                min-height: 44px !important;
+            }
+            .sidebar-section label[style*="display: flex"] input[type="checkbox"] {
+                width: 20px !important;
+                height: 20px !important;
+            }
+            .form-group[style*="flex-direction: row"] {
+                padding: 8px 12px !important;
+                background: var(--bg-card);
+                border-radius: 6px;
+                min-height: 48px !important;
+            }
+            .form-group[style*="flex-direction: row"] input[type="checkbox"] {
+                width: 20px !important;
+                height: 20px !important;
+            }
+            .evidence-card-actions a.btn-action {
+                padding: 8px 12px !important;
+                min-height: 44px !important;
+                display: inline-flex !important;
+                align-items: center !important;
             }
         }
 
@@ -1278,6 +1332,110 @@
             max-width: 100%;
             overflow-x: auto;
         }
+
+        /* Invalid form inputs styling */
+        input.form-control:invalid {
+            border-color: var(--color-danger);
+            background-color: rgba(220, 38, 38, 0.03);
+        }
+
+        /* Toast notifications styling */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background-color: var(--bg-surface);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            font-size: 13.5px;
+            font-weight: 500;
+            min-width: 280px;
+            max-width: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: auto;
+            border-left: 4px solid var(--color-info);
+            border: 1px solid var(--border-color);
+        }
+        .toast.toast-success {
+            border-left: 4px solid var(--color-success);
+        }
+        .toast.toast-error {
+            border-left: 4px solid var(--color-danger);
+        }
+        .toast.toast-warning {
+            border-left: 4px solid var(--color-warning);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Dark Theme Variables Override */
+        @media (prefers-color-scheme: dark) {
+            :root:not(.light-theme) {
+                --bg-base: #0f172a;
+                --bg-surface: #1e293b;
+                --bg-card: #334155;
+                --bg-hover: #475569;
+                --border-color: #475569;
+                
+                --color-primary: #f1f5f9;
+                --color-primary-hover: #e2e8f0;
+                
+                --color-success: #10b981;
+                --color-warning: #f59e0b;
+                --color-danger: #ef4444;
+                --color-info: #38bdf8;
+                
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --text-inverse: #0f172a;
+            }
+        }
+
+        body.dark-theme {
+            --bg-base: #0f172a;
+            --bg-surface: #1e293b;
+            --bg-card: #334155;
+            --bg-hover: #475569;
+            --border-color: #475569;
+            
+            --color-primary: #f1f5f9;
+            --color-primary-hover: #e2e8f0;
+            
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-info: #38bdf8;
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-inverse: #0f172a;
+        }
+
+        /* Focus rings for Accessibility */
+        .theme-toggle-btn:focus, .theme-toggle-btn:focus-visible {
+            outline: 2px solid var(--color-info);
+            outline-offset: 2px;
+        }
+        .copilot-toggle-trigger:focus, .copilot-toggle-trigger:focus-visible {
+            outline: 2px solid var(--color-info);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body>
@@ -1287,9 +1445,14 @@
             <h1>ACR-AC RAG Clinical Hub</h1>
             <p>Appropriateness Criteria &amp; Intelligent Radiology Protocoling</p>
         </div>
-        <div class="status-badge">
-            <span class="status-indicator"></span>
-            <span>FHIR Connected</span>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Theme" style="background: none; border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; font-size: 14px; font-weight: 500; transition: var(--transition-smooth); display: flex; align-items: center; gap: 6px;">
+                <span id="theme-toggle-icon">🌙</span> <span id="theme-toggle-text">Dark Mode</span>
+            </button>
+            <div class="status-badge">
+                <span class="status-indicator"></span>
+                <span>FHIR Connected</span>
+            </div>
         </div>
     </header>
 
@@ -1371,7 +1534,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="patient-age">Age</label>
-                        <input type="number" id="patient-age" class="form-control" value="69">
+                        <input type="number" id="patient-age" class="form-control" value="69" min="0" max="120" required>
                     </div>
                     <div class="form-group">
                         <label for="patient-gender">Gender</label>
@@ -1386,11 +1549,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="patient-egfr">eGFR (mL/min/1.73m²)</label>
-                        <input type="number" id="patient-egfr" class="form-control" value="62">
+                        <input type="number" id="patient-egfr" class="form-control" value="62" min="0" max="250" required>
                     </div>
                     <div class="form-group">
                         <label for="patient-weight">Weight (kg)</label>
-                        <input type="number" id="patient-weight" class="form-control" value="70">
+                        <input type="number" id="patient-weight" class="form-control" value="70" min="1" max="500" required>
                     </div>
                 </div>
 
@@ -1475,13 +1638,13 @@
         <!-- Main Display Panel Area -->
         <div class="workspace">
             
-            <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchTab('guidelines')">ACR Guidelines</button>
-                <button class="tab-btn" onclick="switchTab('safety')">Safety Alerts</button>
-                <button class="tab-btn" onclick="switchTab('protocol')">Draft Protocol</button>
-                <button class="tab-btn" onclick="switchTab('fhir')">FHIR Bundle</button>
-                <button class="tab-btn" onclick="switchTab('cdshook')">CDS Hooks Simulator</button>
-                <button class="tab-btn" onclick="switchTab('diagnostics')">RAG Diagnostics</button>
+            <div class="tab-bar" role="tablist">
+                <button class="tab-btn active" id="tab-guidelines" role="tab" aria-selected="true" aria-controls="panel-guidelines" onclick="switchTab('guidelines')">ACR Guidelines</button>
+                <button class="tab-btn" id="tab-safety" role="tab" aria-selected="false" aria-controls="panel-safety" onclick="switchTab('safety')">Safety Alerts</button>
+                <button class="tab-btn" id="tab-protocol" role="tab" aria-selected="false" aria-controls="panel-protocol" onclick="switchTab('protocol')">Draft Protocol</button>
+                <button class="tab-btn" id="tab-fhir" role="tab" aria-selected="false" aria-controls="panel-fhir" onclick="switchTab('fhir')">FHIR Bundle</button>
+                <button class="tab-btn" id="tab-cdshook" role="tab" aria-selected="false" aria-controls="panel-cdshook" onclick="switchTab('cdshook')">CDS Hooks Simulator</button>
+                <button class="tab-btn" id="tab-diagnostics" role="tab" aria-selected="false" aria-controls="panel-diagnostics" onclick="switchTab('diagnostics')">RAG Diagnostics</button>
             </div>
 
             <!-- Placeholder State -->
@@ -1503,7 +1666,7 @@
             </div>
 
             <!-- Panel 1: ACR Guidelines -->
-            <div id="panel-guidelines" class="panel">
+            <div id="panel-guidelines" class="panel" role="tabpanel" aria-labelledby="tab-guidelines">
                 <div class="acr-guidelines-header">
                     <h2 class="acr-rec-title">ACR Guidelines Recommendation Summary</h2>
                     <p style="color: var(--text-muted); font-size: 14.5px;" id="extracted-scenario-label"></p>
@@ -1551,7 +1714,7 @@
             </div>
 
             <!-- Panel 2: Safety & Contraindications Alerts -->
-            <div id="panel-safety" class="panel">
+            <div id="panel-safety" class="panel" role="tabpanel" aria-labelledby="tab-safety">
                 <div id="safety-summary-box" class="safety-summary-box clear">
                     <span id="safety-summary-icon" class="safety-summary-dot"></span>
                     <div style="display: flex; flex-direction: column;">
@@ -1567,7 +1730,7 @@
             </div>
 
             <!-- Panel 3: Draft Protocol Recipe -->
-            <div id="panel-protocol" class="panel">
+            <div id="panel-protocol" class="panel" role="tabpanel" aria-labelledby="tab-protocol">
                 <div class="acr-guidelines-header">
                     <h2 class="acr-rec-title" id="protocol-title">Pre-Populated Draft Radiology Protocol</h2>
                     <p style="color: var(--text-muted); font-size: 14.5px;">Customized scan configuration based on local hospital rules.</p>
@@ -1614,7 +1777,7 @@
             </div>
 
             <!-- Panel 4: FHIR Bundle Inspector -->
-            <div id="panel-fhir" class="panel">
+            <div id="panel-fhir" class="panel" role="tabpanel" aria-labelledby="tab-fhir">
                 <div class="acr-guidelines-header">
                     <h2 class="acr-rec-title">EHR FHIR Interoperability Bundle</h2>
                     <p style="color: var(--text-muted); font-size: 14.5px;">Standardized R4 Bundle containing Patient, ServiceRequest, and Observation resources.</p>
@@ -1624,7 +1787,7 @@
             </div>
 
             <!-- Panel 5: CDS Hooks Simulator -->
-            <div id="panel-cdshook" class="panel">
+            <div id="panel-cdshook" class="panel" role="tabpanel" aria-labelledby="tab-cdshook">
                 <div class="acr-guidelines-header">
                     <h2 class="acr-rec-title">EHR CDS Hooks Simulator</h2>
                     <p style="color: var(--text-muted); font-size: 14.5px;">Simulates an Epic/Cerner order-select / order-sign hook interaction. Accept dynamic guidelines recommendations directly into the active order.</p>
@@ -1654,7 +1817,7 @@
             </div>
 
             <!-- Panel 6: RAG Diagnostics & Similarity search -->
-            <div id="panel-diagnostics" class="panel">
+            <div id="panel-diagnostics" class="panel" role="tabpanel" aria-labelledby="tab-diagnostics">
                 <div class="acr-guidelines-header">
                     <h2 class="acr-rec-title">RAG Engine Search Diagnostics</h2>
                     <p style="color: var(--text-muted); font-size: 14.5px;">Inner details of the hybrid vector-semantic database retrieval, clinical query expansion, and Reciprocal Rank Fusion (RRF) scoring.</p>
@@ -1695,6 +1858,93 @@
     </div>
 
     <script>
+        // ==========================================
+        // Toast Notification System (Item 6)
+        // ==========================================
+        function showToast(message, type = 'info', duration = 4000) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <span style="flex-grow: 1;">${message}</span>
+                <button aria-label="Close alert" style="background: none; border: none; color: inherit; font-size: 16px; cursor: pointer; margin-left: 12px; padding: 0; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px;" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        // ==========================================
+        // Dark Theme System & Storage (Item 11)
+        // ==========================================
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-theme');
+            const isDark = body.classList.contains('dark-theme');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeUI(isDark);
+        }
+
+        function updateThemeUI(isDark) {
+            const iconEl = document.getElementById('theme-toggle-icon');
+            const textEl = document.getElementById('theme-toggle-text');
+            if (iconEl) iconEl.innerText = isDark ? '☀️' : '🌙';
+            if (textEl) textEl.innerText = isDark ? 'Light Mode' : 'Dark Mode';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.body.classList.add('dark-theme');
+                updateThemeUI(true);
+            } else {
+                updateThemeUI(false);
+            }
+        });
+
+        // ==========================================
+        // Accessibility Focus Trapping (Item 5)
+        // ==========================================
+        let lastFocusedElement = null;
+
+        function setupFocusTrap(element, onEscCallback) {
+            element.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    const focusables = element.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    if (focusables.length === 0) return;
+                    const first = focusables[0];
+                    const last = focusables[focusables.length - 1];
+
+                    if (e.shiftKey) {
+                        if (document.activeElement === first) {
+                            last.focus();
+                            e.preventDefault();
+                        }
+                    } else {
+                        if (document.activeElement === last) {
+                            first.focus();
+                            e.preventDefault();
+                        }
+                    }
+                } else if (e.key === 'Escape') {
+                    if (onEscCallback) {
+                        onEscCallback();
+                        e.preventDefault();
+                    }
+                }
+            });
+        }
+
         const PRESETS = {
             1: {
                 scenario: "69 year old female presenting with acute worsening low back pain and saddle anesthesia. Suspected cauda equina syndrome.",
@@ -1877,8 +2127,19 @@
             }
         }
 
-        // Poll health status every 10 seconds
-        setInterval(checkBackendHealth, 10000);
+        // Poll health status every 10 seconds (optimised with Page Visibility API)
+        let healthInterval = setInterval(checkBackendHealth, 10000);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(healthInterval);
+                healthInterval = null;
+            } else {
+                if (!healthInterval) {
+                    checkBackendHealth();
+                    healthInterval = setInterval(checkBackendHealth, 10000);
+                }
+            }
+        });
         // Initial health check on page load
         window.addEventListener('load', checkBackendHealth);
 
@@ -1911,26 +2172,35 @@
             
             // Toggle active classes on tab buttons
             document.querySelectorAll('.tab-bar .tab-btn').forEach(btn => {
-                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tabId}'`)) {
+                const isSelected = btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tabId}'`);
+                if (isSelected) {
                     btn.classList.add('active');
+                    btn.setAttribute('aria-selected', 'true');
                     // Scroll active tab button to center view
                     btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 } else {
                     btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
                 }
             });
 
             // Hide all panels
             document.querySelectorAll('.panel').forEach(p => {
                 p.classList.remove('active');
+                p.setAttribute('aria-hidden', 'true');
             });
 
             // Show selected panel
             const panel = document.getElementById(`panel-${tabId}`);
             if (panel && latestCDSResult) {
                 panel.classList.add('active');
+                panel.setAttribute('aria-hidden', 'false');
             } else if (!latestCDSResult) {
-                document.getElementById('placeholder').classList.add('active');
+                const placeholder = document.getElementById('placeholder');
+                if (placeholder) {
+                    placeholder.classList.add('active');
+                    placeholder.setAttribute('aria-hidden', 'false');
+                }
             }
         }
 
@@ -2024,8 +2294,19 @@
         async function submitAnalysis() {
             const scenario = document.getElementById('scenario-input').value.trim();
             if (!scenario) {
-                alert("Please enter a clinical scenario or select a preset!");
+                showToast("Please enter a clinical scenario or select a preset!", "warning");
                 return;
+            }
+
+            const overrideParam = document.getElementById('override-patient-data').checked;
+            if (overrideParam) {
+                const ageInput = document.getElementById('patient-age');
+                const egfrInput = document.getElementById('patient-egfr');
+                const weightInput = document.getElementById('patient-weight');
+                if (!ageInput.reportValidity() || !egfrInput.reportValidity() || !weightInput.reportValidity()) {
+                    showToast("Please fix the invalid parameters highlighted in red in the patient context simulator.", "error");
+                    return;
+                }
             }
 
             // Hide placeholder, show loading
@@ -2046,7 +2327,6 @@
             submitBtn.disabled = true;
             submitBtn.querySelector('span').innerText = "Querying...";
             
-            const overrideParam = document.getElementById('override-patient-data').checked;
             const institution = document.getElementById('institution').value;
 
             let requestBody = {};
@@ -2290,7 +2570,7 @@
                 console.error(err);
                 document.getElementById('loading').classList.remove('active');
                 document.getElementById('placeholder').classList.add('active');
-                alert(`Error calling clinical backend: ${err.message}. Please check if the FastAPI server is running.`);
+                showToast(`Error calling clinical backend: ${err.message}. Please check if the FastAPI server is running.`, "error");
             } finally {
                 isLoading = false;
                 submitBtn.disabled = false;
@@ -2532,25 +2812,26 @@
             const detailsContent = document.getElementById('guidelines-details-content');
             if (pea.plan || pea.estimate) {
                 document.getElementById('guidelines-details-accordion').style.display = "block";
-                detailsContent.innerHTML = "";
+                const detailsHtml = [];
                 
                 if (pea.plan) {
-                    detailsContent.innerHTML += `
+                    detailsHtml.push(`
                         <div style="margin-bottom: 15px;">
                             <h5 style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">Clinical Retrieval Plan</h5>
                             <div style="font-size: 13.5px; color: var(--text-main); line-height: 1.5;">${parseMarkdown(pea.plan)}</div>
                         </div>
-                    `;
+                    `);
                 }
                 
                 if (pea.estimate) {
-                    detailsContent.innerHTML += `
+                    detailsHtml.push(`
                         <div>
                             <h5 style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">Clinical Rationale / Estimate</h5>
                             <div style="font-size: 13.5px; color: var(--text-main); line-height: 1.5;">${parseMarkdown(pea.estimate)}</div>
                         </div>
-                    `;
+                    `);
                 }
+                detailsContent.innerHTML = detailsHtml.join('');
             } else {
                 document.getElementById('guidelines-details-accordion').style.display = "none";
             }
@@ -2621,9 +2902,10 @@
                         No structured procedure tables matched. Read the Clinical Rationale above for guidelines.
                     </div>`;
             } else {
+                const rowsHtml = [];
                 matchedRows.forEach(row => {
                     const pct = (row.score / 9) * 100;
-                    container.innerHTML += `
+                    rowsHtml.push(`
                         <div class="procedure-card">
                             <div class="procedure-name">${row.name}</div>
                             <div class="procedure-rating">
@@ -2633,8 +2915,9 @@
                                 </div>
                             </div>
                             <div class="procedure-dose">${row.dose}</div>
-                        </div>`;
+                        </div>`);
                 });
+                container.innerHTML = rowsHtml.join('');
             }
 
             // Render Evidence Provenance (Source Documents & Snippets)
@@ -2646,6 +2929,7 @@
             const sources = (data.acr_sources || []).filter(src => src.metadata.type !== "variant_table");
             
             if (sources.length > 0) {
+                const evidenceHtml = [];
                 sources.forEach((src, idx) => {
                     const filename = src.metadata.source || "";
                     if (!filename) return;
@@ -2664,7 +2948,7 @@
                     const snippetId = `snippet-idx-${idx}`;
                     const highlightedContent = highlightKeywords(src.content || "", query);
                     
-                    evidenceContainer.innerHTML += `
+                    evidenceHtml.push(`
                         <div class="evidence-card">
                             <div class="evidence-card-header" onclick="toggleSnippet('${snippetId}')">
                                 <div class="evidence-card-info">
@@ -2688,8 +2972,9 @@
                                 </div>
                             </div>
                         </div>
-                    `;
+                    `);
                 });
+                evidenceContainer.innerHTML = evidenceHtml.join('');
             } else {
                 evidenceContainer.innerHTML = `<div style="color: var(--text-muted); font-style: italic; font-size: 13px;">No reference guidelines found.</div>`;
             }
@@ -2736,11 +3021,13 @@
 
             let triggerCount = 0;
 
+            const safetyCardsHtml = [];
+
             // Render custom flags
             flags.forEach(flag => {
                 if (flag.triggered) {
                     triggerCount++;
-                    container.innerHTML += `
+                    safetyCardsHtml.push(`
                         <div class="safety-alert-card ${flag.severity}">
                             <span class="alert-badge ${flag.severity}">${flag.severity}</span>
                             <div class="alert-content">
@@ -2748,7 +3035,7 @@
                                 <p>${flag.message}</p>
                                 ${flag.action ? `<p style="margin-top: 6px; font-weight: 600; color: var(--text-main);">Clinical Action: ${flag.action.replace('_', ' ').toUpperCase()}</p>` : ''}
                             </div>
-                        </div>`;
+                        </div>`);
                 }
             });
 
@@ -2756,7 +3043,7 @@
             holds.forEach(hold => {
                 if (hold.patient_is_taking) {
                     triggerCount++;
-                    container.innerHTML += `
+                    safetyCardsHtml.push(`
                         <div class="safety-alert-card warning">
                             <span class="alert-badge warning">Medication Hold</span>
                             <div class="alert-content">
@@ -2764,7 +3051,7 @@
                                 <p>Anticoagulant medication detected in history. <strong>Hold: ${hold.hold_hours_before} hours before</strong> the procedure. <strong>Resume: ${hold.resume_hours_after || 24} hours after</strong> post-hemostasis validation.</p>
                                 ${hold.sir_reference ? `<p style="margin-top:4px; font-size:12px; color:var(--text-muted);">Source: ${hold.sir_reference}</p>` : ''}
                             </div>
-                        </div>`;
+                        </div>`);
                 }
             });
 
@@ -2772,7 +3059,7 @@
             labs.forEach(lab => {
                 if (!lab.is_met) {
                     triggerCount++;
-                    container.innerHTML += `
+                    safetyCardsHtml.push(`
                         <div class="safety-alert-card hard_stop">
                             <span class="alert-badge hard_stop">Lab Contraindication</span>
                             <div class="alert-content">
@@ -2780,11 +3067,13 @@
                                 <p>Required threshold is <strong>${lab.required_operator} ${lab.required_value}</strong>. Patient value was <strong>${lab.patient_value || 'None Found'}</strong>.</p>
                                 ${lab.correction_guidance ? `<p style="margin-top:6px; font-weight:600; color:var(--text-main);">Correction Protocol: ${lab.correction_guidance}</p>` : ''}
                             </div>
-                        </div>`;
+                        </div>`);
                 }
             });
 
-            if (triggerCount === 0) {
+            if (triggerCount > 0) {
+                container.innerHTML = safetyCardsHtml.join('');
+            } else {
                 container.innerHTML = `
                     <div style="padding: 30px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
                         All rules successfully evaluated. No safety flags or medication holds were triggered.
@@ -2835,28 +3124,32 @@
                 { name: "Special Instructions", val: details.special_instructions || "None" }
             ];
 
+            const paramsHtml = [];
             params.forEach(p => {
-                tableBody.innerHTML += `
+                paramsHtml.push(`
                     <tr>
                         <td style="font-weight: 600; width: 30%; color: var(--text-muted);">${p.name}</td>
                         <td>${p.val}</td>
-                    </tr>`;
+                    </tr>`);
             });
+            tableBody.innerHTML = paramsHtml.join('');
 
             // Display sequence steps (useful for MRI)
             const steps = draft.protocol_steps || [];
             if (steps.length > 0) {
                 mriSection.style.display = "block";
+                const stepsHtml = [];
                 steps.forEach(step => {
-                    mriContainer.innerHTML += `
+                    stepsHtml.push(`
                         <div class="sequence-step-row">
                             <div class="sequence-step-info">
                                 <span class="sequence-number">${step.step_order}</span>
                                 <span class="sequence-name">${step.sequence_name}</span>
                             </div>
                             <span class="sequence-timing">${step.timing_description || ''}</span>
-                        </div>`;
+                        </div>`);
                 });
+                mriContainer.innerHTML = stepsHtml.join('');
             }
         }
 
@@ -2868,7 +3161,7 @@
         function copyText(elementId) {
             const el = document.getElementById(elementId);
             navigator.clipboard.writeText(el.innerText || el.textContent);
-            alert("Clinical summary copied to clipboard!");
+            showToast("Clinical summary copied to clipboard!", "success");
         }
 
         function copyProtocol() {
@@ -2898,7 +3191,7 @@
             }
 
             navigator.clipboard.writeText(text);
-            alert("Draft scan recipe copied for EMR copy-paste!");
+            showToast("Draft scan recipe copied for EMR copy-paste!", "success");
         }
 
         // --- Clinician Overrides JS Logic ---
@@ -2906,12 +3199,14 @@
         function openOverrideModal() {
             if (!latestCDSResult) return;
             
+            lastFocusedElement = document.activeElement;
             const selectProc = document.getElementById('override-select-procedure');
             selectProc.innerHTML = "";
             
             const seenProcs = new Set();
             selectProc.innerHTML += `<option value="Do Not Image">Do Not Image (Cancel Order)</option>`;
             
+            const selectOptions = [`<option value="Do Not Image">Do Not Image (Cancel Order)</option>`];
             (latestCDSResult.acr_sources || []).forEach(src => {
                 if (src.metadata.type === "variant_table") {
                     const content = src.content || "";
@@ -2920,19 +3215,32 @@
                         const procName = procMatch[1].trim();
                         if (!seenProcs.has(procName)) {
                             seenProcs.add(procName);
-                            selectProc.innerHTML += `<option value="${procName}">${procName}</option>`;
+                            selectOptions.push(`<option value="${procName}">${procName}</option>`);
                         }
                     }
                 }
             });
             
-            selectProc.innerHTML += `<option value="Custom Alternate Procedure">Custom Alternate Modality...</option>`;
+            selectOptions.push(`<option value="Custom Alternate Procedure">Custom Alternate Modality...</option>`);
+            selectProc.innerHTML = selectOptions.join('');
             document.getElementById('override-notes').value = "";
-            document.getElementById('override-modal').classList.add('active');
+            
+            const modal = document.getElementById('override-modal');
+            modal.classList.add('active');
+            
+            // Trap focus and set initial focus inside modal
+            const focusables = modal.querySelectorAll('button, select, textarea');
+            if (focusables.length > 0) {
+                focusables[0].focus();
+            }
         }
         
         function closeOverrideModal() {
             document.getElementById('override-modal').classList.remove('active');
+            if (lastFocusedElement) {
+                lastFocusedElement.focus();
+                lastFocusedElement = null;
+            }
         }
         
         async function submitOverride() {
@@ -2961,14 +3269,14 @@
                 const resData = await response.json();
                 if (resData.status === "success") {
                     closeOverrideModal();
-                    alert(`Override logged successfully!\nAlternate selected: ${overridden_recommendation}`);
+                    showToast(`Override logged successfully! Alternate selected: ${overridden_recommendation}`, "success");
                     loadOverridesHistory();
                 } else {
-                    alert("Error logging override: " + resData.message);
+                    showToast("Error logging override: " + resData.message, "error");
                 }
             } catch (err) {
                 console.error("Error submitting override:", err);
-                alert("Error connecting to server to save override.");
+                showToast("Error connecting to server to save override.", "error");
             }
         }
         
@@ -2979,10 +3287,10 @@
                 const container = document.getElementById('overrides-history-container');
                 
                 if (data.status === "success" && data.overrides && data.overrides.length > 0) {
-                    container.innerHTML = "";
+                    const overridesHtml = [];
                     data.overrides.slice(0, 5).forEach(o => {
                         const dateStr = new Date(o.timestamp).toLocaleString();
-                        container.innerHTML += `
+                        overridesHtml.push(`
                             <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; font-size: 13px; line-height: 1.4;">
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                                     <span style="font-weight: 700; color: var(--color-warning);">🔄 ${o.override_reason}</span>
@@ -2999,8 +3307,9 @@
                                     "${o.clinician_notes}"
                                 </div>` : ''}
                             </div>
-                        `;
+                        `);
                     });
+                    container.innerHTML = overridesHtml.join('');
                 } else {
                     container.innerHTML = `
                         <div style="font-size: 13px; color: var(--text-muted); font-style: italic; padding: 12px; border: 1px dashed var(--border-color); border-radius: var(--radius-md); text-align: center;">
@@ -3022,9 +3331,22 @@
             const drawer = document.getElementById('copilot-drawer');
             copilotOpen = !copilotOpen;
             if (copilotOpen) {
+                lastFocusedElement = document.activeElement;
                 drawer.classList.add('active');
+                
+                // Trap focus and set initial focus inside drawer
+                const focusables = drawer.querySelectorAll('button, textarea');
+                if (focusables.length > 0) {
+                    const closeBtn = drawer.querySelector('.copilot-close-btn');
+                    if (closeBtn) closeBtn.focus();
+                    else focusables[0].focus();
+                }
             } else {
                 drawer.classList.remove('active');
+                if (lastFocusedElement) {
+                    lastFocusedElement.focus();
+                    lastFocusedElement = null;
+                }
             }
         }
 
@@ -3346,10 +3668,11 @@
                 return;
             }
             
+            const cardsHtml = [];
             cards.forEach(card => {
                 const indicatorClass = card.indicator || "info"; // info, warning, critical
                 
-                let suggestionsHtml = "";
+                const suggestionsHtmlArray = [];
                 if (card.suggestions && card.suggestions.length > 0) {
                     card.suggestions.forEach(sug => {
                         // Find the recommended procedure name from actions
@@ -3360,16 +3683,17 @@
                         }
                         
                         if (recommendedName) {
-                            suggestionsHtml += `
+                            suggestionsHtmlArray.push(`
                                 <button class="cds-action-btn" onclick="acceptCDSHookSuggestion('${recommendedName}')">
                                     Accept Recommendation: ${recommendedName}
                                 </button>
-                            `;
+                            `);
                         }
                     });
                 }
+                const suggestionsHtml = suggestionsHtmlArray.join('');
                 
-                container.innerHTML += `
+                cardsHtml.push(`
                     <div class="cds-card" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; background: var(--bg-card); box-shadow: var(--shadow-premium);">
                         <div class="cds-card-header ${indicatorClass}">
                             <span>${card.summary}</span>
@@ -3384,8 +3708,9 @@
                         </div>
                         ` : ''}
                     </div>
-                `;
+                `);
             });
+            container.innerHTML = cardsHtml.join('');
         }
 
         function acceptCDSHookSuggestion(recommendedName) {
@@ -3411,7 +3736,7 @@
             }
             
             // Display alert to the user that order has been accepted
-            alert(`EHR simulation updated: Changed proposed order to "${recommendedName}". Re-running decision support engine.`);
+            showToast(`EHR simulation updated: Changed proposed order to "${recommendedName}". Re-running decision support engine.`, "info");
             
             // Re-run
             submitAnalysis();
@@ -3439,6 +3764,7 @@
                 return;
             }
             
+            const diagHtml = [];
             sources.forEach((src, idx) => {
                 const filename = src.metadata.source || "ACR Guidelines";
                 let cleanName = filename.replace(/\.pdf$/i, '').replace(/_\d+$/, '').replace(/_/g, ' ').trim();
@@ -3448,7 +3774,7 @@
                 const retrieval = src.metadata.retrieval_method || "vector";
                 
                 // Let's render a nicely styled diagnostic tile
-                container.innerHTML += `
+                diagHtml.push(`
                     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 15px; display: flex; flex-direction: column; gap: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
                             <div>
@@ -3467,17 +3793,39 @@
                             ${src.content}
                         </div>
                     </div>
-                `;
+                `);
             });
+            container.innerHTML = diagHtml.join('');
         }
 
         loadOverridesHistory();
+
+        // Setup Accessibility Focus Trapping & Backdrop Clicks (Item 5)
+        window.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('override-modal');
+            if (modal) {
+                setupFocusTrap(modal, closeOverrideModal);
+                // Close on backdrop click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeOverrideModal();
+                    }
+                });
+            }
+
+            const drawer = document.getElementById('copilot-drawer');
+            if (drawer) {
+                setupFocusTrap(drawer, () => {
+                    if (copilotOpen) toggleCopilot();
+                });
+            }
+        });
     </script>
 
     <!-- Attending Co-Pilot Chat Toggle Button -->
-    <div id="copilot-toggle" class="copilot-toggle-trigger" onclick="toggleCopilot()">
+    <button id="copilot-toggle" class="copilot-toggle-trigger" onclick="toggleCopilot()" aria-label="Toggle Attending Radiology Co-Pilot">
         <span style="font-size: 24px; pointer-events: none;">💬</span>
-    </div>
+    </button>
 
     <!-- Attending Co-Pilot Chat Drawer -->
     <div id="copilot-drawer" class="copilot-drawer">

@@ -1,10 +1,3 @@
-"""
-Attending Radiology Co-Pilot Engine — Service E
-================================================
-A conversational clinical advisor utilizing the Google Gemini API 
-and context retrieved from the ACR Appropriateness Criteria database.
-"""
-
 import os
 import re
 from pydantic import BaseModel, Field
@@ -12,23 +5,15 @@ from typing import List, Optional, Dict, Any
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from rag_engine import query_acr_guidelines, redact_phi
+from security_utils import INJECTION_PATTERNS as _INJECTION_PATTERNS
 
 load_dotenv()
 
-# ---------------------------------------------------------------------------
-# Prompt-injection guard
-# ---------------------------------------------------------------------------
-_INJECTION_PATTERNS = [
-    re.compile(r"ignore\s+(previous|all|prior|above)\s+instructions", re.IGNORECASE),
-    re.compile(r"disregard\s+(your|all|the)\s+(system|previous|prior)", re.IGNORECASE),
-    re.compile(r"you\s+are\s+now", re.IGNORECASE),
-    re.compile(r"new\s+instruction", re.IGNORECASE),
-    re.compile(r"forget\s+(everything|all|your\s+instructions)", re.IGNORECASE),
-    re.compile(r"act\s+as\s+(a\s+|an\s+)?(different|new|unrestricted)", re.IGNORECASE),
-    re.compile(r"<\s*(script|iframe|object|embed)", re.IGNORECASE),
-]
+# In-memory cache for RAG results per scenario text to optimize conversational performance
+_rag_cache = {}
 
 _MAX_INPUT_LENGTH = 4000
 
@@ -72,6 +57,11 @@ def sanitize_clinical_input(text: str) -> str:
     # Wrap in boundary tags so the LLM can distinguish data from instructions
     return f"[PATIENT_CLINICAL_DATA_START]\n{text}\n[PATIENT_CLINICAL_DATA_END]"
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10), reraise=True)
+def _generate_content_with_retry(client, model, contents, config):
+    return client.models.generate_content(model=model, contents=contents, config=config)
+
+
 class ChatMessage(BaseModel):
     role: str                   # "user" or "model" / "assistant"
     content: str
@@ -100,9 +90,17 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
 
     client = get_gemini_client()
     
-    # 1. Retrieve the ACR Guidelines for the current patient context
+    # 1. Retrieve the ACR Guidelines for the current patient context (reusing cache if present)
     try:
-        acr_result = query_acr_guidelines(req.scenario_text)
+        cache_key = req.scenario_text.strip().lower()
+        if cache_key in _rag_cache:
+            acr_result = _rag_cache[cache_key]
+            print(f"[COPILOT CACHE HIT] Reusing guidelines context for conversation.")
+        else:
+            acr_result = query_acr_guidelines(req.scenario_text)
+            _rag_cache[cache_key] = acr_result
+            print(f"[COPILOT CACHE MISS] Querying RAG and caching guidelines context for conversation.")
+            
         acr_recommendation = acr_result.get("recommendation", "No specific recommendation retrieved.")
         sources = acr_result.get("sources", [])
         
@@ -149,7 +147,8 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
 
     # 3. Call the Gemini API
     try:
-        response = client.models.generate_content(
+        response = _generate_content_with_retry(
+            client,
             model="gemini-2.5-flash",
             contents=redacted_prompt,
             config=types.GenerateContentConfig(

@@ -9,7 +9,7 @@ An enterprise-ready, FHIR-native, and CDS Hooks-compliant Retrieval-Augmented Ge
 *   **Clinical Presentation Parser (FHIR-Native):** Converts unstructured clinical text or inputs into standard HL7 FHIR Bundle resources (Patient, Condition, Observation, AllergyIntolerance, MedicationStatement).
 *   **ACR Guideline RAG Engine:** Queries the ACR Appropriateness Criteria database using high-dimensional Google Gemini embeddings (`models/gemini-embedding-2`) and ChromaDB vector store.
 *   **Protocoling Assistant:** Maps the recommended ACR exam to hospital-specific, localized scan protocols (e.g. contrast types, volumes, rates, phase sequences) using a custom mapping database.
-*   **Safety Profile Evaluator:** Proactively flags potential scan risks based on clinical indicators:
+*   **Safety Profile Evaluator:** Flags potential scan risks based on clinical indicators:
     *   **eGFR** (Kidney function warnings for IV contrast agents)
     *   **Allergies** (Contrast allergy warnings)
     *   **Pregnancy status** (Radiation risk alerts)
@@ -19,8 +19,29 @@ An enterprise-ready, FHIR-native, and CDS Hooks-compliant Retrieval-Augmented Ge
 *   **Decision Support Number (DSN) Audit Trail:** Generates a tamper-evident, unique transaction identifier (`ACR-[DATE]-[HASH]`) for every clinical decision, logging the transaction to an immutable audit file (`data/logs/dsn_audit_log.jsonl`) for compliance verification.
 *   **Conversational Attending Radiology Co-Pilot:** An interactive, conversational LLM assistant chat drawer (`/v1/copilot/chat`) to discuss case presentations and clarify guidelines recommendations.
 *   **Clinical Overrides & Audit Log:** Enables clinicians to manually override guideline recommendations by logging justifications to `/v1/override` for compliance auditing.
-*   **CDS Hooks Compliant:** Implements a `/v1/cds-hook` endpoint (e.g. `order-select`) for integration directly with Electronic Health Record (EHR) platforms.
+*   **CDS Hooks Compliant:** Implements a `/v1/cds-hook` endpoint (e.g. `order-select`) for EHR integrations.
 *   **Premium CDS Dashboard:** A beautiful, fully mobile-responsive single-page web dashboard (`index.html`) served directly by the FastAPI backend for clinical simulation on desktop, tablet, and phone viewports.
+
+---
+
+## ⚡ Performance, Security & Usability Upgrades
+
+This system has been upgraded with the following production-ready improvements:
+1.  **Async Thread Offloading:** Synchronous RAG, protocol mapping, and co-pilot responses are offloaded using `asyncio.to_thread` to prevent FastAPI event-loop blocking.
+2.  **API Rate Limiting:** Configured `slowapi` client rate-limiting (30 requests/minute per IP) on all critical endpoints to protect Gemini API quota usage.
+3.  **Tenacity Retry Logic:** Applied tenacity-based exponential backoff retries (min 1s, max 10s, up to 3 attempts) for all LLM and chat generation API calls to mitigate transient rate-limit errors.
+4.  **SQLite Query Cache & TTL:** Added automated SQLite cache schema self-migration (`created_at` timestamp) and enforce a strict 7-day cache expiration (TTL) invalidation.
+5.  **In-Memory RAG Caching:** Implemented co-pilot context caching to store RAG retrieval outputs, bypassing repetitive retrieval queries during a chat turn.
+6.  **FastAPI Request Tracing:** Configured HTTP middleware to inject a unique transaction UUID (`X-Request-ID`) and log the request's execution latency (`X-Process-Time`) in response headers.
+7.  **Pydantic Input Constraints:** Implemented max-length string boundaries (4000 characters) on request models to prevent oversized payload abuse.
+8.  **Shared Injection Guarding:** Extracted and consolidated shared regex patterns for prompt injection checking in `security_utils.py`, applied on both RAG queries and conversational prompts.
+9.  **Dark Mode Theme System:** Supported high-contrast dark theme preferences, persistent state stored in local browser memory (`localStorage`), and system preference detection.
+10. **Keyboard Focus Trapping:** Implemented keyboard focus trapping (`Tab` and `Shift+Tab`) and overlay dismissal (`Escape` or backdrop clicks) inside the Clinician Override Modal and Co-Pilot Drawer.
+11. **Toast Notification Alerts:** Replaced browser-native synchronous `alert()` block prompts with custom non-blocking toast animations.
+12. **HTML5 Validation:** Enforced patient age, eGFR, and weight validation constraints (`min/max/required`) directly inside the EHR Simulator input fields.
+13. **DOM Loop Rendering Optimizations:** Refactored dynamic list loops (`.innerHTML +=`) to use memory array buffers, updating the DOM once to prevent page reflow lag and listener loss.
+14. **Page Visibility Health Polling:** Optimized system resources by automatically pausing background health polling when the dashboard tab is minimized or hidden.
+15. **Offline Unit Testing & CI Verification:** Added `test_safety_security.py` running offline test cases for HIPAA compliance, prompt injection, and safety rule evaluations, integrated directly into the GitHub Actions CI pipeline.
 
 ---
 

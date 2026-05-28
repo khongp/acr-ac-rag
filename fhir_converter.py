@@ -50,9 +50,8 @@ class ClinicalExtraction(BaseModel):
     implants: List[str] = Field(default_factory=list, description="Any implants, pacemakers, cochlear implants, aneurysm clips, or claustrophobia mentioned.")
 
 def get_extraction_llm():
-    if "GOOGLE_API_KEY" not in os.environ:
-        raise ValueError("Please set the GOOGLE_API_KEY environment variable to use the LLM.")
-    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
+    from llm_router import get_llm
+    return get_llm(temperature=0.0)
 
 def fallback_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     """

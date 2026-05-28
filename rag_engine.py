@@ -1,10 +1,3 @@
-"""
-ACR-AC-RAG Retrieval Engine (v3)
-=================================
-Optimized for Google Cloud API embeddings (models/gemini-embedding-2)
-and persistent SQLite caching. Runs CPU-only.
-"""
-
 import os
 import re
 import json
@@ -13,6 +6,8 @@ import pickle
 import time
 from collections import Counter
 from typing import List, Any, Optional
+from datetime import datetime
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from langchain_chroma import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
@@ -23,6 +18,7 @@ from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from dotenv import load_dotenv
 from ingest import CachedGoogleGenerativeAIEmbeddings
+from security_utils import INJECTION_PATTERNS as _INJECTION_PATTERNS
 
 load_dotenv()
 
@@ -118,9 +114,19 @@ def init_cache_db():
         CREATE TABLE IF NOT EXISTS query_cache (
             query_key TEXT PRIMARY KEY,
             recommendation TEXT,
-            sources TEXT
+            sources TEXT,
+            created_at TEXT
         )
     """)
+    # Add created_at column to existing table if it's missing (migration support)
+    try:
+        cursor.execute("PRAGMA table_info(query_cache)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "created_at" not in columns:
+            cursor.execute("ALTER TABLE query_cache ADD COLUMN created_at TEXT")
+    except Exception as e:
+        print(f"[WARN] Error running database migration: {e}")
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS clinician_overrides (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,18 +195,27 @@ def get_clinician_overrides() -> list:
 
 
 def get_cached_query(clinical_scenario: str) -> Optional[dict]:
-    """Retrieve RAG response from cache if exists."""
+    """Retrieve RAG response from cache if exists and not expired."""
     cache_key = redact_phi(clinical_scenario).strip().lower()
     try:
         conn = get_db_connection(CACHE_DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT recommendation, sources FROM query_cache WHERE query_key = ?", (cache_key,))
+        cursor.execute("SELECT recommendation, sources, created_at FROM query_cache WHERE query_key = ?", (cache_key,))
         row = cursor.fetchone()
         conn.close()
         if row:
+            recommendation, sources_json, created_at = row
+            if created_at:
+                try:
+                    dt = datetime.fromisoformat(created_at)
+                    if (datetime.now() - dt).days > 7:
+                        print(f"[CACHE EXPIRED] SQLite cache row older than 7 days: {cache_key}")
+                        return None
+                except Exception as e:
+                    print(f"[WARN] Error parsing cache timestamp: {e}")
             return {
-                "recommendation": row[0],
-                "sources": json.loads(row[1])
+                "recommendation": recommendation,
+                "sources": json.loads(sources_json)
             }
     except Exception as e:
         print(f"[WARN] Error reading cache: {e}")
@@ -208,14 +223,15 @@ def get_cached_query(clinical_scenario: str) -> Optional[dict]:
 
 
 def set_cached_query(clinical_scenario: str, result: dict):
-    """Write RAG response to SQLite persistent cache."""
+    """Write RAG response to SQLite persistent cache with created_at timestamp."""
     cache_key = redact_phi(clinical_scenario).strip().lower()
     try:
         conn = get_db_connection(CACHE_DB_PATH)
         cursor = conn.cursor()
+        ts = datetime.now().isoformat()
         cursor.execute(
-            "INSERT OR REPLACE INTO query_cache (query_key, recommendation, sources) VALUES (?, ?, ?)",
-            (cache_key, result["recommendation"], json.dumps(result["sources"]))
+            "INSERT OR REPLACE INTO query_cache (query_key, recommendation, sources, created_at) VALUES (?, ?, ?, ?)",
+            (cache_key, result["recommendation"], json.dumps(result["sources"]), ts)
         )
         conn.commit()
         conn.close()
@@ -397,7 +413,6 @@ def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
         return candidates
         
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
         from pydantic import BaseModel, Field
         from typing import List
         
@@ -409,8 +424,10 @@ def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
         class RerankedOutput(BaseModel):
             rankings: List[SelectedCandidate] = Field(description="Top 3 selected candidate scenarios, in order of clinical relevance")
             
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
-        structured_llm = llm.with_structured_output(RerankedOutput)
+        global _llm
+        if _llm is None:
+            _llm = get_llm()
+        structured_llm = _llm.with_structured_output(RerankedOutput)
         
         candidates_str = ""
         for idx, (t, s) in enumerate(candidates):
@@ -427,7 +444,7 @@ def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
             "Output the top 3 rankings:"
         )
         
-        res = structured_llm.invoke(prompt)
+        res = _invoke_with_retry(structured_llm, prompt)
         
         selected = []
         for rank in res.rankings:
@@ -464,26 +481,36 @@ class CombinedTypeRetriever(BaseRetriever):
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun = None
     ) -> List[Document]:
         # ── Step 1: Query embedding ──
-        query_emb = self.embeddings.embed_query(query)
+        query_emb = None
+        try:
+            query_emb = self.embeddings.embed_query(query)
+        except Exception as e:
+            print(f"[ERROR] Embedding query failed: {e}. Vector search will be bypassed.")
 
         # ── Step 2: Probe table docs for scenario detection (Hybrid Search) ──
-        try:
-            vector_tables_with_scores = self.db.similarity_search_with_score(
-                query, k=self.k_tables, filter={"type": "variant_table"}
-            )
-            vector_tables = []
-            for doc, score in vector_tables_with_scores:
-                doc.metadata["score"] = float(score)
-                doc.metadata["retrieval_method"] = "vector"
-                vector_tables.append(doc)
-        except Exception as e:
-            print(f"[WARN] Vector table search with score failed: {e}. Falling back to standard search.")
-            vector_tables = self.db.similarity_search_by_vector(
-                query_emb, k=self.k_tables, filter={"type": "variant_table"}
-            )
-            for doc in vector_tables:
-                doc.metadata["score"] = 1.0
-                doc.metadata["retrieval_method"] = "vector"
+        vector_tables = []
+        if query_emb is not None:
+            try:
+                vector_tables_with_scores = self.db.similarity_search_with_score(
+                    query, k=self.k_tables, filter={"type": "variant_table"}
+                )
+                for doc, score in vector_tables_with_scores:
+                    doc.metadata["score"] = float(score)
+                    doc.metadata["retrieval_method"] = "vector"
+                    vector_tables.append(doc)
+            except Exception as e:
+                print(f"[WARN] Vector table search with score failed: {e}. Falling back to standard search.")
+                try:
+                    vector_tables = self.db.similarity_search_by_vector(
+                        query_emb, k=self.k_tables, filter={"type": "variant_table"}
+                    )
+                    for doc in vector_tables:
+                        doc.metadata["score"] = 1.0
+                        doc.metadata["retrieval_method"] = "vector"
+                except Exception as ex:
+                    print(f"[ERROR] Vector table search by vector failed: {ex}")
+        else:
+            print("[WARN] Skipping vector table search because embedding failed.")
         
         bm25_tables = []
         if self.bm25_retriever:
@@ -567,23 +594,29 @@ class CombinedTypeRetriever(BaseRetriever):
             scenario_tables = vector_tables[:5]
 
         # ── Step 5: Get narratives via hybrid search ──
-        try:
-            vector_narratives_with_scores = self.db.similarity_search_with_score(
-                query, k=self.k_narrative, filter={"type": "narrative"}
-            )
-            vector_narratives = []
-            for doc, score in vector_narratives_with_scores:
-                doc.metadata["score"] = float(score)
-                doc.metadata["retrieval_method"] = "vector"
-                vector_narratives.append(doc)
-        except Exception as e:
-            print(f"[WARN] Vector narrative search with score failed: {e}. Falling back to standard search.")
-            vector_narratives = self.db.similarity_search_by_vector(
-                query_emb, k=self.k_narrative, filter={"type": "narrative"}
-            )
-            for doc in vector_narratives:
-                doc.metadata["score"] = 1.0
-                doc.metadata["retrieval_method"] = "vector"
+        vector_narratives = []
+        if query_emb is not None:
+            try:
+                vector_narratives_with_scores = self.db.similarity_search_with_score(
+                    query, k=self.k_narrative, filter={"type": "narrative"}
+                )
+                for doc, score in vector_narratives_with_scores:
+                    doc.metadata["score"] = float(score)
+                    doc.metadata["retrieval_method"] = "vector"
+                    vector_narratives.append(doc)
+            except Exception as e:
+                print(f"[WARN] Vector narrative search with score failed: {e}. Falling back to standard search.")
+                try:
+                    vector_narratives = self.db.similarity_search_by_vector(
+                        query_emb, k=self.k_narrative, filter={"type": "narrative"}
+                    )
+                    for doc in vector_narratives:
+                        doc.metadata["score"] = 1.0
+                        doc.metadata["retrieval_method"] = "vector"
+                except Exception as ex:
+                    print(f"[ERROR] Vector narrative search by vector failed: {ex}")
+        else:
+            print("[WARN] Skipping vector narrative search because embedding failed.")
         
         bm25_narratives = []
         if self.bm25_retriever:
@@ -607,14 +640,9 @@ class CombinedTypeRetriever(BaseRetriever):
 
 def get_retriever():
     """Build the retrieval pipeline using the selected embedding model and ChromaDB."""
-    if EMBEDDING_MODE == "gemini":
-        print("Loading Google Gemini Embeddings (models/gemini-embedding-2) with cache...")
-        embeddings = CachedGoogleGenerativeAIEmbeddings()
-    else:
-        print("Loading Local HuggingFace Embeddings (all-MiniLM-L6-v2)...")
-        from langchain_huggingface import HuggingFaceEmbeddings
-        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-        
+    from llm_router import get_embeddings
+    embeddings = get_embeddings()
+    
     print(f"Loading ChromaDB Vector Store from {CHROMA_PATH}...")
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
     
@@ -628,9 +656,8 @@ def get_retriever():
 
 
 def get_llm():
-    if "GOOGLE_API_KEY" not in os.environ:
-        raise ValueError("Please set the GOOGLE_API_KEY environment variable to use the LLM.")
-    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
+    from llm_router import get_llm as router_get_llm
+    return router_get_llm(temperature=0.0)
 
 
 # PEA architecture prompt
@@ -717,6 +744,11 @@ def init_rag():
         _chain = prompt | _llm | StrOutputParser()
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10), reraise=True)
+def _invoke_with_retry(chain_or_llm, input_data):
+    return chain_or_llm.invoke(input_data)
+
+
 def _expand_clinical_query(query: str) -> str:
     """
     Uses Gemini to expand medical abbreviations, shorthand, and acronyms in the query.
@@ -724,8 +756,9 @@ def _expand_clinical_query(query: str) -> str:
     highly robust for real-world clinician inputs.
     """
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0)
+        global _llm
+        if _llm is None:
+            _llm = get_llm()
         prompt = (
             "You are a medical vocabulary expansion agent.\n"
             "Analyze the following clinical query and expand any shorthand, abbreviations, or acronyms "
@@ -736,7 +769,7 @@ def _expand_clinical_query(query: str) -> str:
             f"Clinical Query: {query}\n"
             "Expanded Search Query:"
         )
-        res = llm.invoke(prompt)
+        res = _invoke_with_retry(_llm, prompt)
         expanded = res.content.strip()
         return expanded if expanded else query
     except Exception as e:
@@ -745,16 +778,6 @@ def _expand_clinical_query(query: str) -> str:
 
 
 # ── RAG Input Sanitization and Completeness (Abstention Gate) ──
-
-_INJECTION_PATTERNS = [
-    re.compile(r"ignore\s+(previous|all|prior|above)\s+instructions", re.IGNORECASE),
-    re.compile(r"disregard\s+(your|all|the)\s+(system|previous|prior)", re.IGNORECASE),
-    re.compile(r"you\s+are\s+now", re.IGNORECASE),
-    re.compile(r"new\s+instruction", re.IGNORECASE),
-    re.compile(r"forget\s+(everything|all|your\s+instructions)", re.IGNORECASE),
-    re.compile(r"act\s+as\s+(a\s+|an\s+)?(different|new|unrestricted)", re.IGNORECASE),
-    re.compile(r"<\s*(script|iframe|object|embed)", re.IGNORECASE),
-]
 
 def evaluate_input_completeness(clinical_text: str, fhir_bundle: dict = None) -> tuple[bool, str]:
     """
@@ -887,7 +910,7 @@ def query_acr_guidelines(clinical_scenario: str, fhir_bundle: dict = None) -> di
     docs = _retriever.invoke(expanded_scenario)
     context = format_docs(docs)
     
-    response = _chain.invoke({"context": context, "question": sanitized_scenario})
+    response = _invoke_with_retry(_chain, {"context": context, "question": sanitized_scenario})
     
     # Compute confidence score as the average similarity score of the top-3 retrieved docs
     scores = [doc.metadata.get("score", 1.0) for doc in docs[:3]]
