@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
@@ -241,6 +241,13 @@ async def get_index():
             return HTMLResponse(content=f.read(), status_code=200)
     return HTMLResponse(content="<h1>Frontend index.html not found</h1>", status_code=404)
 
+@app.get("/apple-touch-icon.png")
+async def get_apple_touch_icon():
+    icon_path = os.path.join(os.path.dirname(__file__), "apple-touch-icon.png")
+    if os.path.exists(icon_path):
+        return FileResponse(icon_path)
+    return HTMLResponse(content="Icon not found", status_code=404)
+
 
 @app.get("/manifest.json")
 async def get_manifest():
@@ -253,6 +260,11 @@ async def get_manifest():
         "background_color": "#f8fafc",
         "theme_color": "#0f172a",
         "icons": [
+            {
+                "src": "/apple-touch-icon.png",
+                "sizes": "180x180",
+                "type": "image/png"
+            },
             {
                 "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>",
                 "sizes": "192x192 512x512",
