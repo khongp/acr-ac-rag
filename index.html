@@ -1459,6 +1459,148 @@
             outline: 2px solid var(--color-info);
             outline-offset: 2px;
         }
+
+        /* =========================================
+           UX Enhancement Styles
+           ========================================= */
+
+        /* Welcome Banner */
+        .welcome-banner {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.06), rgba(129, 140, 248, 0.06));
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 5px;
+            animation: fadeIn 0.5s ease;
+        }
+        .welcome-banner-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+        .welcome-banner-content { flex: 1; }
+        .welcome-banner-content h3 {
+            font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;
+        }
+        .welcome-banner-content p {
+            font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0;
+        }
+        .welcome-banner-content p strong { color: var(--color-info); }
+        .welcome-banner-close {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
+            transition: color 0.2s; flex-shrink: 0;
+        }
+        .welcome-banner-close:hover { color: var(--text-main); }
+
+        /* Scenario Helper Row */
+        .scenario-helper-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .scenario-helper {
+            font-size: 12px; color: var(--text-muted); line-height: 1.4;
+        }
+        .btn-clear-scenario {
+            background: none; border: 1px solid var(--border-color); color: var(--text-muted);
+            padding: 3px 10px; border-radius: var(--radius-md); font-size: 11px;
+            font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
+            white-space: nowrap;
+        }
+        .btn-clear-scenario:hover { border-color: var(--color-danger); color: var(--color-danger); }
+
+        /* Info Tooltip */
+        .info-tooltip-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: rgba(56, 189, 248, 0.15); color: var(--color-info);
+            font-size: 10px; font-weight: 700; font-style: normal;
+            cursor: help; margin-left: 6px; position: relative;
+            vertical-align: middle; flex-shrink: 0;
+        }
+        .info-tooltip-icon .tooltip-text {
+            visibility: hidden; opacity: 0; position: absolute;
+            bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+            background: var(--bg-surface); color: var(--text-main);
+            padding: 10px 14px; border-radius: var(--radius-md);
+            font-size: 12px; font-weight: 400; white-space: normal;
+            width: 260px; text-align: left;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            border: 1px solid var(--border-color); z-index: 200;
+            transition: opacity 0.2s; line-height: 1.4; pointer-events: none;
+        }
+        .info-tooltip-icon:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+        /* Patient Simulator Collapsible */
+        .patient-fields-container {
+            display: none; flex-direction: column; gap: 15px;
+            padding-top: 15px; border-top: 1px solid var(--border-color);
+            margin-top: 12px; animation: fadeIn 0.3s ease;
+        }
+        .patient-fields-container.expanded { display: flex; }
+        .safety-toggle-row {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 14px; background: var(--bg-card);
+            border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            cursor: pointer; transition: var(--transition-smooth);
+        }
+        .safety-toggle-row:hover {
+            border-color: var(--color-info); background: rgba(56, 189, 248, 0.04);
+        }
+        .safety-toggle-row input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; }
+        .safety-toggle-info { display: flex; flex-direction: column; gap: 2px; }
+        .safety-toggle-label {
+            font-size: 13.5px; font-weight: 600; color: var(--text-main); cursor: pointer;
+        }
+        .safety-toggle-hint { font-size: 11.5px; color: var(--text-muted); line-height: 1.3; }
+
+        /* Advanced View Toggle */
+        .advanced-toggle-container {
+            display: flex; align-items: center; justify-content: flex-end;
+            gap: 8px; margin-bottom: 8px;
+        }
+        .advanced-toggle-label {
+            font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            cursor: pointer; user-select: none;
+        }
+        .toggle-switch {
+            position: relative; width: 36px; height: 20px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 10px; cursor: pointer;
+            transition: background 0.3s, border-color 0.3s; flex-shrink: 0;
+        }
+        .toggle-switch.active { background: var(--color-info); border-color: var(--color-info); }
+        .toggle-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 14px; height: 14px; background: var(--text-muted);
+            border-radius: 50%; transition: transform 0.3s, background 0.3s;
+        }
+        .toggle-switch.active::after { transform: translateX(16px); background: white; }
+
+        /* Tab Description */
+        .tab-description {
+            font-size: 12.5px; color: var(--text-muted);
+            padding: 6px 6px 0 6px; min-height: 18px;
+        }
+
+        /* Advanced Tab Hiding */
+        .tab-btn.advanced-tab { display: none; }
+        .tab-btn.advanced-tab.visible { display: flex; }
+
+        /* Co-Pilot CTA */
+        .copilot-cta-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.06), rgba(129, 140, 248, 0.05));
+            border: 1px solid rgba(56, 189, 248, 0.2); color: var(--color-info);
+            padding: 10px 18px; border-radius: var(--radius-md);
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .copilot-cta-btn:hover {
+            background: rgba(56, 189, 248, 0.1); border-color: var(--color-info);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -1484,6 +1626,16 @@
             <div style="font-weight: 600; font-size: 13.5px;">
                 Connection Error: Cannot communicate with the clinical backend. Reconnecting...
             </div>
+        </div>
+
+        <!-- Welcome Banner -->
+        <div id="welcome-banner" class="welcome-banner" style="display: none;">
+            <div class="welcome-banner-icon">👋</div>
+            <div class="welcome-banner-content">
+                <h3>Welcome to ACR-AC RAG Clinical Hub</h3>
+                <p>This portal matches patient presentations directly with the <strong>ACR Appropriateness Criteria®</strong>. Type a clinical scenario to extract age, gender, and comorbidities, then click <strong>Run CDS Engine</strong> to retrieve appropriateness ratings and draft a local protocol. Collapse the patient simulator for a "type-and-go" workflow, or toggle Advanced View for RAG logs, FHIR resources, and CDS Hooks responses.</p>
+            </div>
+            <button class="welcome-banner-close" onclick="dismissWelcomeBanner()" aria-label="Dismiss welcome banner">&times;</button>
         </div>
         
         <div class="info-banner">
@@ -1531,11 +1683,20 @@
 
             <div class="sidebar-section">
                 <div class="section-title">Clinical Scenario</div>
+                <div class="scenario-helper-row">
+                    <div class="scenario-helper">Demographics &amp; symptoms typed here are auto-extracted.</div>
+                    <button class="btn-clear-scenario" onclick="clearScenario()">Clear Input</button>
+                </div>
                 <div class="form-group">
                     <textarea id="scenario-input" class="form-control" placeholder="Enter clinical presentation (e.g., '69 yo female low back pain with suspected cauda equina syndrome...')"></textarea>
                 </div>
                 <div class="form-group" style="margin-top: 10px;">
-                    <label for="proposed-order">EHR Proposed Order</label>
+                    <label for="proposed-order" style="display: flex; align-items: center;">
+                        EHR Proposed Order
+                        <span class="info-tooltip-icon">i
+                            <span class="tooltip-text">Simulates the active order entry in the EHR. Used to evaluate whether the requested scan is appropriate, or if a different modality is recommended.</span>
+                        </span>
+                    </label>
                     <select id="proposed-order" class="form-control">
                         <option value="CT Lumbar Spine">CT Lumbar Spine</option>
                         <option value="MRI Lumbar Spine without contrast">MRI Lumbar Spine without contrast</option>
@@ -1551,91 +1712,96 @@
             <div class="sidebar-section">
                 <div class="section-title">Patient Context Simulator</div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="patient-age">Age</label>
-                        <input type="number" id="patient-age" class="form-control" value="69" min="0" max="120" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="patient-gender">Gender</label>
-                        <select id="patient-gender" class="form-control">
-                            <option value="female">Female</option>
-                            <option value="male">Male</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="patient-egfr">eGFR (mL/min/1.73m²)</label>
-                        <input type="number" id="patient-egfr" class="form-control" value="62" min="0" max="250" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="patient-weight">Weight (kg)</label>
-                        <input type="number" id="patient-weight" class="form-control" value="70" min="1" max="500" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="patient-allergy">Allergies</label>
-                        <select id="patient-allergy" class="form-control">
-                            <option value="none">No Contrast Allergies</option>
-                            <option value="Omnipaque">Omnipaque (Hives)</option>
-                            <option value="Visipaque">Visipaque (Severe)</option>
-                            <option value="Gadolinium">Gadolinium Agent</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="patient-meds">Anticoagulants</label>
-                        <select id="patient-meds" class="form-control">
-                            <option value="none">None</option>
-                            <option value="Eliquis">Eliquis</option>
-                            <option value="Warfarin">Warfarin</option>
-                            <option value="Heparin">Heparin</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="patient-preg">Pregnancy Risk</label>
-                        <select id="patient-preg" class="form-control">
-                            <option value="no">Not Pregnant / N/A</option>
-                            <option value="yes">Confirmed Pregnant</option>
-                            <option value="pending">Pregnancy Test Pending</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="patient-recentscans">Recent CT Scan</label>
-                        <select id="patient-recentscans" class="form-control">
-                            <option value="none">None</option>
-                            <option value="ct-24">CT Scan &lt; 24h ago</option>
-                            <option value="ct-48">CT Scan &lt; 48h ago</option>
-                            <option value="ct-72">CT Scan &lt; 72h ago</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-group" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                    <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 2px;">MRI Safety Pre-Screening</label>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
-                            <input type="checkbox" id="patient-pacemaker" style="width: 15px; height: 15px; cursor: pointer;"> Pacemaker
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
-                            <input type="checkbox" id="patient-metal" style="width: 15px; height: 15px; cursor: pointer;"> Metal Implant
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
-                            <input type="checkbox" id="patient-claustro" style="width: 15px; height: 15px; cursor: pointer;"> Claustrophobia
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <div class="safety-toggle-row" id="safety-toggle-container">
                     <input type="checkbox" id="override-patient-data" style="width: 16px; height: 16px; cursor: pointer;">
-                    <label for="override-patient-data" style="cursor: pointer; margin-bottom: 0; font-size: 13px; font-weight: 500; color: var(--text-muted);">Override patient parameters (Manual Simulator)</label>
+                    <div class="safety-toggle-info">
+                        <span class="safety-toggle-label">Include Patient Safety Context</span>
+                        <span class="safety-toggle-hint">Manually customize patient demographics, eGFR, and MRI screening flags.</span>
+                    </div>
+                </div>
+
+                <div id="patient-fields-container" class="patient-fields-container">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient-age">Age</label>
+                            <input type="number" id="patient-age" class="form-control" value="69" min="0" max="120" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-gender">Gender</label>
+                            <select id="patient-gender" class="form-control">
+                                <option value="female">Female</option>
+                                <option value="male">Male</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient-egfr">eGFR (mL/min/1.73m²)</label>
+                            <input type="number" id="patient-egfr" class="form-control" value="62" min="0" max="250" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-weight">Weight (kg)</label>
+                            <input type="number" id="patient-weight" class="form-control" value="70" min="1" max="500" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient-allergy">Allergies</label>
+                            <select id="patient-allergy" class="form-control">
+                                <option value="none">No Contrast Allergies</option>
+                                <option value="Omnipaque">Omnipaque (Hives)</option>
+                                <option value="Visipaque">Visipaque (Severe)</option>
+                                <option value="Gadolinium">Gadolinium Agent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-meds">Anticoagulants</label>
+                            <select id="patient-meds" class="form-control">
+                                <option value="none">None</option>
+                                <option value="Eliquis">Eliquis</option>
+                                <option value="Warfarin">Warfarin</option>
+                                <option value="Heparin">Heparin</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient-preg">Pregnancy Risk</label>
+                            <select id="patient-preg" class="form-control">
+                                <option value="no">Not Pregnant / N/A</option>
+                                <option value="yes">Confirmed Pregnant</option>
+                                <option value="pending">Pregnancy Test Pending</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-recentscans">Recent CT Scan</label>
+                            <select id="patient-recentscans" class="form-control">
+                                <option value="none">None</option>
+                                <option value="ct-24">CT Scan &lt; 24h ago</option>
+                                <option value="ct-48">CT Scan &lt; 48h ago</option>
+                                <option value="ct-72">CT Scan &lt; 72h ago</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 5px; display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 2px;">MRI Safety Pre-Screening</label>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                <input type="checkbox" id="patient-pacemaker" style="width: 15px; height: 15px; cursor: pointer;"> Pacemaker
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                <input type="checkbox" id="patient-metal" style="width: 15px; height: 15px; cursor: pointer;"> Metal Implant
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                <input type="checkbox" id="patient-claustro" style="width: 15px; height: 15px; cursor: pointer;"> Claustrophobia
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1658,21 +1824,28 @@
         <!-- Main Display Panel Area -->
         <div class="workspace">
             
+            <div class="advanced-toggle-container">
+                <span class="advanced-toggle-label" onclick="toggleAdvancedView()">Advanced Developer View</span>
+                <div id="advanced-toggle-switch" class="toggle-switch" onclick="toggleAdvancedView()"></div>
+            </div>
+
             <div class="tab-bar" role="tablist">
                 <button class="tab-btn active" id="tab-guidelines" role="tab" aria-selected="true" aria-controls="panel-guidelines" onclick="switchTab('guidelines')">ACR Guidelines</button>
                 <button class="tab-btn" id="tab-safety" role="tab" aria-selected="false" aria-controls="panel-safety" onclick="switchTab('safety')">Safety Alerts</button>
                 <button class="tab-btn" id="tab-protocol" role="tab" aria-selected="false" aria-controls="panel-protocol" onclick="switchTab('protocol')">Draft Protocol</button>
-                <button class="tab-btn" id="tab-fhir" role="tab" aria-selected="false" aria-controls="panel-fhir" onclick="switchTab('fhir')">FHIR Bundle</button>
-                <button class="tab-btn" id="tab-cdshook" role="tab" aria-selected="false" aria-controls="panel-cdshook" onclick="switchTab('cdshook')">CDS Hooks Simulator</button>
-                <button class="tab-btn" id="tab-diagnostics" role="tab" aria-selected="false" aria-controls="panel-diagnostics" onclick="switchTab('diagnostics')">RAG Diagnostics</button>
+                <button class="tab-btn advanced-tab" id="tab-fhir" role="tab" aria-selected="false" aria-controls="panel-fhir" onclick="switchTab('fhir')">FHIR Bundle</button>
+                <button class="tab-btn advanced-tab" id="tab-cdshook" role="tab" aria-selected="false" aria-controls="panel-cdshook" onclick="switchTab('cdshook')">CDS Hooks Simulator</button>
+                <button class="tab-btn advanced-tab" id="tab-diagnostics" role="tab" aria-selected="false" aria-controls="panel-diagnostics" onclick="switchTab('diagnostics')">RAG Diagnostics</button>
             </div>
+            
+            <div id="tab-description" class="tab-description"></div>
 
             <!-- Placeholder State -->
             <div id="placeholder" class="panel active">
                 <div class="placeholder-state">
-                    <div style="font-size: 28px; font-weight: 300; margin-bottom: 15px; color: var(--border-color); letter-spacing: 2px;">ACR-AC</div>
-                    <h2>Awaiting Clinical Inquiry</h2>
-                    <p style="max-width: 450px; margin-top: 10px;">Select a clinical preset or type a scenario in the left panel, configure patient parameters, and run the CDS engine to query ACR criteria.</p>
+                    <div style="font-size: 32px; font-weight: 300; margin-bottom: 15px; color: var(--color-info); letter-spacing: 3px;">ACR-AC CDS</div>
+                    <h2>Awaiting Clinical Scenario</h2>
+                    <p style="max-width: 500px; margin-top: 12px; line-height: 1.6;">Welcome to the clinical decision support dashboard! Click one of the <strong>Presets</strong> above to load a test scenario, or type a custom scenario. Demographics (age, gender) and comorbidities (contrast allergy, implants) will be extracted automatically.</p>
                 </div>
             </div>
 
@@ -1721,6 +1894,16 @@
                 <div class="btn-action-container" style="display: flex; gap: 12px; margin-top: 15px;">
                     <button class="btn-action" onclick="copyText('recommendation-text-raw')">Copy Raw Summary</button>
                     <button class="btn-action" id="btn-override-recommendation" onclick="openOverrideModal()" style="border-color: var(--color-warning); color: var(--color-warning); font-weight: 600; display: none;">⚠️ Override Recommendation</button>
+                </div>
+                
+                <div style="margin: 25px 0; padding: 16px; background: rgba(56, 189, 248, 0.05); border: 1px dashed rgba(56, 189, 248, 0.2); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                    <div style="font-size: 13.5px; color: var(--text-muted); line-height: 1.4;">
+                        <strong>Have questions about these clinical recommendations?</strong> Ask the Attending Co-pilot for explanations, literature citations, or alternative pathways.
+                    </div>
+                    <button class="copilot-cta-btn" onclick="openCopilotDrawer()">
+                        <span>Ask Attending Co-pilot</span>
+                        <span style="font-size: 14px;">💬</span>
+                    </button>
                 </div>
                 
                 <div id="overrides-history-section" style="margin-top: 35px; border-top: 1px dashed var(--border-color); padding-top: 25px;">
@@ -2136,6 +2319,137 @@
         // Initial health check on page load
         window.addEventListener('load', checkBackendHealth);
 
+        // ==========================================
+        // UX Enhancement Helper Functions & Constants
+        // ==========================================
+        function dismissWelcomeBanner() {
+            document.getElementById('welcome-banner').style.display = 'none';
+            localStorage.setItem('welcomeBannerDismissed', 'true');
+        }
+
+        function initWelcomeBanner() {
+            if (localStorage.getItem('welcomeBannerDismissed') !== 'true') {
+                document.getElementById('welcome-banner').style.display = 'flex';
+            }
+        }
+
+        function clearScenario() {
+            document.getElementById('scenario-input').value = '';
+            document.getElementById('override-patient-data').checked = false;
+            togglePatientFields(false);
+            latestCDSResult = null;
+            
+            // Clear inspect views
+            document.getElementById('fhir-json-block').textContent = "No bundle generated yet.";
+            document.getElementById('cds-json-request').textContent = "No payload generated. Run CDS Engine first.";
+            document.getElementById('cds-rendered-cards').innerHTML = `
+                <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
+                    Run CDS Engine to trigger simulation and render EHR cards.
+                </div>
+            `;
+            document.getElementById('diag-raw-query').textContent = "N/A";
+            document.getElementById('diag-expanded-query').textContent = "N/A";
+            document.getElementById('diag-retrieved-docs-container').innerHTML = `
+                <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
+                    Run CDS Engine to display RAG matching diagnostics.
+                </div>
+            `;
+            
+            switchTab('guidelines');
+            showToast("Clinical scenario cleared.", "info");
+        }
+
+        function togglePatientFields(show) {
+            const container = document.getElementById('patient-fields-container');
+            const checkbox = document.getElementById('override-patient-data');
+            checkbox.checked = show;
+            
+            if (show) {
+                container.classList.add('expanded');
+                document.getElementById('patient-age').setAttribute('required', 'required');
+                document.getElementById('patient-egfr').setAttribute('required', 'required');
+                document.getElementById('patient-weight').setAttribute('required', 'required');
+            } else {
+                container.classList.remove('expanded');
+                document.getElementById('patient-age').removeAttribute('required');
+                document.getElementById('patient-egfr').removeAttribute('required');
+                document.getElementById('patient-weight').removeAttribute('required');
+            }
+        }
+
+        function toggleAdvancedView() {
+            const switchEl = document.getElementById('advanced-toggle-switch');
+            const isNowActive = !switchEl.classList.contains('active');
+            
+            if (isNowActive) {
+                switchEl.classList.add('active');
+                showToast("Advanced Developer View enabled.", "success");
+            } else {
+                switchEl.classList.remove('active');
+                showToast("Advanced Developer View disabled.", "info");
+            }
+            
+            // Update tab visibility
+            document.querySelectorAll('.tab-btn.advanced-tab').forEach(tab => {
+                if (isNowActive) {
+                    tab.classList.add('visible');
+                } else {
+                    tab.classList.remove('visible');
+                }
+            });
+            
+            // Save to localStorage
+            localStorage.setItem('advancedViewActive', isNowActive ? 'true' : 'false');
+            
+            // Fallback active tab if needed
+            if (!isNowActive && ['fhir', 'cdshook', 'diagnostics'].includes(currentActiveTab)) {
+                switchTab('guidelines');
+            }
+        }
+
+        function initAdvancedView() {
+            const switchEl = document.getElementById('advanced-toggle-switch');
+            const wasActive = localStorage.getItem('advancedViewActive') === 'true';
+            if (wasActive) {
+                switchEl.classList.add('active');
+                document.querySelectorAll('.tab-btn.advanced-tab').forEach(tab => {
+                    tab.classList.add('visible');
+                });
+            } else {
+                switchEl.classList.remove('active');
+                document.querySelectorAll('.tab-btn.advanced-tab').forEach(tab => {
+                    tab.classList.remove('visible');
+                });
+            }
+        }
+
+        const TAB_DESCRIPTIONS = {
+            guidelines: "ACR Appropriateness Criteria modality suitability rankings and clinical reasoning.",
+            safety: "Patient safety warnings, contraindications, and MRI pre-screening checks.",
+            protocol: "Draft imaging protocol mapped from appropriateness recommendations.",
+            fhir: "Developer View: HL7 FHIR R4 Bundle payload generated for EHR interoperability.",
+            cdshook: "Developer View: CDS Hooks simulation request payload and rendered card responses.",
+            diagnostics: "Developer View: Hybrid search scores, query expansion terms, and matching weights."
+        };
+
+        function updateTabDescription(tabId) {
+            const descEl = document.getElementById('tab-description');
+            if (descEl) {
+                descEl.textContent = TAB_DESCRIPTIONS[tabId] || "";
+            }
+        }
+
+        function openCopilotDrawer() {
+            if (!copilotOpen) {
+                toggleCopilot();
+            }
+        }
+
+        function acceptCDSProposal() {
+            document.getElementById('proposed-order').value = "MRI Lumbar Spine without contrast";
+            showToast("Proposed order updated to MRI Lumbar Spine without contrast based on CDS Hook guidance!", "success");
+        }
+
         function applyPreset(num) {
             const data = PRESETS[num];
             document.getElementById('scenario-input').value = data.scenario;
@@ -2155,8 +2469,8 @@
                 document.getElementById('proposed-order').value = data.proposedOrder;
             }
             
-            // Auto check override since presets depend on sidebar values
-            document.getElementById('override-patient-data').checked = true;
+            // Expand simulator fields since presets manually configure patient safety context
+            togglePatientFields(true);
         }
 
         function switchTab(tabId) {
@@ -2165,7 +2479,8 @@
             
             // Toggle active classes on tab buttons
             document.querySelectorAll('.tab-bar .tab-btn').forEach(btn => {
-                const isSelected = btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tabId}'`);
+                // Check if button ID ends with tabId
+                const isSelected = btn.id === `tab-${tabId}`;
                 if (isSelected) {
                     btn.classList.add('active');
                     btn.setAttribute('aria-selected', 'true');
@@ -2195,6 +2510,9 @@
                     placeholder.setAttribute('aria-hidden', 'false');
                 }
             }
+            
+            // Update tab descriptions
+            updateTabDescription(tabId);
         }
 
         function updateSidebarFromFHIR(bundle) {
@@ -3791,10 +4109,172 @@
             container.innerHTML = diagHtml.join('');
         }
 
+        // ==========================================
+        // First-Visit Mock Data & Initializers
+        // ==========================================
+        const MOCK_PRESET_1_RESULT = {
+            status: "success",
+            extracted_scenario: "69-year-old female with acute worsening low back pain and saddle anesthesia. Suspected cauda equina syndrome.",
+            acr_recommendation: "### Plan:\nPerform urgent MRI of the lumbar spine without contrast to evaluate for acute cauda equina compression.\n\n### Estimate:\nMRI Lumbar Spine without contrast is Usually Appropriate (Rating: 9) and is the diagnostic gold standard for suspected cauda equina syndrome.",
+            acr_sources: [
+                {
+                    metadata: {
+                        type: "variant_table",
+                        source: "ACR_Appropriateness_Criteria_Low_Back_Pain.pdf",
+                        score: 0.985,
+                        retrieval_method: "vector"
+                    },
+                    content: "Procedure: MRI Lumbar Spine without contrast\nAppropriateness Category: Usually Appropriate\nAdult Radiation Dose (RRL): 0 mSv"
+                },
+                {
+                    metadata: {
+                        type: "variant_table",
+                        source: "ACR_Appropriateness_Criteria_Low_Back_Pain.pdf",
+                        score: 0.812,
+                        retrieval_method: "vector"
+                    },
+                    content: "Procedure: CT Lumbar Spine without contrast\nAppropriateness Category: May Be Appropriate\nAdult Radiation Dose (RRL): 1-10 mSv"
+                }
+            ],
+            draft_protocol: {
+                protocol_name: "MRI Spine Lumbar Non-Contrast (Emergency)",
+                mapping_method: "fuzzy",
+                confidence_score: 0.95,
+                protocol_details: {
+                    contrast_type: "none",
+                    contrast_agent: "N/A",
+                    contrast_volume_ml: null,
+                    contrast_rate_ml_s: null,
+                    phases: "sagittal T1, sagittal T2, axial T1, axial T2",
+                    oral_prep: "None",
+                    slice_thickness_mm: 3.0,
+                    reconstruction: "sagittal, axial 3mm",
+                    special_instructions: "Fast track emergency queue. Alert on-call radiologist immediately upon scan completion."
+                },
+                protocol_steps: [
+                    { step_order: 1, sequence_name: "3-Plane Localizer", timing_description: "Fast scout" },
+                    { step_order: 2, sequence_name: "Sagittal T2 FSE", timing_description: "Spinal canal screening" },
+                    { step_order: 3, sequence_name: "Sagittal T1 FSE", timing_description: "Vertebral bone marrow" },
+                    { step_order: 4, sequence_name: "Axial T2 FSE (L3-S1)", timing_description: "Direct compression check" },
+                    { step_order: 5, sequence_name: "Axial T1 FSE (L3-S1)", timing_description: "Disc and root mapping" }
+                ],
+                safety_profile: {
+                    overall_status: "clear",
+                    safety_flags: [],
+                    med_holds: [],
+                    lab_checks: []
+                }
+            },
+            fhir_bundle: {
+                resourceType: "Bundle",
+                type: "collection",
+                entry: [
+                    {
+                        resource: {
+                            resourceType: "Patient",
+                            id: "patient-simulated",
+                            gender: "female",
+                            birthDate: "1957-01-01"
+                        }
+                    },
+                    {
+                        resource: {
+                            resourceType: "Condition",
+                            id: "condition-simulated",
+                            code: { text: "69 year old female presenting with acute worsening low back pain and saddle anesthesia. Suspected cauda equina syndrome." },
+                            clinicalStatus: {
+                                coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: "active" }]
+                            }
+                        }
+                    }
+                ]
+            },
+            raw_query: "69 year old female presenting with acute worsening low back pain and saddle anesthesia. Suspected cauda equina syndrome.",
+            expanded_query: "low back pain, cauda equina syndrome, saddle anesthesia, bowel bladder dysfunction, compression, disc herniation"
+        };
+
+        const MOCK_CDS_REQUEST_PAYLOAD = {
+            hook: "order-select",
+            hookInstance: "d7f6b9c0-ea23-4214-8a4e-09a4eb482a4d",
+            fhirServer: "http://localhost:8000/fhir",
+            context: {
+                userId: "Practitioner/radiologist-101",
+                patientId: "patient-simulated",
+                selections: [
+                    "ServiceRequest/proposed-order-lumbar-ct"
+                ]
+            },
+            prefetch: {
+                patientToProcess: {
+                    resourceType: "Patient",
+                    id: "patient-simulated",
+                    gender: "female",
+                    birthDate: "1957-01-01"
+                }
+            }
+        };
+
+        function renderMockCDSCards() {
+            const container = document.getElementById('cds-rendered-cards');
+            container.innerHTML = `
+                <div class="cds-card info">
+                    <div class="cds-card-indicator info"></div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="cds-card-source">ACR Appropriateness Guidelines (CDS Service)</div>
+                        <div class="cds-card-summary">MRI Lumbar Spine Without Contrast Recommended</div>
+                        <div class="cds-card-detail">For low back pain with suspected cauda equina syndrome, MRI Lumbar Spine without contrast is Usually Appropriate (Rating: 9/9). CT is May Be Appropriate (Rating: 5/9) and should only be ordered if MRI is contraindicated.</div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="cds-action-btn primary" onclick="acceptCDSProposal()">Accept Proposed Order (MRI)</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         loadOverridesHistory();
 
         // Setup Accessibility Focus Trapping & Backdrop Clicks (Item 5)
         window.addEventListener('DOMContentLoaded', () => {
+            // Initialize elements based on saved states
+            initWelcomeBanner();
+            initAdvancedView();
+            updateTabDescription('guidelines');
+
+            // Wire up Patient Context Simulator checkbox toggle events
+            const safetyToggle = document.getElementById('safety-toggle-container');
+            const safetyCheckbox = document.getElementById('override-patient-data');
+            
+            if (safetyToggle && safetyCheckbox) {
+                safetyToggle.addEventListener('click', function(e) {
+                    if (e.target !== safetyCheckbox) {
+                        safetyCheckbox.checked = !safetyCheckbox.checked;
+                        togglePatientFields(safetyCheckbox.checked);
+                    }
+                });
+                safetyCheckbox.addEventListener('change', function(e) {
+                    togglePatientFields(this.checked);
+                });
+            }
+
+            // Auto-load Preset 1 mock data on first visit
+            const hasVisited = localStorage.getItem('firstVisitLoaded') === 'true';
+            if (!hasVisited) {
+                applyPreset(1);
+                latestCDSResult = MOCK_PRESET_1_RESULT;
+                renderGuidelinesPanel(MOCK_PRESET_1_RESULT);
+                renderSafetyPanel(MOCK_PRESET_1_RESULT);
+                renderProtocolPanel(MOCK_PRESET_1_RESULT);
+                renderFHIRPanel(MOCK_PRESET_1_RESULT);
+                renderDiagnosticsPanel(MOCK_PRESET_1_RESULT);
+                
+                document.getElementById('cds-json-request').textContent = JSON.stringify(MOCK_CDS_REQUEST_PAYLOAD, null, 4);
+                renderMockCDSCards();
+                
+                switchTab('guidelines');
+                
+                localStorage.setItem('firstVisitLoaded', 'true');
+            }
+
             const modal = document.getElementById('override-modal');
             if (modal) {
                 setupFocusTrap(modal, closeOverrideModal);

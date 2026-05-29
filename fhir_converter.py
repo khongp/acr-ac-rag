@@ -596,12 +596,81 @@ def enrich_bundle_with_ontology(bundle_data: dict) -> dict:
                     
     return bundle_data
 
+def clean_demographics_prefix(text: str) -> str:
+    """
+    Helper to strip age, gender, and 'presenting with' connectors from clinical text
+    to avoid repetitive text like '69-year-old female with 69 year old female presenting with RUQ pain'.
+    """
+    import re
+    t = text.strip()
+    
+    age_pattern = r"\b\d+\s*(?:yo|year-old|years-old|year\s+old|years\s+old|yr\s+old|y/o|y\.o\.|-year-old|-yo)\b"
+    gender_pattern = r"\b(?:female|male|man|woman|gentleman|lady|boy|girl|patient)(?:\s+patient)?\b"
+    demographics_pattern = rf"(?:(?:{age_pattern}\s*{gender_pattern})|(?:{gender_pattern}\s*{age_pattern})|{age_pattern}|{gender_pattern})"
+    connector_pattern = r"\b(?:presenting\s+with|presents\s+with|presentation\s+of|presenting|presents|status-post|status\s+post|with)\b"
+    
+    prefix_regex = re.compile(
+        rf"^[^\w]*(?:{demographics_pattern})\s*(?:{connector_pattern})?\s*",
+        re.IGNORECASE
+    )
+    
+    prefix_regex_fallback = re.compile(
+        rf"^[^\w]*(?:{demographics_pattern})[^\w]*",
+        re.IGNORECASE
+    )
+    
+    match = prefix_regex.match(t)
+    if match:
+        cleaned = t[match.end():].strip()
+        cleaned = cleaned.lstrip(":,;- ").strip()
+        if cleaned:
+            cleaned = cleaned[0].upper() + cleaned[1:]
+        return cleaned
+        
+    match = prefix_regex_fallback.match(t)
+    if match:
+        cleaned = t[match.end():].strip()
+        cleaned = cleaned.lstrip(":,;- ").strip()
+        if cleaned:
+            cleaned = cleaned[0].upper() + cleaned[1:]
+        return cleaned
+        
+    return text
+
+def extract_demographics_from_text(text: str):
+    """
+    Extract age and gender from clinical text if present.
+    Returns (age: int or None, gender: str or None).
+    """
+    import re
+    age = None
+    gender = None
+    
+    age_match = re.search(
+        r'\b(\d+)\s*(?:yo|year-old|years-old|year\s+old|years\s+old|yr\s+old|y/o|y\.o\.|-year-old|-yo)\b',
+        text, re.IGNORECASE
+    )
+    if age_match:
+        age = int(age_match.group(1))
+    
+    gender_match = re.search(r'\b(female|male)\b', text, re.IGNORECASE)
+    if gender_match:
+        gender = gender_match.group(1).lower()
+    
+    return age, gender
+
 def extract_scenario_from_bundle(bundle_dict: dict) -> str:
     """
     Helper function to convert a FHIR Bundle back into a text scenario for the RAG engine.
+    
+    Demographics priority: If the Condition text contains embedded age/gender
+    (e.g. '54 yo female with RUQ pain'), those are treated as the source of truth
+    and override the Patient resource demographics (which may be stale preset data).
     """
-    patient_info = "Unknown patient"
-    conditions = []
+    # Defaults from Patient resource
+    patient_age = None
+    patient_gender = ""
+    raw_conditions = []
     requests = []
     
     for entry in bundle_dict.get("entry", []):
@@ -609,9 +678,8 @@ def extract_scenario_from_bundle(bundle_dict: dict) -> str:
         rtype = resource.get("resourceType")
         
         if rtype == "Patient":
-            gender = resource.get("gender", "")
+            patient_gender = resource.get("gender", "")
             birth_date = resource.get("birthDate", "")
-            age = None
             if birth_date:
                 try:
                     if hasattr(birth_date, "year"):
@@ -619,25 +687,59 @@ def extract_scenario_from_bundle(bundle_dict: dict) -> str:
                     else:
                         birth_year = int(str(birth_date).split('-')[0])
                     from datetime import datetime
-                    age = datetime.now().year - birth_year
+                    patient_age = datetime.now().year - birth_year
                 except Exception:
                     pass
-            if age is not None:
-                patient_info = f"{age}-year-old {gender or 'patient'}"
-            elif gender:
-                patient_info = f"{gender} patient"
         elif rtype == "Condition":
             text = resource.get("code", {}).get("text", "")
             if text:
-                conditions.append(text)
+                raw_conditions.append(text)
         elif rtype == "ServiceRequest":
             code_val = resource.get("code", {})
             text = code_val.get("concept", {}).get("text", "") if "concept" in code_val else code_val.get("text", "")
             if text:
                 requests.append(text)
+    
+    # Check if any condition text has its own embedded demographics.
+    # If so, those are the source of truth (user typed them), and the Patient
+    # resource demographics may be stale preset sidebar data.
+    embedded_age = None
+    embedded_gender = None
+    for cond_text in raw_conditions:
+        ea, eg = extract_demographics_from_text(cond_text)
+        if ea is not None:
+            embedded_age = ea
+            if eg:
+                embedded_gender = eg
+            break  # use the first condition with demographics
+    
+    # Build patient_info: prefer embedded demographics over Patient resource
+    final_age = embedded_age if embedded_age is not None else patient_age
+    final_gender = embedded_gender or patient_gender or "patient"
+    
+    if final_age is not None:
+        patient_info = f"{final_age}-year-old {final_gender}"
+    elif final_gender and final_gender != "patient":
+        patient_info = f"{final_gender} patient"
+    else:
+        patient_info = "Unknown patient"
+    
+    # Clean demographics prefix from condition and request texts
+    cleaned_conditions = []
+    for c in raw_conditions:
+        cleaned = clean_demographics_prefix(c)
+        if cleaned:
+            cleaned_conditions.append(cleaned)
+    
+    cleaned_requests = []
+    for r in requests:
+        cleaned = clean_demographics_prefix(r)
+        if cleaned:
+            cleaned_requests.append(cleaned)
                 
-    scenario = f"{patient_info} with {', '.join(conditions)}."
-    if requests:
-        scenario += f" Requested: {', '.join(requests)}."
+    scenario = f"{patient_info} with {', '.join(cleaned_conditions)}."
+    if cleaned_requests:
+        scenario += f" Requested: {', '.join(cleaned_requests)}."
         
     return scenario
+
