@@ -248,6 +248,12 @@ async def get_apple_touch_icon():
         return FileResponse(icon_path)
     return HTMLResponse(content="Icon not found", status_code=404)
 
+@app.get("/logo.png")
+async def get_logo():
+    logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+    if os.path.exists(logo_path):
+        return FileResponse(logo_path)
+    return HTMLResponse(content="Logo not found", status_code=404)
 
 @app.get("/manifest.json")
 async def get_manifest():

@@ -14,7 +14,7 @@
     <meta property="og:title" content="ACR-AC RAG Clinical Decision Support Hub">
     <meta property="og:description" content="Intelligent Radiology Protocoling and Appropriateness Criteria lookup powered by RAG.">
     <meta property="og:type" content="website">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="icon" type="image/png" href="/logo.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <title>ACR Appropriateness Criteria - Clinical Decision Support Hub</title>
@@ -1607,9 +1607,12 @@
 <body>
 
     <header>
-        <div class="logo-section" onclick="window.location.reload()" title="Click to refresh page">
-            <h1>ACR-AC RAG Clinical Hub</h1>
-            <p>Appropriateness Criteria &amp; Intelligent Radiology Protocoling</p>
+        <div class="logo-section" onclick="window.location.reload()" title="Click to refresh page" style="display: flex; align-items: center; gap: 12px;">
+            <img src="/logo.png" alt="ACR logo" style="height: 38px; width: 38px; border-radius: var(--radius-md); object-fit: cover;">
+            <div>
+                <h1 style="margin: 0; line-height: 1.2;">ACR-AC RAG Clinical Hub</h1>
+                <p style="margin: 2px 0 0 0; line-height: 1.2;">Appropriateness Criteria &amp; Intelligent Radiology Protocoling</p>
+            </div>
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
             <div class="status-badge">
