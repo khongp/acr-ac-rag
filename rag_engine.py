@@ -82,14 +82,17 @@ def redact_phi(text: str) -> str:
     text = re.sub(mrn_pattern, "MRN: [REDACTED_MRN]", text, flags=re.IGNORECASE)
     
     # 5. Names: Common clinical patterns like "patient John Doe", "Mr. Smith"
+    # Note: We match case-sensitively for capitalized names [A-Z][a-z]+ to avoid matching
+    # clinical words (e.g. 'patient with chylothorax' or 'patient presents').
     name_patterns = [
-        (r"\bpatient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b", "patient [REDACTED_NAME]"),
-        (r"\b(?:mr|ms|mrs|dr)\.\s*([A-Z][a-z]+)\b", "[REDACTED_TITLE] [REDACTED_LASTNAME]"),
+        (r"\b[Pp]atient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b", "patient [REDACTED_NAME]"),
+        (r"\b(?:[Mm]r|[Mm]s|[Mm]rs|[Dd]r|[Mm]r[Ss]|[Dd]R)\.\s*([A-Z][a-z]+)\b", "[REDACTED_TITLE] [REDACTED_LASTNAME]"),
     ]
     for pattern, repl in name_patterns:
-        text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
+        text = re.sub(pattern, repl, text)
         
     return text
+
 
 
 def get_db_connection(db_path: str) -> sqlite3.Connection:
