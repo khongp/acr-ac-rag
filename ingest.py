@@ -132,8 +132,11 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
                         break
                     except Exception as e:
                         print(f"    API Error on batch (attempt {attempt + 1}/{max_retries}): {e}")
-                        if "429" in str(e) or "resourceexhausted" in str(e).lower() or "quota" in str(e).lower():
-                            print(f"    Rate limit hit. Sleeping {delay}s...")
+                        err_str = str(e).lower()
+                        # Handle transient issues like quota, 429 rate limits, 500/503/504 server errors, or timeouts
+                        is_transient = any(x in err_str for x in ["429", "500", "502", "503", "504", "resourceexhausted", "quota", "unavailable", "timeout", "connection"])
+                        if is_transient:
+                            print(f"    Transient error detected. Sleeping {delay}s...")
                             time.sleep(delay)
                             delay *= 2
                             attempt += 1

@@ -99,26 +99,52 @@ def init_review_queue_db():
         conn.close()
 
 
+rag_init_task = None
+
+async def _init_rag_bg():
+    global rag_initialized, rag_error
+    try:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, init_rag)
+        rag_initialized = True
+        init_review_queue_db()
+        logger.info("[READY] All RAG models loaded in background — server ready")
+    except Exception as e:
+        rag_error = str(e)
+        logger.critical(f"[CRITICAL STARTUP ERROR] RAG model initialization failed: {e}", exc_info=True)
+
+
+async def ensure_rag_ready():
+    global rag_init_task, rag_initialized, rag_error
+    if not rag_initialized:
+        if rag_init_task:
+            logger.info("RAG is initializing in background. Awaiting completion...")
+            await rag_init_task
+        else:
+            logger.info("Initializing RAG synchronously on demand...")
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, init_rag)
+            rag_initialized = True
+            init_review_queue_db()
+            
+    if rag_error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"RAG engine failed to initialize: {rag_error}"
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load ML models in a background thread during startup."""
-    global rag_initialized, rag_error
-    logger.info("[STARTUP] Pre-loading RAG models (embeddings, reranker, LLM)...")
+    """Start loading ML models in a background task during startup."""
+    global rag_init_task
+    logger.info("[STARTUP] Triggering background RAG model pre-loading...")
     
     # Diagnostics check on assets existence
     if not os.path.exists("chroma_db_gemini") and not os.path.exists("chroma_db_local"):
          logger.warning("[STARTUP WARNING] Vector database directory not found in current workspace. Ensure ingest.py has been run.")
          
-    try:
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, init_rag)
-        rag_initialized = True
-        init_review_queue_db()
-        logger.info("[READY] All models loaded — server ready for requests")
-    except Exception as e:
-        rag_error = str(e)
-        logger.critical(f"[CRITICAL STARTUP ERROR] RAG model initialization failed: {e}", exc_info=True)
-        
+    rag_init_task = asyncio.create_task(_init_rag_bg())
     yield
     # Shutdown: nothing to clean up
 
@@ -303,6 +329,7 @@ def _route_to_manual_review(scenario_text: str, confidence: float):
 async def analyze_scenario(request: Request, req: AnalyzeRequest):
     """Analyzes a clinical scenario with abstention gate, confidence routing, and DSN audit."""
     logger.info("Received request on /v1/analyze")
+    await ensure_rag_ready()
     if not req.text and not req.bundle:
         logger.warning("AnalyzeRequest missing both 'text' and 'bundle'")
         raise HTTPException(status_code=400, detail="Must provide either 'text' or 'bundle'.")
@@ -387,6 +414,7 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
       - Confidence score and evidence provenance
     """
     logger.info("Received request on /v1/protocol")
+    await ensure_rag_ready()
     if not req.text and not req.bundle:
         logger.warning("ProtocolRequest missing both 'text' and 'bundle'")
         raise HTTPException(status_code=400, detail="Must provide either 'text' or 'bundle'.")
@@ -676,6 +704,12 @@ class CoPilotChatRequest(BaseModel):
 async def copilot_chat(request: Request, req: CoPilotChatRequest):
     """Conversational Attending Radiology Co-Pilot endpoint."""
     logger.info("Received request on /v1/copilot/chat")
+    if os.getenv("DISABLE_COPILOT", "false").strip().lower() == "true":
+        return {
+            "status": "success",
+            "response": "The Attending Co-Pilot is currently deactivated to optimize token consumption during RAG engine testing."
+        }
+    await ensure_rag_ready()
     try:
         from copilot_engine import generate_copilot_response, CoPilotChatRequest as EngineRequest, ChatMessage
         
@@ -749,6 +783,7 @@ async def cds_hook(request: Request):
     Parses full EHR CDS Hook payload, runs RAG + Safety, and returns dynamic Cards.
     """
     logger.info("Received request on /v1/cds-hook")
+    await ensure_rag_ready()
     try:
         payload = await request.json()
     except Exception as e:

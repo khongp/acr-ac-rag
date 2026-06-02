@@ -259,6 +259,11 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     """
     from datetime import date
     
+    bypass = os.getenv("BYPASS_FHIR_LLM", "false").strip().lower() == "true"
+    if bypass:
+        print("[FHIR BYPASS] Using fast local regex fallback for FHIR bundle extraction.")
+        return fallback_text_to_fhir_bundle(clinical_scenario)
+    
     try:
         llm = get_extraction_llm()
         structured_llm = llm.with_structured_output(ClinicalExtraction)

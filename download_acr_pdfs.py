@@ -5,7 +5,21 @@ import time
 import logging
 import re
 
-def download_pdfs(output_dir="data/pdf_narratives", max_topic_id=2000):
+def get_pdf_text(filepath):
+    from pypdf import PdfReader
+    try:
+        reader = PdfReader(filepath)
+        text = ""
+        for page in reader.pages:
+            t = page.extract_text()
+            if t:
+                text += t + "\n"
+        return text.strip()
+    except Exception:
+        return ""
+
+def download_pdfs(output_dir="data/pdf_narratives", max_topic_id=2500):
+    import glob
     os.makedirs(output_dir, exist_ok=True)
     
     # Setup simple logging
@@ -13,6 +27,7 @@ def download_pdfs(output_dir="data/pdf_narratives", max_topic_id=2000):
     
     records_downloaded = 0
     consecutive_errors = 0
+    new_articles = []
     
     # We'll use a session to reuse connections and be slightly faster/kinder to the server
     session = requests.Session()
@@ -22,7 +37,7 @@ def download_pdfs(output_dir="data/pdf_narratives", max_topic_id=2000):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
     })
     
-    logging.info(f"Starting to download PDFs to {os.path.abspath(output_dir)}")
+    logging.info(f"Starting to scan and download PDFs to {os.path.abspath(output_dir)} (up to ID {max_topic_id})")
     
     for topic_id in range(1, max_topic_id + 1):
         # We can break if we hit a huge number of consecutive misses
@@ -59,13 +74,51 @@ def download_pdfs(output_dir="data/pdf_narratives", max_topic_id=2000):
             safe_title = re.sub(r'[\\/*?:"<>|]', '_', title)
             safe_title = re.sub(r'_+', '_', safe_title).strip('_ ')
             
-            filepath = os.path.join(output_dir, f"{safe_title}_{topic_id}.pdf")
+            target_filename = f"{safe_title}_{topic_id}.pdf"
+            filepath = os.path.join(output_dir, target_filename)
             
-            # Skip if already downloaded
-            if os.path.exists(filepath):
-                logging.info(f"Topic {topic_id}: Already downloaded ({safe_title})")
-                consecutive_errors = 0
-                continue
+            # Check if any file ending with _{topic_id}.pdf already exists to prevent duplicate titles
+            pattern = os.path.join(output_dir, f"*_{topic_id}.pdf")
+            existing_files = glob.glob(pattern)
+            
+            existing_file = None
+            if existing_files:
+                existing_file = existing_files[0]
+                existing_filename = os.path.basename(existing_file)
+                if existing_filename != target_filename:
+                    # Title has changed: delete old version to avoid duplicate files
+                    logging.info(f"Topic {topic_id}: Title updated from '{existing_filename}' to '{target_filename}'. Deleting old file.")
+                    try:
+                        os.remove(existing_file)
+                        existing_file = None
+                    except Exception as e:
+                        logging.error(f"Failed to delete duplicate/old file {existing_file}: {e}")
+            
+            # If the file already exists (same name and ID), verify if it has updates
+            if existing_file and os.path.exists(existing_file):
+                local_size = os.path.getsize(existing_file)
+                
+                # Check remote Content-Length with a fast HEAD request
+                remote_size = None
+                try:
+                    head_resp = session.head(pdf_url, timeout=10)
+                    if head_resp.status_code == 200:
+                        size_header = head_resp.headers.get('Content-Length')
+                        if size_header:
+                            remote_size = int(size_header)
+                except Exception as e:
+                    logging.debug(f"HEAD request failed for Topic {topic_id}: {e}")
+                    
+                if remote_size is not None:
+                    if local_size == remote_size:
+                        # Sizes match exactly; assume no content update and skip
+                        consecutive_errors = 0
+                        continue
+                    else:
+                        logging.info(f"Topic {topic_id}: Size mismatch detected (Local: {local_size} bytes, Remote: {remote_size} bytes). Fetching update.")
+                else:
+                    # Content-Length is missing or HEAD failed; fallback to check via downloading
+                    logging.info(f"Topic {topic_id}: Size header not found. Fetching to verify content.")
             
             # Fetch the actual PDF
             pdf_resp = session.get(pdf_url, stream=True, timeout=30)
@@ -80,25 +133,46 @@ def download_pdfs(output_dir="data/pdf_narratives", max_topic_id=2000):
                 consecutive_errors += 1
                 continue
             
-            # Write to disk
-            with open(filepath, 'wb') as f:
+            # Download stream to temporary file first (for checksum matching)
+            temp_filepath = filepath + ".tmp"
+            with open(temp_filepath, 'wb') as f:
                 for chunk in pdf_resp.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
             
-            logging.info(f"Downloaded Topic {topic_id}: {safe_title}")
-            records_downloaded += 1
-            consecutive_errors = 0
-            
-            # Polite delay after a successful download
-            time.sleep(1)
+            is_updated = True
+            if existing_file and os.path.exists(existing_file):
+                local_text = get_pdf_text(existing_file)
+                temp_text = get_pdf_text(temp_filepath)
+                if local_text and temp_text and local_text == temp_text:
+                    is_updated = False
+                    os.remove(temp_filepath)
+                    
+            if is_updated:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                os.rename(temp_filepath, filepath)
+                logging.info(f"Downloaded/Updated Topic {topic_id}: {safe_title}")
+                new_articles.append(f"Topic {topic_id}: {title} ({target_filename})")
+                records_downloaded += 1
+                consecutive_errors = 0
+                time.sleep(1) # Polite delay
+            else:
+                consecutive_errors = 0
             
         except Exception as e:
             logging.error(f"Topic {topic_id}: Error - {str(e)}")
             consecutive_errors += 1
             time.sleep(0.5)
-        
-    logging.info(f"Finished. Downloaded {records_downloaded} new PDFs.")
+            
+    logging.info(f"Finished. Downloaded {records_downloaded} new or updated PDFs.")
+    if new_articles:
+        logging.info("\n=== NEW OR UPDATED GUIDELINES FOUND ===")
+        for art in new_articles:
+            logging.info(f" - {art}")
+        logging.info("========================================\n")
+    else:
+        logging.info("\n=== NO NEW GUIDELINES DISCOVERED ===\n")
 
 if __name__ == "__main__":
     download_pdfs()
