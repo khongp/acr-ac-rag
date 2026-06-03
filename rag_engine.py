@@ -329,6 +329,32 @@ def _expand_abbreviations_locally(query: str) -> str:
 
 _cross_encoder = None
 
+
+def _is_therapeutic_query(query: str) -> bool:
+    """Classifies if a query is seeking treatment or interventional therapy."""
+    query_lower = query.lower()
+    treatment_keywords = {
+        "treat", "treatment", "therapy", "management", "manage", "how to treat", "how to manage", 
+        "fix", "intervention", "interventional", "embolization", "embolise", "ligation", 
+        "surgery", "surgical", "pleurodesis", "ir procedure", "ir management"
+    }
+    return any(kw in query_lower for kw in treatment_keywords)
+
+
+def _is_therapeutic_candidate(procedures: list) -> bool:
+    """Classifies if a candidate is therapeutic based on its procedures."""
+    therapeutic_keywords = {
+        "embolization", "embolisation", "ligation", "therapy", "modification", "pleurodesis", 
+        "thrombectomy", "recanalization", "ablation", "surgery", "surgical", "resection", "stenting",
+        "angioplasty", "bypass", "revascularization"
+    }
+    for proc in procedures:
+        proc_lower = proc.get("Procedure", "").lower()
+        if any(kw in proc_lower for kw in therapeutic_keywords):
+            return True
+    return False
+
+
 def get_cross_encoder():
     global _cross_encoder
     if _cross_encoder is None:
@@ -350,17 +376,35 @@ def init_procedures_db():
             variant_json TEXT
         )
     """)
-    # Check if table already has rows
-    cursor.execute("SELECT COUNT(*) FROM acr_procedures")
-    count = cursor.fetchone()[0]
+    # Check if table already has rows, and check if count matches JSON count of entries
+    json_path = "data/acr_variant_tables.json"
+    needs_population = False
+    data = []
     
-    if count == 0:
-        json_path = "data/acr_variant_tables.json"
+    try:
+        cursor.execute("SELECT COUNT(*) FROM acr_procedures")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            needs_population = True
+        else:
+            if os.path.exists(json_path):
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                json_variants_count = sum(len(topic.get("variantData", [])) for topic in data)
+                if count != json_variants_count:
+                    print(f"[INIT] Procedures database count mismatch (SQLite: {count}, JSON: {json_variants_count}). Rebuilding...")
+                    cursor.execute("DELETE FROM acr_procedures")
+                    needs_population = True
+    except Exception:
+        needs_population = True
+
+    if needs_population:
         if os.path.exists(json_path):
-            print(f"[INIT] Populating SQLite procedures database from {json_path}...")
-            with open(json_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+            if not data:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
             
+            print(f"[INIT] Populating SQLite procedures database from {json_path}...")
             insert_data = []
             for topic in data:
                 topic_name = topic.get("topicName", "").strip()
@@ -380,6 +424,12 @@ def init_procedures_db():
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_acr_procedures ON acr_procedures (topic_key, scenario_key)")
             conn.commit()
             print(f"[INIT] Populated {len(insert_data)} rows in SQLite procedures database.")
+            
+            # Reset cached topic keys/terms so they reload with the new database content
+            global _cached_topics, _cached_key_terms
+            _cached_topics = None
+            _cached_key_terms = None
+            
     conn.close()
 
 
@@ -673,11 +723,40 @@ class CombinedTypeRetriever(BaseRetriever):
             if unique_candidates:
                 try:
                     ce = get_cross_encoder()
-                    pairs = [(query, f"Topic: {tp}. Clinical Scenario: {sc}.") for tp, sc in unique_candidates]
+                    pairs = []
+                    query_is_therapeutic = _is_therapeutic_query(query)
+                    candidate_attributes = []
+                    
+                    for tp, sc in unique_candidates:
+                        procs = get_procedures_from_db(tp, sc)
+                        proc_names = [p.get("Procedure", "") for p in procs]
+                        proc_str = ", ".join(proc_names)
+                        
+                        # Enrich context with procedures
+                        text = f"Topic: {tp}. Clinical Scenario: {sc}. Procedures: {proc_str}."
+                        pairs.append((query, text))
+                        
+                        is_ther = _is_therapeutic_candidate(procs)
+                        candidate_attributes.append(is_ther)
+                        
                     scores = ce.predict(pairs)
-                    scored_candidates = sorted(zip(unique_candidates, scores), key=lambda x: x[1], reverse=True)
+                    
+                    # Apply clinical intent alignment boosting
+                    boosted_scores = []
+                    for idx, score in enumerate(scores):
+                        boost = 0.0
+                        is_ther = candidate_attributes[idx]
+                        if query_is_therapeutic:
+                            if is_ther:
+                                boost = 1.0  # Boost therapeutic candidates for therapeutic queries
+                        else:
+                            if not is_ther:
+                                boost = 1.0  # Boost diagnostic candidates for diagnostic queries
+                        boosted_scores.append(score + boost)
+                        
+                    scored_candidates = sorted(zip(unique_candidates, boosted_scores), key=lambda x: x[1], reverse=True)
                     unique_candidates = [cand for cand, score in scored_candidates]
-                    print(f"[LOCAL-RERANK] Scored and reranked {len(unique_candidates)} candidates using ms-marco-MiniLM-L-6-v2.")
+                    print(f"[LOCAL-RERANK] Scored and reranked {len(unique_candidates)} candidates using ms-marco-MiniLM-L-6-v2 with procedure enrichment & boosting.")
                 except Exception as e:
                     print(f"[WARN] Local Cross-Encoder reranking failed: {e}. Using default order.")
             best_candidates = unique_candidates[:MAX_CANDIDATES]
