@@ -14,7 +14,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
-def extract_tables(output_file="data/acr_variant_tables.json", start_topic_id=1, max_topic_id=2000):
+def extract_tables(output_file="data/acr_variant_tables.json", start_topic_id=1, max_topic_id=2500):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%H:%M:%S')
@@ -24,16 +24,38 @@ def extract_tables(output_file="data/acr_variant_tables.json", start_topic_id=1,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     })
     
+    # Load existing data to perform incremental scrape
+    existing_data = {}
+    if os.path.exists(output_file):
+        try:
+            with open(output_file, 'r', encoding='utf-8') as f:
+                raw = json.load(f)
+                existing_data = {t['topicId']: t for t in raw}
+            logging.info(f"Loaded {len(existing_data)} existing topics from {output_file}")
+        except Exception as e:
+            logging.warning(f"Failed to load existing json: {e}. Starting fresh.")
+
+    # The 39 updated guidelines that need to be re-scraped
+    updated_ids = {40, 205, 212, 220, 221, 224, 225, 233, 235, 236, 237, 240, 245, 251, 252, 257, 259, 265, 266, 273, 278, 280, 289, 290, 293, 310, 312, 319, 320, 321, 322, 323, 330, 333, 341, 350, 351, 353, 361, 396}
+    # Plus any new topics we found (like 355)
+    updated_ids.add(355)
+
     all_data = []
     consecutive_errors = 0
     
-    logging.info(f"Starting ACR table extraction v2 → {os.path.abspath(output_file)}")
+    logging.info(f"Starting incremental ACR table extraction v2 → {os.path.abspath(output_file)}")
     logging.info(f"Scanning topic IDs {start_topic_id} to {max_topic_id}")
     
     for topic_id in range(start_topic_id, max_topic_id + 1):
         if consecutive_errors > 500:
             logging.info("Stopping after 500 consecutive empty topics. Assuming end of records.")
             break
+            
+        # Incremental check: if topic_id is already in existing_data and not in updated_ids, skip API call!
+        if topic_id in existing_data and topic_id not in updated_ids:
+            all_data.append(existing_data[topic_id])
+            consecutive_errors = 0
+            continue
             
         url = f"https://gravitas.acr.org/ACPortal/GetDataForOneTopic?topicId={topic_id}"
         
@@ -190,4 +212,5 @@ def extract_tables(output_file="data/acr_variant_tables.json", start_topic_id=1,
     logging.info(f"Done. {len(all_data)} topics, {total} total procedure records → {output_file}")
 
 if __name__ == "__main__":
-    extract_tables()
+    extract_tables(max_topic_id=2500)
+
