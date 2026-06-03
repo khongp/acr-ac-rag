@@ -809,28 +809,58 @@ class CombinedTypeRetriever(BaseRetriever):
             print("[WARN] No scenario matched in probe. Using vector probe documents directly.")
             scenario_tables = vector_tables[:5]
 
-        # ── Step 5: Get narratives via hybrid search ──
+        # ── Step 5: Get narratives via topic-constrained hybrid search ──
+        # Constrain narrative retrieval to the same guideline topics selected by the reranker.
+        # This prevents diagnostic guideline narratives (e.g. "Chylothorax Treatment Planning")
+        # from bleeding into results when the reranker selected an interventional guideline
+        # (e.g. "Management of Chylothorax").
         vector_narratives = []
+        candidate_topic_names = list(set(tp for tp, sc in best_candidates)) if best_candidates else []
+        
         if query_emb is not None:
-            try:
-                vector_narratives_with_scores = self.db.similarity_search_with_score(
-                    query, k=self.k_narrative, filter={"type": "narrative"}
-                )
-                for doc, score in vector_narratives_with_scores:
-                    doc.metadata["score"] = float(score)
-                    doc.metadata["retrieval_method"] = "vector"
-                    vector_narratives.append(doc)
-            except Exception as e:
-                print(f"[WARN] Vector narrative search with score failed: {e}. Falling back to standard search.")
+            # Try topic-constrained narrative search first (requires topic metadata from ingestion Phase 2)
+            if candidate_topic_names:
                 try:
-                    vector_narratives = self.db.similarity_search_by_vector(
-                        query_emb, k=self.k_narrative, filter={"type": "narrative"}
+                    topic_filter = {
+                        "$and": [
+                            {"type": "narrative"},
+                            {"topic": {"$in": candidate_topic_names}}
+                        ]
+                    }
+                    vector_narratives_with_scores = self.db.similarity_search_with_score(
+                        query, k=self.k_narrative, filter=topic_filter
                     )
-                    for doc in vector_narratives:
-                        doc.metadata["score"] = 1.0
+                    for doc, score in vector_narratives_with_scores:
+                        doc.metadata["score"] = float(score)
                         doc.metadata["retrieval_method"] = "vector"
-                except Exception as ex:
-                    print(f"[ERROR] Vector narrative search by vector failed: {ex}")
+                        vector_narratives.append(doc)
+                    if vector_narratives:
+                        print(f"[NARRATIVE] Topic-constrained search returned {len(vector_narratives)} chunks for topics: {candidate_topic_names}")
+                except Exception as e:
+                    print(f"[WARN] Topic-constrained narrative search failed: {e}. Falling back to unfiltered search.")
+            
+            # Fallback: unfiltered narrative search if topic-constrained returned nothing
+            if not vector_narratives:
+                try:
+                    vector_narratives_with_scores = self.db.similarity_search_with_score(
+                        query, k=self.k_narrative, filter={"type": "narrative"}
+                    )
+                    for doc, score in vector_narratives_with_scores:
+                        doc.metadata["score"] = float(score)
+                        doc.metadata["retrieval_method"] = "vector"
+                        vector_narratives.append(doc)
+                    print(f"[NARRATIVE] Unfiltered fallback search returned {len(vector_narratives)} chunks.")
+                except Exception as e:
+                    print(f"[WARN] Vector narrative search with score failed: {e}. Falling back to standard search.")
+                    try:
+                        vector_narratives = self.db.similarity_search_by_vector(
+                            query_emb, k=self.k_narrative, filter={"type": "narrative"}
+                        )
+                        for doc in vector_narratives:
+                            doc.metadata["score"] = 1.0
+                            doc.metadata["retrieval_method"] = "vector"
+                    except Exception as ex:
+                        print(f"[ERROR] Vector narrative search by vector failed: {ex}")
         else:
             print("[WARN] Skipping vector narrative search because embedding failed.")
         
@@ -839,6 +869,12 @@ class CombinedTypeRetriever(BaseRetriever):
             try:
                 bm25_docs = self.bm25_retriever.invoke(query)
                 bm25_narratives = [d for d in bm25_docs if d.metadata.get("type") == "narrative"]
+                # Post-filter BM25 narratives to match selected candidate topics
+                if candidate_topic_names:
+                    filtered_bm25 = [d for d in bm25_narratives if d.metadata.get("topic") in candidate_topic_names]
+                    if filtered_bm25:
+                        bm25_narratives = filtered_bm25
+                        print(f"[NARRATIVE] BM25 topic-filtered to {len(bm25_narratives)} chunks.")
                 for doc in bm25_narratives:
                     doc.metadata["retrieval_method"] = "bm25"
                     doc.metadata["score"] = doc.metadata.get("score", 1.0)

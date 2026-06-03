@@ -358,6 +358,9 @@ def chunk_pdf_documents(documents: list) -> list:
             pdf_version = "unknown"
         pdf_ingested_at = datetime.now(timezone.utc).isoformat()
 
+        # Extract topic name from PDF filename (e.g. "Management of Chylothorax_355.pdf" -> "Management of Chylothorax")
+        topic_name = re.sub(r'_\d+\.pdf$', '', src, flags=re.IGNORECASE).strip()
+
         # Chunk each section and build final Document objects
         for sec_name, sec_text in sections:
             sub_texts = sub_splitter.split_text(sec_text)
@@ -369,6 +372,7 @@ def chunk_pdf_documents(documents: list) -> list:
                     metadata={
                         "source": src,
                         "type": "narrative",
+                        "topic": topic_name,
                         "section": sec_name,
                         "chunk_index": idx,
                         "guideline_version": pdf_version,
@@ -448,8 +452,21 @@ def ingest_documents():
     
     if os.path.exists(CHROMA_PATH):
         import shutil
-        shutil.rmtree(CHROMA_PATH)
-        print("  Cleared existing ChromaDB")
+        import time
+        max_retries = 15
+        delay = 1.0
+        for attempt in range(max_retries):
+            try:
+                shutil.rmtree(CHROMA_PATH)
+                print("  Cleared existing ChromaDB")
+                break
+            except PermissionError as e:
+                if attempt == max_retries - 1:
+                    print(f"  [Lock Error] Permanent lock on {CHROMA_PATH}. Cannot delete: {e}")
+                    raise e
+                print(f"  [Lock Alert] ChromaDB folder locked by another process (likely Google Drive sync). Retrying delete in {delay}s... (attempt {attempt+1}/{max_retries})")
+                time.sleep(delay)
+                delay = min(delay * 1.5, 10.0)
         
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
     

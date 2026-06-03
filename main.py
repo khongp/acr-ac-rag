@@ -99,33 +99,14 @@ def init_review_queue_db():
         conn.close()
 
 
-rag_init_task = None
-
-async def _init_rag_bg():
+async def ensure_rag_ready():
     global rag_initialized, rag_error
-    try:
+    if not rag_initialized:
+        logger.info("Initializing RAG synchronously on demand...")
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, init_rag)
         rag_initialized = True
         init_review_queue_db()
-        logger.info("[READY] All RAG models loaded in background — server ready")
-    except Exception as e:
-        rag_error = str(e)
-        logger.critical(f"[CRITICAL STARTUP ERROR] RAG model initialization failed: {e}", exc_info=True)
-
-
-async def ensure_rag_ready():
-    global rag_init_task, rag_initialized, rag_error
-    if not rag_initialized:
-        if rag_init_task:
-            logger.info("RAG is initializing in background. Awaiting completion...")
-            await rag_init_task
-        else:
-            logger.info("Initializing RAG synchronously on demand...")
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, init_rag)
-            rag_initialized = True
-            init_review_queue_db()
             
     if rag_error:
         raise HTTPException(
@@ -136,15 +117,24 @@ async def ensure_rag_ready():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start loading ML models in a background task during startup."""
-    global rag_init_task
-    logger.info("[STARTUP] Triggering background RAG model pre-loading...")
+    """Load ML models synchronously during startup to utilize Cloud Run startup CPU boost."""
+    global rag_initialized, rag_error
+    logger.info("[STARTUP] Pre-loading RAG models (embeddings, reranker, LLM)...")
     
     # Diagnostics check on assets existence
     if not os.path.exists("chroma_db_gemini") and not os.path.exists("chroma_db_local"):
          logger.warning("[STARTUP WARNING] Vector database directory not found in current workspace. Ensure ingest.py has been run.")
          
-    rag_init_task = asyncio.create_task(_init_rag_bg())
+    try:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, init_rag)
+        rag_initialized = True
+        init_review_queue_db()
+        logger.info("[READY] All models loaded — server ready for requests")
+    except Exception as e:
+        rag_error = str(e)
+        logger.critical(f"[CRITICAL STARTUP ERROR] RAG model initialization failed: {e}", exc_info=True)
+        
     yield
     # Shutdown: nothing to clean up
 
