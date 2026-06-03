@@ -243,6 +243,101 @@ def set_cached_query(clinical_scenario: str, result: dict):
         print(f"[WARN] Error writing cache: {e}")
 
 
+_cached_topics = None
+_cached_key_terms = None
+
+def get_all_topics_keys() -> set:
+    global _cached_topics
+    if _cached_topics is not None:
+        return _cached_topics
+    
+    _cached_topics = set()
+    try:
+        conn = get_db_connection(PROCEDURES_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT topic_key FROM acr_procedures")
+        rows = cursor.fetchall()
+        conn.close()
+        _cached_topics = {row[0].strip().lower() for row in rows if row[0]}
+    except Exception as e:
+        print(f"[ERR] Error fetching topic keys: {e}")
+    return _cached_topics
+
+def get_all_topic_key_terms() -> set:
+    global _cached_key_terms
+    if _cached_key_terms is not None:
+        return _cached_key_terms
+        
+    _cached_key_terms = set()
+    stopwords = {
+        "and", "the", "for", "with", "after", "before", "known", "suspected", 
+        "management", "treatment", "planning", "follow-up", "follow", "evaluation", 
+        "imaging", "screening", "assessment", "adult", "child", "infant", "pediatric", 
+        "routine", "common", "suspicion", "possible", "diagnostic", "radiologic", "disease"
+    }
+    topic_keys = get_all_topics_keys()
+    for t_key in topic_keys:
+        words = re.findall(r"\b\w{4,}\b", t_key)
+        for w in words:
+            if w not in stopwords:
+                _cached_key_terms.add(w)
+    return _cached_key_terms
+
+def _expand_abbreviations_locally(query: str) -> str:
+    """
+    Expands common medical abbreviations and shorthand in the query locally
+    using a dictionary map, preserving the original terms.
+    """
+    if not query:
+        return ""
+        
+    abbrev_map = {
+        "LBP": "low back pain",
+        "PE": "pulmonary embolism",
+        "RUQ": "right upper quadrant",
+        "LUQ": "left upper quadrant",
+        "RLQ": "right lower quadrant",
+        "LLQ": "left lower quadrant",
+        "DVT": "deep vein thrombosis",
+        "AAA": "abdominal aortic aneurysm",
+        "CAD": "coronary artery disease",
+        "MVC": "motor vehicle collision",
+        "UTI": "urinary tract infection",
+        "URI": "upper respiratory infection",
+        "AMS": "altered mental status",
+        "COPD": "chronic obstructive pulmonary disease",
+        "TIA": "transient ischemic attack",
+        "r/o": "rule out",
+        "ro": "rule out",
+        "sob": "shortness of breath",
+        "cxr": "chest x-ray",
+        "ct": "computed tomography",
+        "mri": "magnetic resonance imaging",
+        "us": "ultrasound",
+        "hx": "history",
+        "dx": "diagnosis",
+        "tx": "treatment"
+    }
+    
+    expanded = query
+    for abbrev, replacement in abbrev_map.items():
+        pattern = re.compile(rf"\b{re.escape(abbrev)}\b", re.IGNORECASE)
+        if pattern.search(expanded):
+            expanded = pattern.sub(f"{abbrev} ({replacement})", expanded)
+            
+    return expanded
+
+_cross_encoder = None
+
+def get_cross_encoder():
+    global _cross_encoder
+    if _cross_encoder is None:
+        from sentence_transformers import CrossEncoder
+        print("[RERANK] Loading local CrossEncoder: cross-encoder/ms-marco-MiniLM-L-6-v2 on CPU...")
+        _cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device="cpu")
+    return _cross_encoder
+
+
 def init_procedures_db():
     """Ensure the acr_procedures table exists and is populated in SQLite."""
     os.makedirs(os.path.dirname(PROCEDURES_DB_PATH), exist_ok=True)
@@ -542,13 +637,49 @@ class CombinedTypeRetriever(BaseRetriever):
                 if pair not in unique_candidates:
                     unique_candidates.append(pair)
 
-        # Rerank candidates using LLM to choose the top 3 (if enabled)
+        # Apply age-based demographic pre-filtering/boosting
+        is_pediatric = False
+        age_match = re.search(r"\b(\d{1,3})\s*(?:yo|year|yr|-year|years\s+old)\b", query, re.IGNORECASE)
+        if age_match:
+            is_pediatric = (int(age_match.group(1)) < 18)
+        elif any(x in query.lower() for x in ["child", "pediatric", "infant", "peds", "boy", "girl", "neonat"]):
+            is_pediatric = True
+            
+        print(f"[DEMOGRAPHICS] Query classified as: {'Pediatric' if is_pediatric else 'Adult'}")
+        
+        filtered_candidates = []
+        for tp, sc in unique_candidates:
+            tp_lower = tp.lower()
+            is_child_topic = "child" in tp_lower or "pediatric" in tp_lower or "infant" in tp_lower or "neonat" in tp_lower
+            
+            if is_pediatric:
+                if is_child_topic:
+                    filtered_candidates.insert(0, (tp, sc))  # Prioritize pediatric guidelines
+                else:
+                    filtered_candidates.append((tp, sc))
+            else:
+                if is_child_topic and ("-child" in tp_lower or "child" in tp_lower):
+                    print(f"[DEMOGRAPHICS] Filtering out pediatric topic '{tp}' for adult query.")
+                    continue
+                filtered_candidates.append((tp, sc))
+        unique_candidates = filtered_candidates
+
+        # Rerank candidates using local Cross-Encoder (default) or LLM
         if ENABLE_LLM_RERANK:
             print(f"[RERANK] Prompting LLM to rerank {len(unique_candidates)} unique candidates...")
             best_candidates = _rerank_scenarios_llm(query, unique_candidates)
             print(f"[RERANK] Selected top {len(best_candidates)} candidates.")
         else:
-            print(f"[RERANK] LLM reranking is disabled. Using top {min(MAX_CANDIDATES, len(unique_candidates))} candidates from hybrid search.")
+            if unique_candidates:
+                try:
+                    ce = get_cross_encoder()
+                    pairs = [(query, f"Topic: {tp}. Clinical Scenario: {sc}.") for tp, sc in unique_candidates]
+                    scores = ce.predict(pairs)
+                    scored_candidates = sorted(zip(unique_candidates, scores), key=lambda x: x[1], reverse=True)
+                    unique_candidates = [cand for cand, score in scored_candidates]
+                    print(f"[LOCAL-RERANK] Scored and reranked {len(unique_candidates)} candidates using ms-marco-MiniLM-L-6-v2.")
+                except Exception as e:
+                    print(f"[WARN] Local Cross-Encoder reranking failed: {e}. Using default order.")
             best_candidates = unique_candidates[:MAX_CANDIDATES]
         
         scenario_tables = []
@@ -636,7 +767,21 @@ class CombinedTypeRetriever(BaseRetriever):
         if ENABLE_COLBERT_RERANK:
             best_narratives = rerank_with_colbert(query, fused_narratives, top_k=self.k_narrative)
         else:
-            best_narratives = fused_narratives[:self.k_narrative]
+            if fused_narratives:
+                try:
+                    ce = get_cross_encoder()
+                    # Rerank the top 10 fused candidates to save computation
+                    candidates_to_rerank = fused_narratives[:10]
+                    pairs = [(query, doc.page_content) for doc in candidates_to_rerank]
+                    scores = ce.predict(pairs)
+                    scored_docs = sorted(zip(candidates_to_rerank, scores), key=lambda x: x[1], reverse=True)
+                    best_narratives = [doc for doc, score in scored_docs][:self.k_narrative]
+                    print(f"[LOCAL-RERANK] Scored and reranked {len(candidates_to_rerank)} narrative chunks using ms-marco-MiniLM-L-6-v2.")
+                except Exception as e:
+                    print(f"[WARN] Local Cross-Encoder narrative reranking failed: {e}. Using default order.")
+                    best_narratives = fused_narratives[:self.k_narrative]
+            else:
+                best_narratives = []
 
         return scenario_tables + best_narratives
 
@@ -870,6 +1015,17 @@ def evaluate_input_completeness(clinical_text: str, fhir_bundle: dict = None) ->
             has_body_region = True
             break
 
+    # Fallback check: if the query contains any descriptive terms from the known guideline topics
+    if not has_body_region:
+        try:
+            topic_terms = get_all_topic_key_terms()
+            words_in_query = re.findall(r"\b\w{4,}\b", text_lower)
+            if any(w in topic_terms for w in words_in_query):
+                has_body_region = True
+                print("[ABSTENTION GATE-FALLBACK] Bypassed anatomical check because query matches a known guideline topic keyword.")
+        except Exception as e:
+            print(f"[WARN] Error running abstention gate fallback: {e}")
+
     has_condition = False
     if fhir_bundle:
         for entry in fhir_bundle.get("entry", []):
@@ -941,13 +1097,18 @@ def query_acr_guidelines(clinical_scenario: str, fhir_bundle: dict = None) -> di
         
     print(f"[CACHE MISS] Executing RAG query for scenario: '{sanitized_scenario}'")
     
-    # Expand query before calling retriever to resolve medical jargon (if enabled)
+    # 1. Apply local abbreviation expansion first
+    locally_expanded = _expand_abbreviations_locally(sanitized_scenario)
+    if locally_expanded != sanitized_scenario:
+        print(f"[LOCAL-EXPANSION] Expanded query: '{locally_expanded}'")
+    
+    # 2. Expand query before calling retriever to resolve medical jargon (if enabled)
     if ENABLE_NLP_EXPANSION:
-        expanded_scenario = _expand_clinical_query(sanitized_scenario)
-        print(f"[NLP-EXPANSION] Expanded query: '{expanded_scenario}'")
+        expanded_scenario = _expand_clinical_query(locally_expanded)
+        print(f"[NLP-EXPANSION] LLM Expanded query: '{expanded_scenario}'")
     else:
-        print("[NLP-EXPANSION] Clinical NLP query expansion is disabled. Using raw redacted query.")
-        expanded_scenario = sanitized_scenario
+        print("[NLP-EXPANSION] Clinical NLP query expansion is disabled. Using raw/locally-expanded query.")
+        expanded_scenario = locally_expanded
     
     docs = _retriever.invoke(expanded_scenario)
     context = format_docs(docs)
