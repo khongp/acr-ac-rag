@@ -345,9 +345,10 @@ async def analyze_scenario(request: Request, req: AnalyzeRequest):
         bundle_dict = req.bundle
 
     scenario_str = extract_scenario_from_bundle(bundle_dict)
+    rag_query = req.text if req.text else scenario_str
 
     try:
-        result = await asyncio.to_thread(query_acr_guidelines, scenario_str, bundle_dict)
+        result = await asyncio.to_thread(query_acr_guidelines, rag_query, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")
@@ -434,8 +435,10 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
     scenario_str = extract_scenario_from_bundle(bundle_dict)
 
     # 3. Run ACR RAG Engine
+    # Use the original raw text query if available to preserve clinical intent (e.g. "how to fix")
+    rag_query = req.text if req.text else scenario_str
     try:
-        acr_result = await asyncio.to_thread(query_acr_guidelines, scenario_str, bundle_dict)
+        acr_result = await asyncio.to_thread(query_acr_guidelines, rag_query, bundle_dict)
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")

@@ -24,7 +24,7 @@ load_dotenv()
 
 EMBEDDING_MODE = os.getenv("EMBEDDING_MODE", "local").strip().lower()
 ENABLE_NLP_EXPANSION = os.getenv("ENABLE_NLP_EXPANSION", "false").strip().lower() == "true"
-ENABLE_LLM_RERANK = os.getenv("ENABLE_LLM_RERANK", "false").strip().lower() == "true"
+ENABLE_LLM_RERANK = os.getenv("ENABLE_LLM_RERANK", "true").strip().lower() == "true"
 ENABLE_COLBERT_RERANK = os.getenv("ENABLE_COLBERT_RERANK", "false").strip().lower() == "true"
 MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "3"))
 
@@ -579,7 +579,10 @@ def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
         
         candidates_str = ""
         for idx, (t, s) in enumerate(candidates):
-            candidates_str += f"{idx+1}. Topic: '{t}' | Scenario: '{s}'\n"
+            procs = get_procedures_from_db(t, s)
+            proc_names = [p.get("Procedure", "") for p in procs]
+            proc_str = ", ".join(proc_names)
+            candidates_str += f"{idx+1}. Topic: '{t}' | Scenario: '{s}' | Procedures: {proc_str}\n"
             
         prompt = (
             "You are a medical guidelines reranking agent.\n"
