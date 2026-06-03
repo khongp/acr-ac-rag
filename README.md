@@ -1,47 +1,27 @@
 # ACR Appropriateness Criteria - Clinical Decision Support Hub (ACR-AC-RAG)
 
-An enterprise-ready, FHIR-native, and CDS Hooks-compliant Retrieval-Augmented Generation (RAG) system designed to assist clinicians in ordering and performing the most appropriate imaging examinations based on the American College of Radiology (ACR) Appropriateness Criteria.
+An enterprise-grade, FHIR-native, and CDS Hooks-compliant Clinical Decision Support (CDS) system. It combines Retrieval-Augmented Generation (RAG) with clinical heuristics and safety guardrails to assist clinicians in ordering appropriate imaging examinations and interventional procedures, grounded directly in the published **American College of Radiology (ACR) Appropriateness Criteria**.
 
 ---
 
-## 🌟 Key Features
+## 🌟 Core Capabilities & What it Accomplishes
 
-*   **Clinical Presentation Parser (FHIR-Native):** Converts unstructured clinical text or inputs into standard HL7 FHIR Bundle resources (Patient, Condition, Observation, AllergyIntolerance, MedicationStatement).
-*   **ACR Guideline RAG Engine:** Queries the ACR Appropriateness Criteria database using high-dimensional Google Gemini embeddings (`models/gemini-embedding-2`) and ChromaDB vector store.
-*   **Protocoling Assistant:** Maps the recommended ACR exam to hospital-specific, localized scan protocols (e.g. contrast types, volumes, rates, phase sequences) using a custom mapping database.
-*   **Safety Profile Evaluator:** Flags potential scan risks based on clinical indicators:
-    *   **eGFR** (Kidney function warnings for IV contrast agents)
-    *   **Allergies** (Contrast allergy warnings)
-    *   **Pregnancy status** (Radiation risk alerts)
-    *   **Medication Holds** (e.g. Metformin hold rules)
-*   **Closed-Loop Safety Re-Query:** Detects hard contraindications (such as pacemakers or severe contrast allergies) and automatically re-queries the RAG engine with safety constraints to suggest alternative, non-contrast or safer imaging modalities.
-*   **Confidence Routing & Manual Review Queue:** Scenarios with low-confidence RAG matching scores (< 0.55) are automatically routed to a SQLite-based manual review queue database (`data/query_cache.db`), enabling senior radiologists to claim, review, and resolve complex clinical presentations.
-*   **Decision Support Number (DSN) Audit Trail:** Generates a tamper-evident, unique transaction identifier (`ACR-[DATE]-[HASH]`) for every clinical decision, logging the transaction to an immutable audit file (`data/logs/dsn_audit_log.jsonl`) for compliance verification.
-*   **Conversational Attending Radiology Co-Pilot:** An interactive, conversational LLM assistant chat drawer (`/v1/copilot/chat`) to discuss case presentations and clarify guidelines recommendations.
-*   **Clinical Overrides & Audit Log:** Enables clinicians to manually override guideline recommendations by logging justifications to `/v1/override` for compliance auditing.
-*   **CDS Hooks Compliant:** Implements a `/v1/cds-hook` endpoint (e.g. `order-select`) for EHR integrations.
-*   **Premium CDS Dashboard:** A beautiful, fully mobile-responsive single-page web dashboard (`index.html`) served directly by the FastAPI backend for clinical simulation on desktop, tablet, and phone viewports.
-
----
-
-## ⚡ Performance, Security & Usability Upgrades
-
-This system has been upgraded with the following production-ready improvements:
-1.  **Async Thread Offloading:** Synchronous RAG, protocol mapping, and co-pilot responses are offloaded using `asyncio.to_thread` to prevent FastAPI event-loop blocking.
-2.  **API Rate Limiting:** Configured `slowapi` client rate-limiting (30 requests/minute per IP) on all critical endpoints to protect Gemini API quota usage.
-3.  **Tenacity Retry Logic:** Applied tenacity-based exponential backoff retries (min 1s, max 10s, up to 3 attempts) for all LLM and chat generation API calls to mitigate transient rate-limit errors.
-4.  **SQLite Query Cache & TTL:** Added automated SQLite cache schema self-migration (`created_at` timestamp) and enforce a strict 7-day cache expiration (TTL) invalidation.
-5.  **In-Memory RAG Caching:** Implemented co-pilot context caching to store RAG retrieval outputs, bypassing repetitive retrieval queries during a chat turn.
-6.  **FastAPI Request Tracing:** Configured HTTP middleware to inject a unique transaction UUID (`X-Request-ID`) and log the request's execution latency (`X-Process-Time`) in response headers.
-7.  **Pydantic Input Constraints:** Implemented max-length string boundaries (4000 characters) on request models to prevent oversized payload abuse.
-8.  **Shared Injection Guarding:** Extracted and consolidated shared regex patterns for prompt injection checking in `security_utils.py`, applied on both RAG queries and conversational prompts.
-9.  **Dark Mode Theme System:** Supported high-contrast dark theme preferences, persistent state stored in local browser memory (`localStorage`), and system preference detection.
-10. **Keyboard Focus Trapping:** Implemented keyboard focus trapping (`Tab` and `Shift+Tab`) and overlay dismissal (`Escape` or backdrop clicks) inside the Clinician Override Modal and Co-Pilot Drawer.
-11. **Toast Notification Alerts:** Replaced browser-native synchronous `alert()` block prompts with custom non-blocking toast animations.
-12. **HTML5 Validation:** Enforced patient age, eGFR, and weight validation constraints (`min/max/required`) directly inside the EHR Simulator input fields.
-13. **DOM Loop Rendering Optimizations:** Refactored dynamic list loops (`.innerHTML +=`) to use memory array buffers, updating the DOM once to prevent page reflow lag and listener loss.
-14. **Page Visibility Health Polling:** Optimized system resources by automatically pausing background health polling when the dashboard tab is minimized or hidden.
-15. **Offline Unit Testing & CI Verification:** Added `test_safety_security.py` running offline test cases for HIPAA compliance, prompt injection, and safety rule evaluations, integrated directly into the GitHub Actions CI pipeline.
+*   **Clinical Presentation Parser (FHIR-Native):** Converts unstructured clinical text (e.g., from a search box or clinic note) into standard HL7 FHIR Bundle resources (`Patient`, `Condition`, `Observation`, `AllergyIntolerance`, `MedicationStatement`) using structured Gemini-driven entity extraction.
+*   **ACR Guideline RAG Engine:** Indexes and queries 275 ACR Appropriateness Criteria PDF narrative guidelines and variant tables using high-dimensional Google Gemini embeddings (`models/gemini-embedding-2`), a ChromaDB vector store, and a BM25 lexical retriever in a hybrid configuration.
+*   **Safety Profile Evaluator & Rules Engine:** Scans clinical indicators extracted from FHIR to alert providers of critical risks:
+    *   **eGFR/Renal Alert:** Flags kidney function status (eGFR thresholds) for intravenous (IV) iodinated or gadolinium-based contrast agents.
+    *   **Allergy Warnings:** Flags contrast agent class and brand allergies (e.g., Omnipaque, Visipaque, Isovue, gadolinium, iodine) mapped to RxNorm/SNOMED codes.
+    *   **Radiation Safety (Pregnancy):** Displays warning banners for childbearing/pregnant patients when ordering ionizing radiation procedures (CT, X-Ray).
+    *   **Medication Safety:** Displays hold instructions for drugs like Metformin before/after IV contrast administration.
+    *   **Interventional Radiology (IR) Holds:** Provides exact pre-procedure hold and post-procedure resume intervals for anticoagulants (e.g., Warfarin, Eliquis, Plavix) and evaluates lab values (platelets, INR) against safe interventional thresholds.
+*   **Closed-Loop Safety Re-Query:** If a severe contraindication is detected (e.g., pacemakers for MRI or severe contrast anaphylaxis for CT), the engine automatically runs a secondary, constrained query to suggest safer, alternative modalities (e.g., Ultrasound, non-contrast CT/MRI).
+*   **Protocoling Assistant (Local Procedures DB):** Maps recommended ACR procedures to localized hospital-specific scan protocols (e.g., contrast types, volumes, rates, phase sequences) via a SQLite mapping database (`data/acr_procedures.db`).
+*   **Confidence Routing & Review Queue:** Queries scoring below the ambiguity threshold (< 0.55) are routed to a SQLite-based manual review queue database (`data/query_cache.db`), enabling senior radiologists to review, audit, and override complex presentations.
+*   **Decision Support Number (DSN) Audit Trail:** Generates a unique, tamper-evident transaction identifier (`ACR-[DATE]-[HASH]`) logging recommendations, sources, and confidence scores to an immutable audit file (`data/logs/dsn_audit_log.jsonl`) for compliance verification.
+*   **Clinician Overrides & Override Auditing:** Allows clinicians to manually override guideline recommendations by logging justifications (reason and clinical notes) to a secure SQLite override database.
+*   **CDS Hooks Compliant:** Implements a `/v1/cds-hook` endpoint (e.g., `order-select`) for direct Electronic Health Record (EHR) integrations.
+*   **Attending Co-Pilot Chat:** Provides an interactive clinical assistant conversational drawer built on top of the RAG pipeline, offering dialogue sessions with the "Attending Radiologist" using sanitized context.
+*   **Web Dashboard:** A high-end, responsive dark-mode single-page dashboard (`index.html`) served directly by the FastAPI backend for clinical simulation on desktop, tablet, and phone viewports.
 
 ---
 
@@ -53,6 +33,7 @@ graph TD
     API -->|1. Convert| FHIR[FHIR Converter]
     API -->|2. RAG Query| RAG[ACR RAG Engine]
     RAG -->|Vector Search| Chroma[(ChromaDB)]
+    RAG -->|Gemini Rerank & Intent Alignment| Gemini[Gemini Cloud API]
     API -->|3. Map Protocol| Mapper[Protocol Mapper]
     Mapper -->|Lookup| SQLite[(Procedures SQLite)]
     API -->|4. Check Risks| Safety[Safety Engine]
@@ -64,13 +45,54 @@ graph TD
 
 ---
 
+## ⚡ Performance, Scaling & Cost Optimizations
+
+This system is optimized for serverless deployment on **Google Cloud Run** to ensure near-zero cold starts, high concurrency scaling, and minimal billing:
+
+1.  **☁️ Cloud Gemini Reranker**: Replaced CPU-bound local Cross-Encoder models (`sentence-transformers`/`torch` which required 25-second startup load times) with a cloud-based **Gemini Cloud Reranker** (`ENABLE_LLM_RERANK="true"`). It offloads semantic comparison to the Gemini 2.5 Flash API at a cost of less than `1/100th of a cent` per search, reducing cold starts from **45 seconds to under 5 seconds**.
+2.  **🎯 Clinical Intent Alignment (Procedural Boosting)**: Classifies user queries as Therapeutic (keywords: *treat, therapy, management, fix, embolization, ligation*) vs. Diagnostic (keywords: *image, scan, order, CT, MRI*). Appends SQLite candidate procedures to the reranker and applies a `+1.0` score boost to candidates matching the query's clinical intent. This guarantees accurate routing for interventional radiology guidelines (e.g., Thoracic Duct Embolization) vs. diagnostic scans.
+3.  **🎯 Demographic Age-Based Pre-Filtering**: Detects patient age demographics (pediatric vs. adult) and pre-filters/prioritizes candidates (e.g., filtering out `Suspected Spine Trauma-Child` for adult queries) to prevent incorrect criteria mixing.
+4.  **📖 Local Abbreviation & Acronym Expansion**: Maps common clinical shorthand (e.g. `LBP` -> `low back pain`, `PE` -> `pulmonary embolism`, `DVT` -> `deep vein thrombosis`) locally before querying, bridging the semantic gap for **zero token cost**.
+5.  **🛡️ Fuzzy Anatomical Fallback (Abstention Gate)**: Extracted all known guideline topics to bypass the anatomical region check when the query matches a specific clinical guideline topic (e.g. `chylothorax`), resolving false-positive abstention query blocks.
+6.  **🔄 Self-Healing Procedures Database**: Automated `init_procedures_db()` to check row counts against the source `data/acr_variant_tables.json` on startup. If a mismatch is detected, it drops and rebuilds the SQLite table to sync newly scraped guidelines.
+7.  **⚡ Lightweight Container Footprint**: Deactivated heavy PyTorch/Transformers dependencies. This shrunk the Docker image footprint by **over 1.5 GB**, allowing Cloud Run to scale out and boot container instances instantly under load.
+8.  **⚡ Async Thread Offloading**: Offloads blocking synchronous RAG and database tasks using `asyncio.to_thread` to keep the FastAPI event loop fully non-blocking.
+9.  **🛡️ API Rate Limiting & Tenacity Retries**: Implemented client rate-limiting (`slowapi`, 30 req/min) on critical endpoints and exponential backoff retry policies (`tenacity`) on Google API calls to mitigate transient errors.
+10. **💾 SQLite Query Cache & TTL**: Enforces a strict 7-day TTL cache expiration on query results inside the SQLite database, with automatic cloud GCS bucket synchronization.
+
+---
+
+## 📂 Project Directory Structure
+
+Here is a map of the key files in the repository:
+
+| File / Folder | Role & Functionality |
+| :--- | :--- |
+| **`main.py`** | Entry point hosting the FastAPI web application, HTTP middlewares, rate limiting, and all API endpoints (analysis, protocoling, override logger, review queue, attending chat, and CDS Hooks). |
+| **`fhir_converter.py`** | Transforms unstructured clinical query strings into HL7 FHIR bundles containing `Patient`, `Condition`, `Observation`, `AllergyIntolerance`, and `MedicationStatement` resources using Gemini-driven entity extraction. |
+| **`rag_engine.py`** | Handles vector database operations, hybrid BM25 search, Gemini-based cloud reranking, query abbreviation expansion, demographic age-based filtering, clinical intent classification, and closed-loop alternative routing. |
+| **`safety_engine.py`** | Scans clinical indicators extracted from FHIR to evaluate iodine/gadolinium contrast contraindications (eGFR, allergy history), fetal radiation risks, and interventional cardiology/radiology threshold criteria (platelets, INR, medication hold guidelines). |
+| **`protocol_mapper.py`** | Maps abstract ACR-recommended imaging procedures to localized scan protocols and parameters (e.g., contrast parameters, sequence instructions). |
+| **`protocol_db.py`** | Connects to and queries the local SQL database to manage localized procedures and overrides. |
+| **`copilot_engine.py`** | Powering the conversational Attending Chat drawer using context-injected dialogue sessions, matching patient clinical history with retrieved guidelines. |
+| **`medical_ontology.py`** | Pre-defined static medical codes (LOINC, RxNorm, SNOMED-CT) mapping common medications, contrast types, and lab metrics for safety evaluation. |
+| **`llm_router.py`** | Evaluates and routes query types based on semantic classification. |
+| **`security_utils.py`** | Safeguards clinical text parsing against prompt-injection patterns. |
+| **`ingest.py`** | Parses 275 ACR guideline PDFs and structured JSON variant tables, generating vector embeddings cached in a SQLite table. |
+| **`index.html`** | Fully responsive, glassmorphic dark-mode clinician dashboard simulating the EHR workspace, attending chat, review queue, audit logs, and scan orders. |
+| **`Dockerfile`** | Container specification optimized for Cloud Run serverless hosting (multi-stage build, minimal footprint). |
+| **`requirements.txt`** | Dependency manifest specifying precise library pins. |
+| **`data/`** | Location of SQLite DBs (`acr_procedures.db`, `query_cache.db`), raw guidelines, and audit logs. |
+
+---
+
 ## 🚀 Tech Stack
 
-*   **Core API Framework:** FastAPI (Python 3.11) & Uvicorn
-*   **LLM & Embeddings:** Google Gemini (`gemini-2.5-flash`), `google-genai`
+*   **Core Framework:** FastAPI & Uvicorn (Python 3.11)
 *   **Vector Database:** ChromaDB
-*   **Data Store:** SQLite (for local caching and clinical protocol procedures mapping)
-*   **Static UI Frontend:** Vanilla HTML5, CSS3, & Modern Javascript (Desktop & mobile-optimized layouts, horizontal swipeable tabs with auto-centering, stacked mobile-friendly rating cards, full-bleed co-pilot drawer, auto-scrolling to results, Dark Mode, and micro-animations)
+*   **LLM & Embeddings:** Google Gemini (`gemini-2.5-flash`), `google-genai` SDK
+*   **Metadata Storage:** SQLite (For caching, clinician overrides, and procedures mapping)
+*   **Static UI:** Vanilla HTML5, CSS3, & Modern Javascript (Responsive dark-mode interface, swipeable tabs, override modal, and conversational attending chat drawer)
 *   **Cloud Hosting:** Google Cloud Run, Google Cloud Storage (GCS)
 *   **CI/CD:** GitHub Actions
 
@@ -85,10 +107,9 @@ graph TD
 ### Installation
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/acr-ac-rag.git
+    git clone https://github.com/khongp/acr-ac-rag.git
     cd acr-ac-rag
     ```
-
 2.  **Create and activate a virtual environment:**
     ```bash
     python -m venv .venv
@@ -97,17 +118,18 @@ graph TD
     # macOS/Linux:
     source .venv/bin/activate
     ```
-
 3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
-
 4.  **Set up environment variables:**
     Create a `.env` file in the root directory:
     ```env
     GOOGLE_API_KEY="your-gemini-api-key-here"
     EMBEDDING_MODE="gemini"
+    BYPASS_FHIR_LLM="false"
+    ENABLE_LLM_RERANK="true"
+    DISABLE_COPILOT="false"
     ```
 
 ### Run the App Locally
@@ -130,8 +152,8 @@ If you need to update the vector database with new PDF guidelines or structured 
     ```
 3.  Upload the updated database files directly to your Cloud Storage bucket (where it is instantly mounted in Cloud Run without code redeploys):
     ```bash
-    gcloud storage cp -r chroma_db_gemini gs://your-bucket-name/chroma_db_gemini
-    gcloud storage cp data/acr_procedures.db gs://your-bucket-name/data/acr_procedures.db
+    gsutil cp -r chroma_db_gemini gs://acr-ac-rag-data-667793722294/chroma_db_gemini
+    gsutil cp data/acr_procedures.db gs://acr-ac-rag-data-667793722294/data/acr_procedures.db
     ```
 
 ---
@@ -143,9 +165,26 @@ This repository includes a fully automated **GitHub Actions** deployment pipelin
 *   **Workflow file:** `.github/workflows/deploy.yml`
 *   **Trigger:** Commits pushed to the `main` branch.
 *   **Target:** Deploys containerized code directly to **Google Cloud Run** in `us-east1`.
-*   **Database Externalization:** Uses **Cloud Storage FUSE** to mount a GCS bucket onto the Cloud Run revision at `/mnt/gcs`, which is copied to local container memory (`/tmp`) on startup for optimal RAM-speed lookups.
+*   **Database Externalization:** Uses **Cloud Storage FUSE** to mount a GCS bucket onto the Cloud Run revision at `/mnt/gcs`. Database files are copied to local container memory (`/tmp`) on startup for optimal RAM-speed lookups.
 
 ### Secrets Configuration
 To enable CI/CD, add the following secrets under **Settings** -> **Secrets and variables** -> **Actions** in your GitHub repository:
-*   `GCP_PROJECT_ID`: Your Google Cloud Project ID (e.g. `acr-ac-rag`).
+*   `GCP_PROJECT_ID`: Your Google Cloud Project ID.
 *   `GCP_SA_KEY`: The JSON credentials key for your GCP Service Account.
+
+---
+
+## 🧪 Verification & Testing
+
+Verify system integrity using the included offline and endpoint testing suite:
+
+```bash
+# Run all tests
+pytest
+
+# Run safety evaluation test cases specifically
+pytest test_safety_security.py
+
+# Run end-to-end integration and routing tests
+pytest test_all_upgrades.py
+```
