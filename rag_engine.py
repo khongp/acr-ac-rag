@@ -102,7 +102,7 @@ def get_db_connection(db_path: str) -> sqlite3.Connection:
     Establish a SQLite database connection with a 30-second timeout 
     and WAL (Write-Ahead Logging) enabled for concurrency support.
     """
-    conn = sqlite3.connect(db_path, timeout=30.0)
+    conn = sqlite3.connect(db_path, timeout=30.0, check_same_thread=False)
     try:
         conn.execute("PRAGMA journal_mode=WAL;")
     except Exception as e:
@@ -574,10 +574,11 @@ def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
         class RerankedOutput(BaseModel):
             rankings: List[SelectedCandidate] = Field(description="Top 3 selected candidate scenarios, in order of clinical relevance")
             
-        global _llm
-        if _llm is None:
-            _llm = get_llm()
-        structured_llm = _llm.with_structured_output(RerankedOutput)
+        global _llm_fast
+        if _llm_fast is None:
+            from llm_router import get_llm_fast
+            _llm_fast = get_llm_fast()
+        structured_llm = _llm_fast.with_structured_output(RerankedOutput)
         
         candidates_str = ""
         for idx, (t, s) in enumerate(candidates):
@@ -630,17 +631,7 @@ class CombinedTypeRetriever(BaseRetriever):
     class Config:
         arbitrary_types_allowed = True
 
-    def _get_relevant_documents(
-        self, query: str, *, run_manager: CallbackManagerForRetrieverRun = None
-    ) -> List[Document]:
-        # ── Step 1: Query embedding ──
-        query_emb = None
-        try:
-            query_emb = self.embeddings.embed_query(query)
-        except Exception as e:
-            print(f"[ERROR] Embedding query failed: {e}. Vector search will be bypassed.")
-
-        # ── Step 2: Probe table docs for scenario detection (Hybrid Search) ──
+    def _search_vector_tables(self, query: str, query_emb: Optional[List[float]]) -> List[Document]:
         vector_tables = []
         if query_emb is not None:
             try:
@@ -662,9 +653,9 @@ class CombinedTypeRetriever(BaseRetriever):
                         doc.metadata["retrieval_method"] = "vector"
                 except Exception as ex:
                     print(f"[ERROR] Vector table search by vector failed: {ex}")
-        else:
-            print("[WARN] Skipping vector table search because embedding failed.")
-        
+        return vector_tables
+
+    def _search_bm25_tables(self, query: str) -> List[Document]:
         bm25_tables = []
         if self.bm25_retriever:
             try:
@@ -675,7 +666,95 @@ class CombinedTypeRetriever(BaseRetriever):
                     doc.metadata["score"] = doc.metadata.get("score", 1.0)
             except Exception as e:
                 print(f"[WARN] BM25 table query failed: {e}")
-                
+        return bm25_tables
+
+    def _search_vector_narratives(self, query: str, query_emb: Optional[List[float]], candidate_topic_names: List[str]) -> List[Document]:
+        vector_narratives = []
+        if query_emb is not None:
+            # Try topic-constrained narrative search first
+            if candidate_topic_names:
+                try:
+                    topic_filter = {
+                        "$and": [
+                            {"type": "narrative"},
+                            {"topic": {"$in": candidate_topic_names}}
+                        ]
+                    }
+                    vector_narratives_with_scores = self.db.similarity_search_with_score(
+                        query, k=self.k_narrative, filter=topic_filter
+                    )
+                    for doc, score in vector_narratives_with_scores:
+                        doc.metadata["score"] = float(score)
+                        doc.metadata["retrieval_method"] = "vector"
+                        vector_narratives.append(doc)
+                    if vector_narratives:
+                        print(f"[NARRATIVE] Topic-constrained search returned {len(vector_narratives)} chunks for topics: {candidate_topic_names}")
+                except Exception as e:
+                    print(f"[WARN] Topic-constrained narrative search failed: {e}. Falling back to unfiltered search.")
+            
+            # Fallback: unfiltered narrative search if topic-constrained returned nothing
+            if not vector_narratives:
+                try:
+                    vector_narratives_with_scores = self.db.similarity_search_with_score(
+                        query, k=self.k_narrative, filter={"type": "narrative"}
+                    )
+                    for doc, score in vector_narratives_with_scores:
+                        doc.metadata["score"] = float(score)
+                        doc.metadata["retrieval_method"] = "vector"
+                        vector_narratives.append(doc)
+                    print(f"[NARRATIVE] Unfiltered fallback search returned {len(vector_narratives)} chunks.")
+                except Exception as e:
+                    print(f"[WARN] Vector narrative search with score failed: {e}. Falling back to standard search.")
+                    try:
+                        vector_narratives = self.db.similarity_search_by_vector(
+                            query_emb, k=self.k_narrative, filter={"type": "narrative"}
+                        )
+                        for doc in vector_narratives:
+                            doc.metadata["score"] = 1.0
+                            doc.metadata["retrieval_method"] = "vector"
+                    except Exception as ex:
+                        print(f"[ERROR] Vector narrative search by vector failed: {ex}")
+        return vector_narratives
+
+    def _search_bm25_narratives(self, query: str, candidate_topic_names: List[str]) -> List[Document]:
+        bm25_narratives = []
+        if self.bm25_retriever:
+            try:
+                bm25_docs = self.bm25_retriever.invoke(query)
+                bm25_narratives = [d for d in bm25_docs if d.metadata.get("type") == "narrative"]
+                # Post-filter BM25 narratives to match selected candidate topics
+                if candidate_topic_names:
+                    filtered_bm25 = [d for d in bm25_narratives if d.metadata.get("topic") in candidate_topic_names]
+                    if filtered_bm25:
+                        bm25_narratives = filtered_bm25
+                        print(f"[NARRATIVE] BM25 topic-filtered to {len(bm25_narratives)} chunks.")
+                for doc in bm25_narratives:
+                    doc.metadata["retrieval_method"] = "bm25"
+                    doc.metadata["score"] = doc.metadata.get("score", 1.0)
+            except Exception as e:
+                print(f"[WARN] BM25 narrative query failed: {e}")
+        return bm25_narratives
+
+    def _get_relevant_documents(
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun = None
+    ) -> List[Document]:
+        from concurrent.futures import ThreadPoolExecutor
+
+        # ── Step 1: Query embedding ──
+        query_emb = None
+        try:
+            query_emb = self.embeddings.embed_query(query)
+        except Exception as e:
+            print(f"[ERROR] Embedding query failed: {e}. Vector search will be bypassed.")
+
+        # ── Step 2: Probe table docs for scenario detection (Hybrid Search) in Parallel ──
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_vector = executor.submit(self._search_vector_tables, query, query_emb)
+            future_bm25 = executor.submit(self._search_bm25_tables, query)
+            
+            vector_tables = future_vector.result()
+            bm25_tables = future_bm25.result()
+            
         # Reciprocal Rank Fusion
         fused_tables = reciprocal_rank_fusion([vector_tables, bm25_tables])
 
@@ -815,78 +894,16 @@ class CombinedTypeRetriever(BaseRetriever):
             print("[WARN] No scenario matched in probe. Using vector probe documents directly.")
             scenario_tables = vector_tables[:5]
 
-        # ── Step 5: Get narratives via topic-constrained hybrid search ──
-        # Constrain narrative retrieval to the same guideline topics selected by the reranker.
-        # This prevents diagnostic guideline narratives (e.g. "Chylothorax Treatment Planning")
-        # from bleeding into results when the reranker selected an interventional guideline
-        # (e.g. "Management of Chylothorax").
-        vector_narratives = []
+        # ── Step 5: Get narratives via topic-constrained hybrid search in Parallel ──
         candidate_topic_names = list(set(tp for tp, sc in best_candidates)) if best_candidates else []
         
-        if query_emb is not None:
-            # Try topic-constrained narrative search first (requires topic metadata from ingestion Phase 2)
-            if candidate_topic_names:
-                try:
-                    topic_filter = {
-                        "$and": [
-                            {"type": "narrative"},
-                            {"topic": {"$in": candidate_topic_names}}
-                        ]
-                    }
-                    vector_narratives_with_scores = self.db.similarity_search_with_score(
-                        query, k=self.k_narrative, filter=topic_filter
-                    )
-                    for doc, score in vector_narratives_with_scores:
-                        doc.metadata["score"] = float(score)
-                        doc.metadata["retrieval_method"] = "vector"
-                        vector_narratives.append(doc)
-                    if vector_narratives:
-                        print(f"[NARRATIVE] Topic-constrained search returned {len(vector_narratives)} chunks for topics: {candidate_topic_names}")
-                except Exception as e:
-                    print(f"[WARN] Topic-constrained narrative search failed: {e}. Falling back to unfiltered search.")
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_vector_narratives = executor.submit(self._search_vector_narratives, query, query_emb, candidate_topic_names)
+            future_bm25_narratives = executor.submit(self._search_bm25_narratives, query, candidate_topic_names)
             
-            # Fallback: unfiltered narrative search if topic-constrained returned nothing
-            if not vector_narratives:
-                try:
-                    vector_narratives_with_scores = self.db.similarity_search_with_score(
-                        query, k=self.k_narrative, filter={"type": "narrative"}
-                    )
-                    for doc, score in vector_narratives_with_scores:
-                        doc.metadata["score"] = float(score)
-                        doc.metadata["retrieval_method"] = "vector"
-                        vector_narratives.append(doc)
-                    print(f"[NARRATIVE] Unfiltered fallback search returned {len(vector_narratives)} chunks.")
-                except Exception as e:
-                    print(f"[WARN] Vector narrative search with score failed: {e}. Falling back to standard search.")
-                    try:
-                        vector_narratives = self.db.similarity_search_by_vector(
-                            query_emb, k=self.k_narrative, filter={"type": "narrative"}
-                        )
-                        for doc in vector_narratives:
-                            doc.metadata["score"] = 1.0
-                            doc.metadata["retrieval_method"] = "vector"
-                    except Exception as ex:
-                        print(f"[ERROR] Vector narrative search by vector failed: {ex}")
-        else:
-            print("[WARN] Skipping vector narrative search because embedding failed.")
-        
-        bm25_narratives = []
-        if self.bm25_retriever:
-            try:
-                bm25_docs = self.bm25_retriever.invoke(query)
-                bm25_narratives = [d for d in bm25_docs if d.metadata.get("type") == "narrative"]
-                # Post-filter BM25 narratives to match selected candidate topics
-                if candidate_topic_names:
-                    filtered_bm25 = [d for d in bm25_narratives if d.metadata.get("topic") in candidate_topic_names]
-                    if filtered_bm25:
-                        bm25_narratives = filtered_bm25
-                        print(f"[NARRATIVE] BM25 topic-filtered to {len(bm25_narratives)} chunks.")
-                for doc in bm25_narratives:
-                    doc.metadata["retrieval_method"] = "bm25"
-                    doc.metadata["score"] = doc.metadata.get("score", 1.0)
-            except Exception as e:
-                print(f"[WARN] BM25 narrative query failed: {e}")
-                
+            vector_narratives = future_vector_narratives.result()
+            bm25_narratives = future_bm25_narratives.result()
+            
         fused_narratives = reciprocal_rank_fusion([vector_narratives, bm25_narratives])
         if ENABLE_COLBERT_RERANK:
             best_narratives = rerank_with_colbert(query, fused_narratives, top_k=self.k_narrative)
@@ -970,15 +987,16 @@ def format_docs(docs):
 # Singleton Pattern for RAG Components
 _retriever = None
 _llm = None
+_llm_fast = None
 _chain = None
 
 
 def init_rag():
     """Initialize all RAG components (embedding model, vector store, LLM).
     Safe to call multiple times — uses singleton pattern."""
-    global _retriever, _llm, _chain, _bm25_retriever
+    global _retriever, _llm, _llm_fast, _chain, _bm25_retriever
     
-    if _retriever is not None and _llm is not None and _chain is not None:
+    if _retriever is not None and _llm is not None and _llm_fast is not None and _chain is not None:
         return
         
     # 1. Copy database files from GCS source mounts to fast local /tmp storage on Cloud Run
@@ -1078,6 +1096,9 @@ def init_rag():
         _retriever = get_retriever()
     if _llm is None:
         _llm = get_llm()
+    if _llm_fast is None:
+        from llm_router import get_llm_fast
+        _llm_fast = get_llm_fast()
     if _chain is None:
         _chain = prompt | _llm | StrOutputParser()
     
@@ -1096,24 +1117,23 @@ def _expand_clinical_query(query: str) -> str:
     highly robust for real-world clinician inputs.
     """
     try:
-        global _llm
-        if _llm is None:
-            _llm = get_llm()
+        global _llm_fast
+        if _llm_fast is None:
+            from llm_router import get_llm_fast
+            _llm_fast = get_llm_fast()
         prompt = (
             "You are a medical vocabulary expansion agent.\n"
             "Analyze the following clinical query and expand any shorthand, abbreviations, or acronyms "
             "to their full, formal medical names (e.g. resolve LBP to Low Back Pain, MVC to Motor Vehicle Collision, "
-            "CES to cauda equina syndrome, GU to genitourinary, r/o to rule out, etc.).\n"
-            "Return the original query text combined with the expanded terms as a single query string for a search engine.\n"
-            "Keep the output extremely concise and return ONLY the resulting query string.\n\n"
-            f"Clinical Query: {query}\n"
-            "Expanded Search Query:"
+            "hx to History, s/p to Status Post, etc.).\n"
+            "Do not add any other commentary or introductory text. Return only the expanded clinical text.\n"
+            f"\nClinical Query: {query}"
         )
-        res = _invoke_with_retry(_llm, prompt)
-        expanded = res.content.strip()
-        return expanded if expanded else query
+        
+        res = _invoke_with_retry(_llm_fast, prompt)
+        return res.content.strip()
     except Exception as e:
-        print(f"[WARN] Clinical NLP expansion failed: {e}. Using raw query.")
+        print(f"[WARN] LLM Query expansion failed: {e}. Falling back to raw query.")
         return query
 
 

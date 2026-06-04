@@ -147,9 +147,10 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
 
     # 3. Call the Gemini API
     try:
+        model_name = os.getenv("LLM_PRIMARY_MODEL", "gemini-2.5-flash")
         response = _generate_content_with_retry(
             client,
-            model="gemini-2.5-flash",
+            model=model_name,
             contents=redacted_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,

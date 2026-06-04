@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -50,8 +51,42 @@ class ClinicalExtraction(BaseModel):
     implants: List[str] = Field(default_factory=list, description="Any implants, pacemakers, cochlear implants, aneurysm clips, or claustrophobia mentioned.")
 
 def get_extraction_llm():
-    from llm_router import get_llm
-    return get_llm(temperature=0.0)
+    from llm_router import get_llm_fast
+    return get_llm_fast(temperature=0.0)
+
+def is_term_negated(text: str, term: str) -> bool:
+    """
+    Checks if a clinical term is negated in the text.
+    Handles boundaries and stops negation propagation at clause boundaries (comma, but, however, except, presents with).
+    """
+    import re
+    text_lower = text.lower()
+    term_lower = term.lower()
+    
+    for match in re.finditer(rf'\b{re.escape(term_lower)}\b', text_lower):
+        start_idx = match.start()
+        sub = text_lower[max(0, start_idx - 40):start_idx]
+        parts = re.split(r'[,;]|\b(?:but|however|except|presents\s+with|presents|has|presents\s+for)\b', sub)
+        segment_to_check = parts[-1]
+        
+        if re.search(r'\b(?:no|denies|without|negative|neg|none)\b', segment_to_check):
+            return True
+    return False
+
+COMMON_INDICATIONS = [
+    "chest pain", "sob", "shortness of breath", "dyspnea", "headache", "dvt", 
+    "pulmonary embolism", "pe", "stroke", "tia", "back pain", "low back pain", 
+    "abdominal pain", "jaundice", "trauma", "blunt trauma", "hematuria", 
+    "seizure", "syncope", "dizziness"
+]
+
+HIGH_RISK_MEDS = {
+    "eliquis": "apixaban",
+    "plavix": "clopidogrel",
+    "coumadin": "warfarin",
+    "xarelto": "rivaroxaban",
+    "glucophage": "metformin"
+}
 
 def fallback_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     """
@@ -86,21 +121,81 @@ def fallback_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     
     entries.append({"resource": patient_data})
     
-    # 3. Clinical condition (Indications)
-    condition_data = {
-        "id": "condition-1",
-        "resourceType": "Condition",
-        "clinicalStatus": {
-            "coding": [{"system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active"}]
-        },
-        "subject": {"reference": "Patient/patient-1"},
-        "code": {
-            "coding": [{"display": clinical_scenario}],
-            "text": clinical_scenario
+    # 3. Clinical conditions (Indications)
+    # Check for specific COMMON_INDICATIONS, filtering out negated ones
+    conditions_extracted = []
+    for term in COMMON_INDICATIONS:
+        if re.search(rf"\b{re.escape(term)}\b", clinical_scenario, re.IGNORECASE):
+            if not is_term_negated(clinical_scenario, term):
+                conditions_extracted.append(term.capitalize())
+                
+    # Also check rule-outs (suspected conditions)
+    for match in re.finditer(r'(?:r/o|eval for|suspected|evaluate for|rule out)\s+([a-zA-Z\s]+)', clinical_scenario, re.IGNORECASE):
+        # Extract up to 3 words
+        raw_cond = match.group(1).strip()
+        cond_words = re.findall(r'\b\w+\b', raw_cond)[:3]
+        if cond_words:
+            suspected_cond = " ".join(cond_words).capitalize()
+            if suspected_cond.lower() not in [c.lower() for c in conditions_extracted]:
+                conditions_extracted.append(suspected_cond)
+
+    # 3a. Implants & Claustrophobia check (Safety-critical conditions)
+    # pacemaker/icd
+    has_pacemaker = re.search(r'\b(?:pacemaker|icd|cardiac device)\b', clinical_scenario, re.IGNORECASE)
+    if has_pacemaker and not is_term_negated(clinical_scenario, has_pacemaker.group(0)):
+        conditions_extracted.append("Pacemaker")
+    # metallic implant
+    has_implant = re.search(r'\b(?:aneurysm clip|metallic clip|metallic implant|shrapnel|cochlear implant)\b', clinical_scenario, re.IGNORECASE)
+    if has_implant and not is_term_negated(clinical_scenario, has_implant.group(0)):
+        conditions_extracted.append("Metallic implant")
+    # claustrophobia
+    has_claustrophobia = re.search(r'\b(?:claustrophobia|claustrophobic)\b', clinical_scenario, re.IGNORECASE)
+    if has_claustrophobia and not is_term_negated(clinical_scenario, has_claustrophobia.group(0)):
+        conditions_extracted.append("Claustrophobia")
+
+    # Add matched conditions to entries
+    cond_idx = 1
+    for cond in conditions_extracted:
+        condition_data = {
+            "id": f"condition-{cond_idx}",
+            "resourceType": "Condition",
+            "clinicalStatus": {
+                "coding": [{"system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active"}]
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "code": {
+                "coding": [{"display": cond}],
+                "text": cond
+            }
         }
-    }
-    entries.append({"resource": condition_data})
-    
+        entries.append({"resource": condition_data})
+        cond_idx += 1
+
+    # Fallback to general condition display if no indications/implants matched
+    if cond_idx == 1:
+        # Sanitize clinical scenario from safety critical terms if negated
+        clean_scenario = clinical_scenario
+        if has_pacemaker and is_term_negated(clinical_scenario, has_pacemaker.group(0)):
+            clean_scenario = re.sub(r'\b(?:pacemaker|icd|cardiac device)\b', 'device-negated', clean_scenario, flags=re.IGNORECASE)
+        if has_implant and is_term_negated(clinical_scenario, has_implant.group(0)):
+            clean_scenario = re.sub(r'\b(?:aneurysm clip|metallic clip|metallic implant|shrapnel|cochlear implant)\b', 'implant-negated', clean_scenario, flags=re.IGNORECASE)
+        if has_claustrophobia and is_term_negated(clinical_scenario, has_claustrophobia.group(0)):
+            clean_scenario = re.sub(r'\b(?:claustrophobia|claustrophobic)\b', 'claustrophobia-negated', clean_scenario, flags=re.IGNORECASE)
+            
+        condition_data = {
+            "id": "condition-1",
+            "resourceType": "Condition",
+            "clinicalStatus": {
+                "coding": [{"system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active"}]
+            },
+            "subject": {"reference": "Patient/patient-1"},
+            "code": {
+                "coding": [{"display": clean_scenario}],
+                "text": clean_scenario
+            }
+        }
+        entries.append({"resource": condition_data})
+
     # 4. Lab Values (eGFR, INR, etc.)
     # eGFR
     egfr_match = re.search(r"egfr\s*(?:is|of|=)?\s*(\d+(?:\.\d+)?)", clinical_scenario, re.IGNORECASE)
@@ -222,29 +317,65 @@ def fallback_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     # 6. Medications
     from medical_ontology import MEDICATION_MAP
     med_idx = 1
+    # De-duplicate medications by RxNorm code to prevent duplicate statements (e.g. brand + generic)
+    meds_by_rxnorm = {}
+    
+    # Check default keys
     for key, val in MEDICATION_MAP.items():
         if re.search(rf"\b{key}\b", clinical_scenario, re.IGNORECASE):
-            med_data = {
-                "id": f"medication-{med_idx}",
-                "resourceType": "MedicationStatement",
-                "status": "active",
-                "subject": {"reference": "Patient/patient-1"},
-                "medication": {
-                    "concept": {
-                        "coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": val["rxnorm"], "display": val.get("generic", key)}],
-                        "text": key.capitalize()
-                    }
+            meds_by_rxnorm[val["rxnorm"]] = (key, val)
+            
+    # Check brand mappings
+    for brand, generic in HIGH_RISK_MEDS.items():
+        if re.search(rf"\b{brand}\b", clinical_scenario, re.IGNORECASE):
+            if generic in MEDICATION_MAP:
+                val = MEDICATION_MAP[generic]
+                meds_by_rxnorm[val["rxnorm"]] = (generic, val)
+            else:
+                meds_by_rxnorm["unknown_" + generic] = (generic, {"rxnorm": "unknown", "generic": generic})
+                
+    for rxnorm_code, (key, val) in meds_by_rxnorm.items():
+        med_data = {
+            "id": f"medication-{med_idx}",
+            "resourceType": "MedicationStatement",
+            "status": "active",
+            "subject": {"reference": "Patient/patient-1"},
+            "medication": {
+                "concept": {
+                    "coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": val["rxnorm"], "display": val.get("generic", key)}],
+                    "text": key.capitalize()
                 }
             }
-            entries.append({"resource": med_data})
-            med_idx += 1
-            
+        }
+        entries.append({"resource": med_data})
+        med_idx += 1
+        
     bundle_data = {
         "resourceType": "Bundle",
         "type": "collection",
         "entry": entries
     }
     return Bundle(**bundle_data)
+
+
+def _needs_llm_extraction(text: str) -> bool:
+    """Returns True if the clinical text is complex enough to warrant LLM extraction."""
+    if len(text.strip()) < 100:
+        return False
+    if is_generic_query(text):
+        return False
+
+    complexity_markers = 0
+    if re.search(r'\d+\s*(?:mg|mcg|units?|ml)\b', text, re.IGNORECASE):
+        complexity_markers += 1  # Dosages present
+    if text.count(',') > 3 or text.count('.') > 3:
+        complexity_markers += 1  # Multiple clauses
+    if len(re.findall(r'\b(?:and|with|also|plus|additionally)\b', text, re.IGNORECASE)) > 2:
+        complexity_markers += 1  # Multiple conditions joined
+    if re.search(r'(?:post-?op|status.?post|s/p|prior)\b', text, re.IGNORECASE):
+        complexity_markers += 1  # Surgical history
+
+    return complexity_markers >= 2
 
 
 def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
@@ -258,11 +389,26 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     - MedicationStatement resources (anticoagulants, antiplatelets)
     """
     from datetime import date
+    import re
     
+    mode = os.getenv("FHIR_EXTRACTION_MODE", "auto").strip().lower()
+    
+    # Legacy env var support
     bypass = os.getenv("BYPASS_FHIR_LLM", "false").strip().lower() == "true"
     if bypass:
+        mode = "regex"
+    
+    if mode == "regex":
         print("[FHIR BYPASS] Using fast local regex fallback for FHIR bundle extraction.")
         return fallback_text_to_fhir_bundle(clinical_scenario)
+        
+    elif mode == "auto":
+        if not _needs_llm_extraction(clinical_scenario):
+            print("[FHIR AUTO] Simple query — using fast local regex fallback for FHIR bundle extraction.")
+            return fallback_text_to_fhir_bundle(clinical_scenario)
+        print("[FHIR AUTO] Complex scenario — attempting LLM FHIR extraction.")
+    else:
+        print("[FHIR LLM] Always-LLM mode — attempting LLM FHIR extraction.")
     
     try:
         llm = get_extraction_llm()

@@ -21,6 +21,7 @@ Configuration via environment variables:
 import os
 import warnings
 from dotenv import load_dotenv
+from functools import lru_cache
 
 load_dotenv()
 
@@ -29,6 +30,8 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 _DEFAULT_LOCAL_MODEL = "llama3.1:8b"
 _DEFAULT_OLLAMA_HOST = "http://localhost:11434"
+_DEFAULT_PRIMARY_MODEL = "gemini-2.5-flash"
+_DEFAULT_FAST_MODEL = "gemini-2.5-flash-lite"
 
 
 def get_deployment_mode() -> str:
@@ -47,18 +50,19 @@ def get_deployment_mode() -> str:
     return mode
 
 
-def get_llm(temperature: float = 0.0):
+@lru_cache(maxsize=4)
+def get_llm(temperature: float = 0.0, tier: str = "primary"):
     """Return a LangChain ``BaseChatModel`` for the active deployment mode.
 
-    Cloud mode  → ``ChatGoogleGenerativeAI(model='gemini-2.5-flash')``
+    Cloud mode  → ``ChatGoogleGenerativeAI(model=LLM_PRIMARY_MODEL or LLM_FAST_MODEL)``
     Local mode  → ``ChatOllama`` configured with LOCAL_MODEL / OLLAMA_HOST.
-                   Falls back to cloud with a warning if ``langchain_ollama``
-                   is not installed.
 
     Parameters
     ----------
     temperature : float, optional
         Sampling temperature passed to the underlying model (default 0.0).
+    tier : str, optional
+        Model tier to use: 'primary' (default) or 'fast'.
 
     Returns
     -------
@@ -90,11 +94,21 @@ def get_llm(temperature: float = 0.0):
     # Cloud mode (default)
     from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore[import-untyped]
 
-    print("[LLM Router] Using CLOUD model: gemini-2.5-flash")
+    if tier == "fast":
+        model_name = os.getenv("LLM_FAST_MODEL", _DEFAULT_FAST_MODEL).strip()
+    else:
+        model_name = os.getenv("LLM_PRIMARY_MODEL", _DEFAULT_PRIMARY_MODEL).strip()
+
+    print(f"[LLM Router] Initializing cloud model: {model_name} (tier: '{tier}', temp: {temperature})")
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model=model_name,
         temperature=temperature,
     )
+
+
+def get_llm_fast(temperature: float = 0.0):
+    """Return the cached fast-tier cloud model (default: gemini-2.5-flash-lite)."""
+    return get_llm(temperature=temperature, tier="fast")
 
 
 def get_embeddings():

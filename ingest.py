@@ -11,6 +11,7 @@ import json
 import time
 import hashlib
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from typing import List, Optional
 from dotenv import load_dotenv
@@ -51,8 +52,19 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
         api_key = os.environ.get("GOOGLE_API_KEY")
         self.client = genai.Client(api_key=api_key)
         self._init_cache()
-        self._conn = sqlite3.connect(self.cache_path, timeout=30.0)
-        self._conn.execute("PRAGMA journal_mode=WAL;")
+        self._local = threading.local()
+
+    @property
+    def conn(self):
+        """Thread-local database connection to ensure safety when retrieved in parallel threads."""
+        if not hasattr(self._local, "conn"):
+            conn = sqlite3.connect(self.cache_path, timeout=30.0, check_same_thread=False)
+            try:
+                conn.execute("PRAGMA journal_mode=WAL;")
+            except Exception as e:
+                print(f"[WARN] Failed to enable WAL mode in embedding cache: {e}")
+            self._local.conn = conn
+        return self._local.conn
 
     def _init_cache(self):
         os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
@@ -74,7 +86,7 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
     def _get_cached_embedding(self, text: str) -> Optional[List[float]]:
         h = self._get_hash(text)
         try:
-            cursor = self._conn.cursor()
+            cursor = self.conn.cursor()
             cursor.execute("SELECT embedding FROM embeddings WHERE text_hash = ?", (h,))
             row = cursor.fetchone()
             if row:
@@ -86,12 +98,12 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
     def _set_cached_embedding(self, text: str, embedding: List[float]):
         h = self._get_hash(text)
         try:
-            cursor = self._conn.cursor()
+            cursor = self.conn.cursor()
             cursor.execute(
                 "INSERT OR REPLACE INTO embeddings (text_hash, text_content, embedding) VALUES (?, ?, ?)",
                 (h, text, json.dumps(embedding))
             )
-            self._conn.commit()
+            self.conn.commit()
         except Exception as e:
             print(f"Cache write error: {e}")
 

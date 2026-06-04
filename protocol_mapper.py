@@ -341,12 +341,12 @@ def _llm_fuzzy_match(
     )
     
     try:
-        from llm_router import get_llm
+        from llm_router import get_llm_fast
         from tenacity import retry, stop_after_attempt, wait_exponential
         
         global _llm
         if _llm is None:
-            _llm = get_llm(temperature=0.0)
+            _llm = get_llm_fast(temperature=0.0)
             
         @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10), reraise=True)
         def _invoke_with_retry(llm_inst, prompt_str):
