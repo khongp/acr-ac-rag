@@ -22,3 +22,4 @@ beautifulsoup4==4.14.3
 # langchain-ollama==0.1.0       # Required only for local LLM mode
 # ragatouille==0.0.8            # Required only for ColBERT reranking
 
+sentence-transformers==3.0.1
