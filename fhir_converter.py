@@ -9,6 +9,58 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fhir.resources.bundle import Bundle
+import sqlite3
+
+FHIR_CACHE_DB_PATH = os.getenv("FHIR_CACHE_DB_PATH", "data/fhir_bundle_cache.db").strip()
+
+def init_fhir_cache_db():
+    os.makedirs(os.path.dirname(FHIR_CACHE_DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(FHIR_CACHE_DB_PATH, timeout=30.0)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS fhir_bundle_cache (
+                query_key TEXT PRIMARY KEY,
+                bundle_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[WARN] Failed to initialize FHIR cache database: {e}")
+    finally:
+        conn.close()
+
+init_fhir_cache_db()
+
+def get_cached_fhir_bundle(clinical_scenario: str) -> Optional[dict]:
+    """Retrieve FHIR bundle from cache if exists."""
+    cache_key = clinical_scenario.strip().lower()
+    try:
+        conn = sqlite3.connect(FHIR_CACHE_DB_PATH, timeout=10.0)
+        cursor = conn.cursor()
+        cursor.execute("SELECT bundle_json FROM fhir_bundle_cache WHERE query_key = ?", (cache_key,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return json.loads(row[0])
+    except Exception as e:
+        print(f"[WARN] Error reading FHIR cache: {e}")
+    return None
+
+def set_cached_fhir_bundle(clinical_scenario: str, bundle_dict: dict):
+    """Write FHIR bundle to persistent cache."""
+    cache_key = clinical_scenario.strip().lower()
+    try:
+        conn = sqlite3.connect(FHIR_CACHE_DB_PATH, timeout=10.0)
+        conn.execute(
+            "INSERT OR REPLACE INTO fhir_bundle_cache (query_key, bundle_json) VALUES (?, ?)",
+            (cache_key, json.dumps(bundle_dict))
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[WARN] Error writing FHIR cache: {e}")
 
 # Simplified extraction models for LLM
 class ExtractedPatient(BaseModel):
@@ -355,6 +407,7 @@ def fallback_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
         "type": "collection",
         "entry": entries
     }
+    set_cached_fhir_bundle(clinical_scenario, bundle_data)
     return Bundle(**bundle_data)
 
 
@@ -388,6 +441,12 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     - AllergyIntolerance resources (contrast agent allergies)
     - MedicationStatement resources (anticoagulants, antiplatelets)
     """
+    # Check SQLite cache first
+    cached_bundle = get_cached_fhir_bundle(clinical_scenario)
+    if cached_bundle:
+        print("[FHIR CACHE HIT] Retrieved FHIR bundle from SQLite cache.")
+        return Bundle(**cached_bundle)
+
     from datetime import date
     import re
     

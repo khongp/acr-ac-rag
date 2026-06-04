@@ -1102,6 +1102,9 @@ def init_rag():
     if _chain is None:
         _chain = prompt | _llm | StrOutputParser()
     
+    # Pre-load CrossEncoder to prevent first-query latency spike
+    get_cross_encoder()
+    
 
 
 

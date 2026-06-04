@@ -12,7 +12,26 @@ def seed_skyridge(db_path=None):
     """Initialize DB schema and load Sky Ridge seed data."""
     path = db_path or get_db_path()
     
-    # 1. Create schema
+    # 1. Clear existing database file if it exists to start fresh and avoid duplicates
+    if os.path.exists(path):
+        try:
+            # Close connection by garbage collecting or ensuring no other handles
+            os.remove(path)
+            print(f"🗑️ Removed existing database at: {path}")
+        except Exception as e:
+            # If database is locked, we can fallback to truncating tables inside a connection
+            print(f"⚠️ Could not delete database file, will attempt table truncation instead: {e}")
+            try:
+                with get_connection(path) as conn:
+                    conn.execute("PRAGMA foreign_keys = OFF")
+                    for t in ['acr_protocol_map', 'ir_med_hold', 'ir_lab_threshold', 'ir_protocol',
+                              'contrast_rule', 'protocol_step', 'imaging_protocol', 'scanner', 'institution']:
+                        conn.execute(f"DELETE FROM {t}")
+                    conn.execute("PRAGMA foreign_keys = ON")
+                print("🧹 Cleared all tables in the existing database.")
+            except Exception as ex:
+                print(f"❌ Failed to clear tables: {ex}")
+
     initialize_db(path)
     
     # 2. Execute seed SQL
