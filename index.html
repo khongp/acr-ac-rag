@@ -3039,7 +3039,8 @@
         window.toggleSnippet = function(id) {
             const el = document.getElementById('snippet-' + id);
             const arrow = document.getElementById('arrow-' + id);
-            if (el.style.display === 'none') {
+            const isCurrentlyHidden = window.getComputedStyle(el).display === 'none';
+            if (isCurrentlyHidden) {
                 el.style.display = 'block';
                 if (arrow) {
                     arrow.style.transform = 'rotate(90deg)';
