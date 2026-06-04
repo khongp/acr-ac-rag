@@ -33,4 +33,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Run the app with Uvicorn, binding to the port set by Cloud Run ($PORT)
-CMD exec uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2 --timeout-keep-alive 30
+CMD exec uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 30
+
