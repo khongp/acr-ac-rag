@@ -49,16 +49,20 @@ graph TD
 
 This system is optimized for serverless deployment on **Google Cloud Run** to ensure near-zero cold starts, high concurrency scaling, and minimal billing:
 
-1.  **☁️ Cloud Gemini Reranker**: Replaced CPU-bound local Cross-Encoder models (`sentence-transformers`/`torch` which required 25-second startup load times) with a cloud-based **Gemini Cloud Reranker** (`ENABLE_LLM_RERANK="true"`). It offloads semantic comparison to the Gemini 2.5 Flash API at a cost of less than `1/100th of a cent` per search, reducing cold starts from **45 seconds to under 5 seconds**.
-2.  **🎯 Clinical Intent Alignment (Procedural Boosting)**: Classifies user queries as Therapeutic (keywords: *treat, therapy, management, fix, embolization, ligation*) vs. Diagnostic (keywords: *image, scan, order, CT, MRI*). Appends SQLite candidate procedures to the reranker and applies a `+1.0` score boost to candidates matching the query's clinical intent. This guarantees accurate routing for interventional radiology guidelines (e.g., Thoracic Duct Embolization) vs. diagnostic scans.
-3.  **🎯 Demographic Age-Based Pre-Filtering**: Detects patient age demographics (pediatric vs. adult) and pre-filters/prioritizes candidates (e.g., filtering out `Suspected Spine Trauma-Child` for adult queries) to prevent incorrect criteria mixing.
-4.  **📖 Local Abbreviation & Acronym Expansion**: Maps common clinical shorthand (e.g. `LBP` -> `low back pain`, `PE` -> `pulmonary embolism`, `DVT` -> `deep vein thrombosis`) locally before querying, bridging the semantic gap for **zero token cost**.
-5.  **🛡️ Fuzzy Anatomical Fallback (Abstention Gate)**: Extracted all known guideline topics to bypass the anatomical region check when the query matches a specific clinical guideline topic (e.g. `chylothorax`), resolving false-positive abstention query blocks.
-6.  **🔄 Self-Healing Procedures Database**: Automated `init_procedures_db()` to check row counts against the source `data/acr_variant_tables.json` on startup. If a mismatch is detected, it drops and rebuilds the SQLite table to sync newly scraped guidelines.
-7.  **⚡ Lightweight Container Footprint**: Deactivated heavy PyTorch/Transformers dependencies. This shrunk the Docker image footprint by **over 1.5 GB**, allowing Cloud Run to scale out and boot container instances instantly under load.
-8.  **⚡ Async Thread Offloading**: Offloads blocking synchronous RAG and database tasks using `asyncio.to_thread` to keep the FastAPI event loop fully non-blocking.
-9.  **🛡️ API Rate Limiting & Tenacity Retries**: Implemented client rate-limiting (`slowapi`, 30 req/min) on critical endpoints and exponential backoff retry policies (`tenacity`) on Google API calls to mitigate transient errors.
-10. **💾 SQLite Query Cache & TTL**: Enforces a strict 7-day TTL cache expiration on query results inside the SQLite database, with automatic cloud GCS bucket synchronization.
+1.  **⚡ Tiered Model Routing**: Combines multiple model capabilities by routing lightweight NLP helper tasks (query expansion, scenario reranking, and fuzzy matching) to **`gemini-2.5-flash-lite`** via caching router singetons, while reserving **`gemini-2.5-flash`** for primary complex FHIR entity extraction and Attending Co-Pilot Chat reasoning.
+2.  **🎯 Clinical Regex Smart Bypass**: Bypasses expensive LLM-based FHIR bundle generation entirely for simple clinical scenario entries using a hardened regex parser. Supports clause-boundary negation (e.g. `denies chest pain` -> chest pain marked inactive), implant/claustrophobia profiling, and drug brand-name mapping (e.g. `Eliquis` -> RxNorm `apixaban`). Activated dynamically via `FHIR_EXTRACTION_MODE="auto"`.
+3.  **⚡ Parallel Database Retrieval**: Executes BM25 lexical keyword lookups and vector semantic search tables concurrently using a thread-safe `ThreadPoolExecutor`, reducing database query latency by over **50%**.
+4.  **🔒 Thread-Safe SQLite Caching**: Backs embedding lookup vectors with a thread-local SQLite cache implementation (`threading.local()`) running in WAL (Write-Ahead Logging) mode, enabling concurrent thread-safe reads and writes without thread-collision errors or lock starvation.
+5.  **☁️ Cloud Gemini Reranker**: Replaced CPU-bound local Cross-Encoder models (`sentence-transformers`/`torch` which required 25-second startup load times) with a cloud-based **Gemini Cloud Reranker** (`ENABLE_LLM_RERANK="true"`). It offloads semantic comparison to the Gemini API at a cost of less than `1/100th of a cent` per search, reducing cold starts from **45 seconds to under 5 seconds**.
+6.  **🎯 Clinical Intent Alignment (Procedural Boosting)**: Classifies user queries as Therapeutic (keywords: *treat, therapy, management, fix, embolization, ligation*) vs. Diagnostic (keywords: *image, scan, order, CT, MRI*). Appends SQLite candidate procedures to the reranker and applies a `+1.0` score boost to candidates matching the query's clinical intent. This guarantees accurate routing for interventional radiology guidelines (e.g., Thoracic Duct Embolization) vs. diagnostic scans.
+7.  **🎯 Demographic Age-Based Pre-Filtering**: Detects patient age demographics (pediatric vs. adult) and pre-filters/prioritizes candidates (e.g., filtering out `Suspected Spine Trauma-Child` for adult queries) to prevent incorrect criteria mixing.
+8.  **📖 Local Abbreviation & Acronym Expansion**: Maps common clinical shorthand (e.g. `LBP` -> `low back pain`, `PE` -> `pulmonary embolism`, `DVT` -> `deep vein thrombosis`) locally before querying, bridging the semantic gap for **zero token cost**.
+9.  **🛡️ Fuzzy Anatomical Fallback (Abstention Gate)**: Extracted all known guideline topics to bypass the anatomical region check when the query matches a specific clinical guideline topic (e.g. `chylothorax`), resolving false-positive abstention query blocks.
+10. **🔄 Self-Healing Procedures Database**: Automated `init_procedures_db()` to check row counts against the source `data/acr_variant_tables.json` on startup. If a mismatch is detected, it drops and rebuilds the SQLite table to sync newly scraped guidelines.
+11. **⚡ Lightweight Container Footprint**: Deactivated heavy PyTorch/Transformers dependencies. This shrunk the Docker image footprint by **over 1.5 GB**, allowing Cloud Run to scale out and boot container instances instantly under load.
+12. **⚡ Async Thread Offloading**: Offloads blocking synchronous RAG and database tasks using `asyncio.to_thread` to keep the FastAPI event loop fully non-blocking.
+13. **🛡️ API Rate Limiting & Tenacity Retries**: Implemented client rate-limiting (`slowapi`, 30 req/min) on critical endpoints and exponential backoff retry policies (`tenacity`) on Google API calls to mitigate transient errors.
+14. **💾 SQLite Query Cache & TTL**: Enforces a strict 7-day TTL cache expiration on query results inside the SQLite database, with automatic cloud GCS bucket synchronization.
 
 ---
 
@@ -69,14 +73,14 @@ Here is a map of the key files in the repository:
 | File / Folder | Role & Functionality |
 | :--- | :--- |
 | **`main.py`** | Entry point hosting the FastAPI web application, HTTP middlewares, rate limiting, and all API endpoints (analysis, protocoling, override logger, review queue, attending chat, and CDS Hooks). |
-| **`fhir_converter.py`** | Transforms unstructured clinical query strings into HL7 FHIR bundles containing `Patient`, `Condition`, `Observation`, `AllergyIntolerance`, and `MedicationStatement` resources using Gemini-driven entity extraction. |
+| **`fhir_converter.py`** | Transforms unstructured clinical query strings into HL7 FHIR bundles containing `Patient`, `Condition`, `Observation`, `AllergyIntolerance`, and `MedicationStatement` resources using Gemini-driven entity extraction or a hardened regex fallback parser. |
 | **`rag_engine.py`** | Handles vector database operations, hybrid BM25 search, Gemini-based cloud reranking, query abbreviation expansion, demographic age-based filtering, clinical intent classification, and closed-loop alternative routing. |
 | **`safety_engine.py`** | Scans clinical indicators extracted from FHIR to evaluate iodine/gadolinium contrast contraindications (eGFR, allergy history), fetal radiation risks, and interventional cardiology/radiology threshold criteria (platelets, INR, medication hold guidelines). |
 | **`protocol_mapper.py`** | Maps abstract ACR-recommended imaging procedures to localized scan protocols and parameters (e.g., contrast parameters, sequence instructions). |
 | **`protocol_db.py`** | Connects to and queries the local SQL database to manage localized procedures and overrides. |
 | **`copilot_engine.py`** | Powering the conversational Attending Chat drawer using context-injected dialogue sessions, matching patient clinical history with retrieved guidelines. |
 | **`medical_ontology.py`** | Pre-defined static medical codes (LOINC, RxNorm, SNOMED-CT) mapping common medications, contrast types, and lab metrics for safety evaluation. |
-| **`llm_router.py`** | Evaluates and routes query types based on semantic classification. |
+| **`llm_router.py`** | Evaluates and routes query types based on semantic classification, managing tiered primary vs. fast model instances. |
 | **`security_utils.py`** | Safeguards clinical text parsing against prompt-injection patterns. |
 | **`ingest.py`** | Parses 275 ACR guideline PDFs and structured JSON variant tables, generating vector embeddings cached in a SQLite table. |
 | **`index.html`** | Fully responsive, glassmorphic dark-mode clinician dashboard simulating the EHR workspace, attending chat, review queue, audit logs, and scan orders. |
@@ -90,7 +94,7 @@ Here is a map of the key files in the repository:
 
 *   **Core Framework:** FastAPI & Uvicorn (Python 3.11)
 *   **Vector Database:** ChromaDB
-*   **LLM & Embeddings:** Google Gemini (`gemini-2.5-flash`), `google-genai` SDK
+*   **LLM & Embeddings:** Google Gemini (`gemini-2.5-flash` and `gemini-2.5-flash-lite`), `google-genai` SDK
 *   **Metadata Storage:** SQLite (For caching, clinician overrides, and procedures mapping)
 *   **Static UI:** Vanilla HTML5, CSS3, & Modern Javascript (Responsive dark-mode interface, swipeable tabs, override modal, and conversational attending chat drawer)
 *   **Cloud Hosting:** Google Cloud Run, Google Cloud Storage (GCS)
@@ -106,31 +110,38 @@ Here is a map of the key files in the repository:
 
 ### Installation
 1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/khongp/acr-ac-rag.git
-    cd acr-ac-rag
-    ```
+     ```bash
+     git clone https://github.com/khongp/acr-ac-rag.git
+     cd acr-ac-rag
+     ```
 2.  **Create and activate a virtual environment:**
-    ```bash
-    python -m venv .venv
-    # Windows:
-    .\.venv\Scripts\activate
-    # macOS/Linux:
-    source .venv/bin/activate
-    ```
+     ```bash
+     python -m venv .venv
+     # Windows:
+     .\.venv\Scripts\activate
+     # macOS/Linux:
+     source .venv/bin/activate
+     ```
 3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+     ```bash
+     pip install -r requirements.txt
+     ```
 4.  **Set up environment variables:**
-    Create a `.env` file in the root directory:
-    ```env
-    GOOGLE_API_KEY="your-gemini-api-key-here"
-    EMBEDDING_MODE="gemini"
-    BYPASS_FHIR_LLM="false"
-    ENABLE_LLM_RERANK="true"
-    DISABLE_COPILOT="false"
-    ```
+     Create a `.env` file in the root directory:
+     ```env
+     GOOGLE_API_KEY="your-gemini-api-key-here"
+     EMBEDDING_MODE="gemini"
+     BYPASS_FHIR_LLM="false"
+     ENABLE_LLM_RERANK="true"
+     DISABLE_COPILOT="false"
+
+     # Tiered Model Routing Configuration
+     LLM_PRIMARY_MODEL="gemini-2.5-flash"      # Primary tier
+     LLM_FAST_MODEL="gemini-2.5-flash-lite"    # Fast/helper tier
+
+     # FHIR Smart Bypass Mode ("auto", "llm", or "regex")
+     FHIR_EXTRACTION_MODE="auto"
+     ```
 
 ### Run the App Locally
 Run the Uvicorn server with hot reloading enabled:
