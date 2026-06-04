@@ -41,6 +41,8 @@ PROCEDURES_DB_PATH = os.getenv("PROCEDURES_DB_PATH", "data/acr_procedures.db").s
 CHROMA_SOURCE_PATH = os.getenv("CHROMA_SOURCE_PATH", "").strip()
 PROCEDURES_SOURCE_PATH = os.getenv("PROCEDURES_SOURCE_PATH", "").strip()
 CACHE_SOURCE_PATH = os.getenv("CACHE_SOURCE_PATH", "").strip()
+BM25_RETRIEVER_SOURCE_PATH = os.getenv("BM25_RETRIEVER_SOURCE_PATH", "").strip()
+BM25_CHUNKS_SOURCE_PATH = os.getenv("BM25_CHUNKS_SOURCE_PATH", "").strip()
 
 
 def sync_cache_to_gcs():
@@ -777,15 +779,19 @@ class CombinedTypeRetriever(BaseRetriever):
                     adult_rrl = row.get("Adult RRL", "")
                     peds_rrl = row.get("Peds RRL", "")
                     
+                    # Explicitly label missing RRL for interventional procedures
+                    if not adult_rrl or adult_rrl.strip() == "":
+                        adult_rrl = "Not Applicable (Interventional Procedure)"
+                    if not peds_rrl or peds_rrl.strip() == "":
+                        peds_rrl = "Not Applicable"
+                    
                     content = f"ACR Appropriateness Table Data:\n"
                     content += f"Topic: {best_topic}\n"
                     content += f"Clinical Scenario (Variant): {best_scenario}\n"
                     content += f"Procedure: {proc}\n"
                     content += f"Appropriateness Category: {cat}\n"
-                    if adult_rrl:
-                        content += f"Adult Radiation Dose (RRL): {adult_rrl}\n"
-                    if peds_rrl:
-                        content += f"Pediatric Radiation Dose (RRL): {peds_rrl}\n"
+                    content += f"Adult Radiation Dose (RRL): {adult_rrl}\n"
+                    content += f"Pediatric Radiation Dose (RRL): {peds_rrl}\n"
                         
                     # Find source score if available from fused tables
                     matching_score = 1.0
@@ -934,10 +940,11 @@ You must guide the user toward consulting with a licensed healthcare professiona
 You must offer general, non-prescriptive information grounded ONLY in the provided text context.
 
 IMPORTANT: 
-1. If the context contains 'ACR Appropriateness Table Data' that matches the user's clinical presentation, strictly list the imaging modalities that are "Usually appropriate" (Ratings 7-9) followed by "May be appropriate" (Ratings 4-6). Always include the Radiation Dose (RRL).
+1. If the context contains 'ACR Appropriateness Table Data' that matches the user's clinical presentation, list the procedures or imaging modalities rated "Usually appropriate" (Ratings 7-9) followed by "May be appropriate" (Ratings 4-6). Include Radiation Dose (RRL) when applicable. For interventional procedures without radiation, state 'Not Applicable'.
 2. If the context DOES NOT contain the exact table data, but DOES contain narrative text or guidelines relevant to the clinical scenario, you MUST summarize that narrative guidance. Do not simply refuse to answer.
-3. Then, use any narrative text provided to add a brief 'Clinical Rationale / FYI' section explaining why.
-4. Keep the output extremely concise and direct. Avoid verbose explanations or conversational filler. Be as brief as possible while providing the required information.
+3. If context comes from multiple guideline topics, clearly label which recommendations come from which guideline topic.
+4. Then, use any narrative text provided to add a brief 'Clinical Rationale / FYI' section explaining why.
+5. Keep the output extremely concise and direct. Avoid verbose explanations or conversational filler. Be as brief as possible while providing the required information.
 
 Context:
 {context}
@@ -1039,6 +1046,32 @@ def init_rag():
 
     init_cache_db()
     init_procedures_db()
+    # Copy BM25 files from GCS mount if available
+    bm25_retriever_path = "data/bm25_retriever.pkl"
+    bm25_chunks_path = "data/bm25_chunks.pkl"
+    
+    if BM25_RETRIEVER_SOURCE_PATH and os.path.exists(BM25_RETRIEVER_SOURCE_PATH):
+        if not os.path.exists(bm25_retriever_path):
+            import shutil
+            print(f"[STARTUP] Copying BM25 retriever from GCS mount {BM25_RETRIEVER_SOURCE_PATH}...")
+            try:
+                os.makedirs(os.path.dirname(bm25_retriever_path), exist_ok=True)
+                shutil.copy2(BM25_RETRIEVER_SOURCE_PATH, bm25_retriever_path)
+                print("[STARTUP] BM25 retriever copy completed.")
+            except Exception as e:
+                print(f"[WARN] Failed to copy BM25 retriever from GCS: {e}")
+    
+    if BM25_CHUNKS_SOURCE_PATH and os.path.exists(BM25_CHUNKS_SOURCE_PATH):
+        if not os.path.exists(bm25_chunks_path):
+            import shutil
+            print(f"[STARTUP] Copying BM25 chunks from GCS mount {BM25_CHUNKS_SOURCE_PATH}...")
+            try:
+                os.makedirs(os.path.dirname(bm25_chunks_path), exist_ok=True)
+                shutil.copy2(BM25_CHUNKS_SOURCE_PATH, bm25_chunks_path)
+                print("[STARTUP] BM25 chunks copy completed.")
+            except Exception as e:
+                print(f"[WARN] Failed to copy BM25 chunks from GCS: {e}")
+
     if _bm25_retriever is None:
         _bm25_retriever = load_bm25_retriever()
     if _retriever is None:

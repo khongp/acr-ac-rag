@@ -159,12 +159,14 @@ def extract_tables(output_file="data/acr_variant_tables.json", start_topic_id=1,
                         category = cell_texts[5].strip()
                         
                         if procedure and category:
+                            adult_rrl = cell_texts[3].strip() or "N/A"
+                            peds_rrl = cell_texts[4].strip() or "N/A"
                             topic_variants.append({
                                 "Scenario": current_scenario,
                                 "Scenario ID": current_scenario_id,
                                 "Procedure": procedure,
-                                "Adult RRL": cell_texts[3].strip(),
-                                "Peds RRL": cell_texts[4].strip(),
+                                "Adult RRL": adult_rrl,
+                                "Peds RRL": peds_rrl,
                                 "Appropriateness Category": category,
                             })
                     
@@ -174,12 +176,14 @@ def extract_tables(output_file="data/acr_variant_tables.json", start_topic_id=1,
                         category = cell_texts[3].strip()
                         
                         if procedure and category and current_scenario:
+                            adult_rrl = cell_texts[1].strip() or "N/A"
+                            peds_rrl = cell_texts[2].strip() or "N/A"
                             topic_variants.append({
                                 "Scenario": current_scenario,
                                 "Scenario ID": current_scenario_id or "",
                                 "Procedure": procedure,
-                                "Adult RRL": cell_texts[1].strip(),
-                                "Peds RRL": cell_texts[2].strip(),
+                                "Adult RRL": adult_rrl,
+                                "Peds RRL": peds_rrl,
                                 "Appropriateness Category": category,
                             })
                     

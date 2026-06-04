@@ -51,6 +51,8 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
         api_key = os.environ.get("GOOGLE_API_KEY")
         self.client = genai.Client(api_key=api_key)
         self._init_cache()
+        self._conn = sqlite3.connect(self.cache_path, timeout=30.0)
+        self._conn.execute("PRAGMA journal_mode=WAL;")
 
     def _init_cache(self):
         os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
@@ -72,11 +74,9 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
     def _get_cached_embedding(self, text: str) -> Optional[List[float]]:
         h = self._get_hash(text)
         try:
-            conn = sqlite3.connect(self.cache_path)
-            cursor = conn.cursor()
+            cursor = self._conn.cursor()
             cursor.execute("SELECT embedding FROM embeddings WHERE text_hash = ?", (h,))
             row = cursor.fetchone()
-            conn.close()
             if row:
                 return json.loads(row[0])
         except Exception as e:
@@ -86,14 +86,12 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
     def _set_cached_embedding(self, text: str, embedding: List[float]):
         h = self._get_hash(text)
         try:
-            conn = sqlite3.connect(self.cache_path)
-            cursor = conn.cursor()
+            cursor = self._conn.cursor()
             cursor.execute(
                 "INSERT OR REPLACE INTO embeddings (text_hash, text_content, embedding) VALUES (?, ?, ?)",
                 (h, text, json.dumps(embedding))
             )
-            conn.commit()
-            conn.close()
+            self._conn.commit()
         except Exception as e:
             print(f"Cache write error: {e}")
 
@@ -303,6 +301,18 @@ def chunk_pdf_documents(documents: list) -> list:
     from collections import defaultdict
     import re
 
+    # Build topic_id -> canonical_name lookup from JSON
+    json_path = 'data/acr_variant_tables.json'
+    topic_id_to_name = {}
+    if os.path.exists(json_path):
+        with open(json_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+        for entry in json_data:
+            tid = entry.get('topicId')
+            tname = entry.get('topicName', '').strip()
+            if tid and tname:
+                topic_id_to_name[tid] = tname
+
     # Group pages by document filename
     docs_by_source = defaultdict(list)
     for doc in documents:
@@ -358,8 +368,13 @@ def chunk_pdf_documents(documents: list) -> list:
             pdf_version = "unknown"
         pdf_ingested_at = datetime.now(timezone.utc).isoformat()
 
-        # Extract topic name from PDF filename (e.g. "Management of Chylothorax_355.pdf" -> "Management of Chylothorax")
-        topic_name = re.sub(r'_\d+\.pdf$', '', src, flags=re.IGNORECASE).strip()
+        # Extract topic name from PDF filename using topic_id lookup for canonical names
+        topic_id_match = re.search(r'_(\d+)\.pdf$', src, re.IGNORECASE)
+        if topic_id_match:
+            topic_id = int(topic_id_match.group(1))
+            topic_name = topic_id_to_name.get(topic_id, re.sub(r'_\d+\.pdf$', '', src, flags=re.IGNORECASE).strip())
+        else:
+            topic_name = re.sub(r'_\d+\.pdf$', '', src, flags=re.IGNORECASE).strip()
 
         # Chunk each section and build final Document objects
         for sec_name, sec_text in sections:
@@ -393,8 +408,8 @@ def ingest_documents():
     
     documents = []
     boundary_pattern = re.compile(
-        r"^\s*(References|Literature Search|Evidence Table|Appendix)\b|\n\s*(References|Literature Search|Evidence Table|Appendix)\b",
-        re.IGNORECASE
+        r"(?:^|\n\n|\n)\s*(References\s*$|Literature Search Procedure|Evidence Table\s*$|Appendix\s*[A-Z]?\s*$)",
+        re.IGNORECASE | re.MULTILINE
     )
     
     # ── Load PDFs (excluding References/Evidence Tables/Appendix) ──
@@ -412,8 +427,14 @@ def ingest_documents():
                     for idx, doc in enumerate(docs):
                         text = doc.page_content
                         # Stop loading when we reach references page or appendix
-                        if boundary_pattern.search(text):
-                            break
+                        match = boundary_pattern.search(text)
+                        if match:
+                            # Secondary validation: verify if page looks like references/appendix
+                            text_after = text[match.start():]
+                            citation_count = len(re.findall(r'(?:^|\n)\s*\[?\d+\]?\.\s+', text_after))
+                            matched_heading = match.group(1).strip().lower()
+                            if citation_count >= 2 or match.start() < 200 or "references" in matched_heading or "evidence table" in matched_heading:
+                                break
                         doc.metadata["source"] = filename
                         doc.metadata["type"] = "narrative"
                         filtered_docs.append(doc)
