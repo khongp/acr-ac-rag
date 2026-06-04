@@ -900,7 +900,7 @@ def get_hard_contraindication_triggers(safety_profile: SafetyProfile) -> list[di
     
     # Critical lab failures
     for lab in safety_profile.lab_checks:
-        if not lab.is_met and lab.action_if_not_met == "hard_stop":
+        if not lab.is_met and lab.action_if_not_met == "hard_stop" and lab.patient_value is not None:
             triggers.append({
                 "rule_type": f"lab_{lab.lab_name}",
                 "message": f"{lab.lab_name} value {lab.patient_value} does not meet threshold ({lab.required_operator} {lab.required_value})",

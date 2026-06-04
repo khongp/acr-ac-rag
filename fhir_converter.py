@@ -748,3 +748,55 @@ def extract_scenario_from_bundle(bundle_dict: dict) -> str:
         
     return scenario
 
+
+def is_generic_query(text: str) -> bool:
+    """
+    Determines if a query is a general knowledge search rather than a specific patient case.
+    To avoid false positives, this check is hyper-conservative.
+    """
+    text_lower = text.strip().lower()
+    
+    # 1. Must start with explicit question or guidelines search prefix
+    generic_prefixes = (
+        "how to", "what is", "what are", "treatment for", "guidelines for",
+        "recommendation for", "recommendations for", "protocol for", "protocols for",
+        "workup for", "management of", "diagnose", "diagnosis of", "evaluation of",
+        "appropriate scan for", "appropriate imaging for", "imaging for", "indication for"
+    )
+    starts_with_prefix = any(text_lower.startswith(prefix) for prefix in generic_prefixes)
+    if not starts_with_prefix:
+        return False
+        
+    # 2. Must not contain any patient demographics or case presentation markers
+    # (avoid bypassing actual patient cases described with prefixes like "guidelines for...")
+    patient_keywords = {
+        # Demographics / age / gender
+        "yo", "year-old", "year old", "years old", "y.o.", "y/o", "male", "female", 
+        "man", "woman", "boy", "girl", "infant", "toddler", "pediatric", "child", "adult", 
+        "pregnant", "pregnancy", "gestational",
+        
+        # Clinical case markers
+        "patient", "pt", "presents", "presented", "complaining", "complains", 
+        "hx of", "history of", "diagnosed with", "admitted", "symptoms of", "symptom of",
+        "vitals", "bp", "heart rate",
+        
+        # Safety/implant/allergy markers
+        "pacemaker", "allergy", "allergies", "allergic", "egfr", "creatinine", 
+        "gfr", "inr", "platelet", "platelets", "hemoglobin", "hgb", "weight", "kg", "lbs", 
+        "implant", "shunt", "metal", "stent", "cochlear", "claustrophobia", "claustrophobic",
+        "contrast allergy", "allergy to",
+        
+        # Medications
+        "eliquis", "apixaban", "warfarin", "coumadin", "plavix", "clopidogrel", "aspirin", 
+        "metformin", "heparin", "lovenox", "enoxaparin"
+    }
+    
+    import re
+    # Check if any patient keyword is present as a whole word
+    for word in patient_keywords:
+        pattern = r"\b" + re.escape(word) + r"\b"
+        if re.search(pattern, text_lower):
+            return False
+            
+    return True
+

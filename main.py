@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("acr-ac-rag")
 
-from fhir_converter import convert_text_to_fhir_bundle, extract_scenario_from_bundle
+from fhir_converter import convert_text_to_fhir_bundle, extract_scenario_from_bundle, fallback_text_to_fhir_bundle, is_generic_query
 from rag_engine import query_acr_guidelines, init_rag, add_clinician_override, get_clinician_overrides
 import hashlib
 import uuid
@@ -413,7 +413,11 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
     # 1. Convert to FHIR Bundle
     if req.text:
         try:
-            bundle_obj = convert_text_to_fhir_bundle(req.text)
+            if is_generic_query(req.text):
+                logger.info(f"Generic query detected: '{req.text}'. Bypassing LLM FHIR extraction.")
+                bundle_obj = fallback_text_to_fhir_bundle(req.text)
+            else:
+                bundle_obj = convert_text_to_fhir_bundle(req.text)
             bundle_dict = bundle_obj.model_dump()
         except Exception as e:
             logger.error("Error in Text-to-FHIR conversion", exc_info=True)
@@ -459,8 +463,8 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
             "protocol_error": str(e),
         }
 
-    # Closed-loop: if hard contraindications found, re-query for alternatives
-    if draft.safety_profile and draft.status in ("matched", "fuzzy_matched"):
+    # Closed-loop: if hard contraindications found, re-query for alternatives (skip for generic queries)
+    if draft.safety_profile and draft.status in ("matched", "fuzzy_matched") and not (req.text and is_generic_query(req.text)):
         from safety_engine import get_hard_contraindication_triggers, SafetyProfile as SP
         try:
             # Reconstruct SafetyProfile from dict to use the helper

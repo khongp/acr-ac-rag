@@ -1080,6 +1080,9 @@ def init_rag():
         _llm = get_llm()
     if _chain is None:
         _chain = prompt | _llm | StrOutputParser()
+    
+    # Pre-load CrossEncoder reranking model to prevent first-request cold-start latency
+    get_cross_encoder()
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10), reraise=True)
