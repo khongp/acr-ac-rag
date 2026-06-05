@@ -1,0 +1,1391 @@
+{
+  "version": "ACR-AC-DB-959856EF600C",
+  "release_date": "2026-06-05",
+  "ingested_at": "2026-06-05T23:06:08.703313+00:00",
+  "total_pdfs": 275,
+  "pdf_files": [
+    {
+      "filename": "Abdominal Aortic Aneurysm Follow-up (Without Repair)_257.pdf",
+      "size_bytes": 174125,
+      "hash": "d33c6191"
+    },
+    {
+      "filename": "Abdominal Aortic Aneurysm or Dissection-Interventional Planning and Follow-up_174.pdf",
+      "size_bytes": 239868,
+      "hash": "a9a08df5"
+    },
+    {
+      "filename": "Abdominal Pain-Child_351.pdf",
+      "size_bytes": 196424,
+      "hash": "e1130b85"
+    },
+    {
+      "filename": "Abnormal Liver Function Tests_288.pdf",
+      "size_bytes": 208865,
+      "hash": "acba8ba1"
+    },
+    {
+      "filename": "Abnormal Uterine Bleeding_116.pdf",
+      "size_bytes": 193168,
+      "hash": "611295ef"
+    },
+    {
+      "filename": "Acute Elbow and Forearm Pain_335.pdf",
+      "size_bytes": 185505,
+      "hash": "43ca0a4b"
+    },
+    {
+      "filename": "Acute Hand and Wrist Trauma_77.pdf",
+      "size_bytes": 222149,
+      "hash": "969f278b"
+    },
+    {
+      "filename": "Acute Hip Pain_189.pdf",
+      "size_bytes": 196826,
+      "hash": "5c1d98be"
+    },
+    {
+      "filename": "Acute Left Upper Quadrant Pain_350.pdf",
+      "size_bytes": 179841,
+      "hash": "65ee7ce2"
+    },
+    {
+      "filename": "Acute Nonlocalized Abdominal Pain_125.pdf",
+      "size_bytes": 246933,
+      "hash": "cc84c896"
+    },
+    {
+      "filename": "Acute Nonspecific Chest Pain-Low Probability of Coronary Artery Disease_61.pdf",
+      "size_bytes": 192231,
+      "hash": "e4373513"
+    },
+    {
+      "filename": "Acute Onset Flank Pain-Suspicion of Stone Disease (Urolithiasis)_26.pdf",
+      "size_bytes": 186025,
+      "hash": "767eed68"
+    },
+    {
+      "filename": "Acute Onset of Scrotal Pain-Without Trauma, Without Antecedent Mass_27.pdf",
+      "size_bytes": 169377,
+      "hash": "76b70fb9"
+    },
+    {
+      "filename": "Acute Pancreatitis_126.pdf",
+      "size_bytes": 190763,
+      "hash": "d5be9471"
+    },
+    {
+      "filename": "Acute Pelvic Pain in the Reproductive Age Group_161.pdf",
+      "size_bytes": 242927,
+      "hash": "d473e9c2"
+    },
+    {
+      "filename": "Acute Pyelonephritis_147.pdf",
+      "size_bytes": 215760,
+      "hash": "f2c106ec"
+    },
+    {
+      "filename": "Acute Respiratory Illness in Immunocompetent Patients_104.pdf",
+      "size_bytes": 242807,
+      "hash": "d88d1747"
+    },
+    {
+      "filename": "Acute Respiratory Illness in Immunocompromised Patients_105.pdf",
+      "size_bytes": 183266,
+      "hash": "4e6519ff"
+    },
+    {
+      "filename": "Acute Shoulder Pain_91.pdf",
+      "size_bytes": 200491,
+      "hash": "64cc7847"
+    },
+    {
+      "filename": "Acute Spinal Trauma_23.pdf",
+      "size_bytes": 218801,
+      "hash": "7dff811f"
+    },
+    {
+      "filename": "Acute Trauma to the Ankle_94.pdf",
+      "size_bytes": 283135,
+      "hash": "06a6b3f0"
+    },
+    {
+      "filename": "Acute Trauma to the Foot_172.pdf",
+      "size_bytes": 197780,
+      "hash": "e6da5552"
+    },
+    {
+      "filename": "Acutely Limping Child Up To Age 5_25.pdf",
+      "size_bytes": 223103,
+      "hash": "ee2225c6"
+    },
+    {
+      "filename": "Adrenal Mass Evaluation_30.pdf",
+      "size_bytes": 205986,
+      "hash": "15dbbf6c"
+    },
+    {
+      "filename": "Altered Mental Status, Coma, Delirium, and Psychosis_271.pdf",
+      "size_bytes": 205389,
+      "hash": "001c9f36"
+    },
+    {
+      "filename": "Anorectal Disease_250.pdf",
+      "size_bytes": 191400,
+      "hash": "f9efcfef"
+    },
+    {
+      "filename": "Antenatal Hydronephrosis-Infant_254.pdf",
+      "size_bytes": 251181,
+      "hash": "ba4e3654"
+    },
+    {
+      "filename": "Assessment of Cardiac Function and Baseline Cardiac Risk Stratification in Oncology Patients_322.pdf",
+      "size_bytes": 205760,
+      "hash": "e51c4df2"
+    },
+    {
+      "filename": "Asymptomatic Patient at Risk for Coronary Artery Disease_187.pdf",
+      "size_bytes": 198871,
+      "hash": "82b21d48"
+    },
+    {
+      "filename": "Ataxia-Child_293.pdf",
+      "size_bytes": 194241,
+      "hash": "c51e8df9"
+    },
+    {
+      "filename": "Autosomal Dominant Polycystic Kidney Disease_359.pdf",
+      "size_bytes": 219986,
+      "hash": "c0838ff1"
+    },
+    {
+      "filename": "Back Pain-Child_230.pdf",
+      "size_bytes": 236618,
+      "hash": "9074359d"
+    },
+    {
+      "filename": "Blunt Chest Trauma-Suspected Cardiac Injury_190.pdf",
+      "size_bytes": 203572,
+      "hash": "b1f4f9ab"
+    },
+    {
+      "filename": "Brain Tumors_336.pdf",
+      "size_bytes": 235283,
+      "hash": "431f8202"
+    },
+    {
+      "filename": "Breast Imaging During Lactation_363.pdf",
+      "size_bytes": 233770,
+      "hash": "cf1644c1"
+    },
+    {
+      "filename": "Breast Imaging During Pregnancy_396.pdf",
+      "size_bytes": 205181,
+      "hash": "5bc73d7f"
+    },
+    {
+      "filename": "Breast Imaging of Lactating Women_248.pdf",
+      "size_bytes": 158537,
+      "hash": "e811ecaa"
+    },
+    {
+      "filename": "Breast Implant Evaluation_239.pdf",
+      "size_bytes": 162338,
+      "hash": "79901534"
+    },
+    {
+      "filename": "Breast Pain_204.pdf",
+      "size_bytes": 187211,
+      "hash": "1336fe6e"
+    },
+    {
+      "filename": "Central Venous Access Device and Site Selection_222.pdf",
+      "size_bytes": 185143,
+      "hash": "24b64c24"
+    },
+    {
+      "filename": "Cerebrovascular Disease-Child_246.pdf",
+      "size_bytes": 249019,
+      "hash": "ddf7f229"
+    },
+    {
+      "filename": "Cerebrovascular Diseases-Aneurysm, Vascular Malformation, and Subarachnoid Hemorrhage_281.pdf",
+      "size_bytes": 238459,
+      "hash": "7e4f99e0"
+    },
+    {
+      "filename": "Cerebrovascular Diseases-Stroke and Stroke-Related Conditions_280.pdf",
+      "size_bytes": 304401,
+      "hash": "b37d84b5"
+    },
+    {
+      "filename": "Cervical Pain or Cervical Radiculopathy_85.pdf",
+      "size_bytes": 253662,
+      "hash": "649a40c6"
+    },
+    {
+      "filename": "Chest Pain-Child_347.pdf",
+      "size_bytes": 177414,
+      "hash": "bfbf2251"
+    },
+    {
+      "filename": "Chest Pain-Possible Acute Coronary Syndrome_63.pdf",
+      "size_bytes": 255124,
+      "hash": "0cb57528"
+    },
+    {
+      "filename": "Chronic Ankle Pain_81.pdf",
+      "size_bytes": 209511,
+      "hash": "62992e13"
+    },
+    {
+      "filename": "Chronic Chest Pain-High Probability of Coronary Artery Disease_65.pdf",
+      "size_bytes": 236194,
+      "hash": "1ed206ef"
+    },
+    {
+      "filename": "Chronic Chest Pain-Noncardiac Etiology Unlikely_ Low to Intermediate Probability of Coronary Artery Disease_1.pdf",
+      "size_bytes": 176196,
+      "hash": "651e6b87"
+    },
+    {
+      "filename": "Chronic Cough_298.pdf",
+      "size_bytes": 216963,
+      "hash": "269f1011"
+    },
+    {
+      "filename": "Chronic Dyspnea-Noncardiovascular Origin_106.pdf",
+      "size_bytes": 198030,
+      "hash": "e70ed761"
+    },
+    {
+      "filename": "Chronic Elbow Pain_82.pdf",
+      "size_bytes": 172269,
+      "hash": "e40b7be8"
+    },
+    {
+      "filename": "Chronic Extremity Joint Pain-Suspected Inflammatory Arthritis, Crystalline Arthritis, or Erosive Osteoarthritis_225.pdf",
+      "size_bytes": 187267,
+      "hash": "234f3dac"
+    },
+    {
+      "filename": "Chronic Foot Pain_83.pdf",
+      "size_bytes": 222519,
+      "hash": "4c6d1e39"
+    },
+    {
+      "filename": "Chronic Hand and Wrist Pain_86.pdf",
+      "size_bytes": 191653,
+      "hash": "8c4af033"
+    },
+    {
+      "filename": "Chronic Hip Pain_84.pdf",
+      "size_bytes": 273171,
+      "hash": "b0daa853"
+    },
+    {
+      "filename": "Chronic Knee Pain_90.pdf",
+      "size_bytes": 188127,
+      "hash": "045d1bf7"
+    },
+    {
+      "filename": "Chronic Liver Disease_229.pdf",
+      "size_bytes": 199691,
+      "hash": "91ff3265"
+    },
+    {
+      "filename": "Chronic Pancreatitis_352.pdf",
+      "size_bytes": 184039,
+      "hash": "c125a3fb"
+    },
+    {
+      "filename": "Chronic Shoulder Pain_241.pdf",
+      "size_bytes": 227916,
+      "hash": "b5a1b0dd"
+    },
+    {
+      "filename": "Chylothorax Treatment Planning_231.pdf",
+      "size_bytes": 205353,
+      "hash": "a63d9431"
+    },
+    {
+      "filename": "Clinically Suspected Adnexal Mass, No Acute Symptoms_124.pdf",
+      "size_bytes": 245217,
+      "hash": "7a92e757"
+    },
+    {
+      "filename": "Clinically Suspected Vascular Malformation of the Extremities_259.pdf",
+      "size_bytes": 258286,
+      "hash": "91fbf58f"
+    },
+    {
+      "filename": "Colorectal Cancer Screening_127.pdf",
+      "size_bytes": 202129,
+      "hash": "52af0316"
+    },
+    {
+      "filename": "Cranial Neuropathy_167.pdf",
+      "size_bytes": 291041,
+      "hash": "d21742c3"
+    },
+    {
+      "filename": "Crohn Disease-Child_295.pdf",
+      "size_bytes": 230640,
+      "hash": "be657868"
+    },
+    {
+      "filename": "Crohn Disease_128.pdf",
+      "size_bytes": 214363,
+      "hash": "cf1b35d7"
+    },
+    {
+      "filename": "Dementia_274.pdf",
+      "size_bytes": 288067,
+      "hash": "56959cec"
+    },
+    {
+      "filename": "Demyelinating Diseases_367.pdf",
+      "size_bytes": 258796,
+      "hash": "8e22c8b6"
+    },
+    {
+      "filename": "Developmental Dysplasia of the Hip-Child_95.pdf",
+      "size_bytes": 218816,
+      "hash": "b4f56aa7"
+    },
+    {
+      "filename": "Diagnosis and Monitoring of Sarcopenia_374.pdf",
+      "size_bytes": 238689,
+      "hash": "afcc68ea"
+    },
+    {
+      "filename": "Dialysis Fistula Malfunction_291.pdf",
+      "size_bytes": 289269,
+      "hash": "0fec612f"
+    },
+    {
+      "filename": "Diffuse Lung Disease_284.pdf",
+      "size_bytes": 189744,
+      "hash": "07022a82"
+    },
+    {
+      "filename": "Dizziness and Ataxia_135.pdf",
+      "size_bytes": 250340,
+      "hash": "8d5b5b42"
+    },
+    {
+      "filename": "Dysphagia_129.pdf",
+      "size_bytes": 211663,
+      "hash": "4f0e31b2"
+    },
+    {
+      "filename": "Dyspnea-Suspected Cardiac Origin (Ischemia Already Excluded)_66.pdf",
+      "size_bytes": 229607,
+      "hash": "376eac99"
+    },
+    {
+      "filename": "Endometriosis_331.pdf",
+      "size_bytes": 188188,
+      "hash": "8c15bc4d"
+    },
+    {
+      "filename": "Epigastric Pain_289.pdf",
+      "size_bytes": 173519,
+      "hash": "f44f6b65"
+    },
+    {
+      "filename": "Evaluation of Cardiac Masses_324.pdf",
+      "size_bytes": 241375,
+      "hash": "98eca80d"
+    },
+    {
+      "filename": "Evaluation of Coronary Artery Anomalies_323.pdf",
+      "size_bytes": 159664,
+      "hash": "802db86a"
+    },
+    {
+      "filename": "Evaluation of Nipple Discharge_236.pdf",
+      "size_bytes": 216287,
+      "hash": "418c9c5d"
+    },
+    {
+      "filename": "Evaluation of the Symptomatic Male Breast_205.pdf",
+      "size_bytes": 197672,
+      "hash": "0424b10c"
+    },
+    {
+      "filename": "Female Breast Cancer Screening_179.pdf",
+      "size_bytes": 243005,
+      "hash": "77a8ece1"
+    },
+    {
+      "filename": "Female Infertility_211.pdf",
+      "size_bytes": 170794,
+      "hash": "f8436b7f"
+    },
+    {
+      "filename": "Fever Without Source or Unknown Origin-Child_96.pdf",
+      "size_bytes": 197377,
+      "hash": "11deb170"
+    },
+    {
+      "filename": "Fibroids_312.pdf",
+      "size_bytes": 177928,
+      "hash": "7fca7585"
+    },
+    {
+      "filename": "First Trimester Vaginal Bleeding_118.pdf",
+      "size_bytes": 184453,
+      "hash": "eb7559c8"
+    },
+    {
+      "filename": "Growth Disturbances\u2013Risk of Fetal Growth Restriction_41.pdf",
+      "size_bytes": 171498,
+      "hash": "eef492b2"
+    },
+    {
+      "filename": "Head Trauma-Child_199.pdf",
+      "size_bytes": 216726,
+      "hash": "60c27482"
+    },
+    {
+      "filename": "Head Trauma_139.pdf",
+      "size_bytes": 252351,
+      "hash": "c92fce27"
+    },
+    {
+      "filename": "Headache-Child_97.pdf",
+      "size_bytes": 210241,
+      "hash": "5295d7e3"
+    },
+    {
+      "filename": "Headache_140.pdf",
+      "size_bytes": 250990,
+      "hash": "b14de164"
+    },
+    {
+      "filename": "Hearing Loss and_or Vertigo_146.pdf",
+      "size_bytes": 176024,
+      "hash": "dfef926a"
+    },
+    {
+      "filename": "Hematospermia_173.pdf",
+      "size_bytes": 196300,
+      "hash": "30822395"
+    },
+    {
+      "filename": "Hematuria-Child_98.pdf",
+      "size_bytes": 231156,
+      "hash": "280fc830"
+    },
+    {
+      "filename": "Hematuria_148.pdf",
+      "size_bytes": 181057,
+      "hash": "f1b59ace"
+    },
+    {
+      "filename": "Hemoptysis_107.pdf",
+      "size_bytes": 202812,
+      "hash": "95f5afb8"
+    },
+    {
+      "filename": "Hernia_290.pdf",
+      "size_bytes": 198631,
+      "hash": "3e1fd567"
+    },
+    {
+      "filename": "Horner Syndrome_337.pdf",
+      "size_bytes": 235255,
+      "hash": "f5c241e0"
+    },
+    {
+      "filename": "Hydrocephalus-Child_344.pdf",
+      "size_bytes": 214256,
+      "hash": "d7e9d22c"
+    },
+    {
+      "filename": "Hydronephrosis on Prior Imaging-Unknown Cause_315.pdf",
+      "size_bytes": 279048,
+      "hash": "982ddae7"
+    },
+    {
+      "filename": "Imaging After Liver Transplant_326.pdf",
+      "size_bytes": 188771,
+      "hash": "f839b5f6"
+    },
+    {
+      "filename": "Imaging After Shoulder Arthroplasty_224.pdf",
+      "size_bytes": 235643,
+      "hash": "c88fe51d"
+    },
+    {
+      "filename": "Imaging After Total Knee Arthroplasty_88.pdf",
+      "size_bytes": 251572,
+      "hash": "4d1a9f0d"
+    },
+    {
+      "filename": "Imaging after Breast Surgery_306.pdf",
+      "size_bytes": 226704,
+      "hash": "381af748"
+    },
+    {
+      "filename": "Imaging after Mastectomy and Breast Reconstruction_282.pdf",
+      "size_bytes": 195412,
+      "hash": "6ce284a5"
+    },
+    {
+      "filename": "Imaging after Total Hip Arthroplasty_220.pdf",
+      "size_bytes": 244780,
+      "hash": "0d034436"
+    },
+    {
+      "filename": "Imaging for Pulmonary Embolism, Known Clot_325.pdf",
+      "size_bytes": 209612,
+      "hash": "5640de9c"
+    },
+    {
+      "filename": "Imaging of Deep Inferior Epigastric Arteries for Surgical Planning (Breast Reconstruction Surgery)_243.pdf",
+      "size_bytes": 197653,
+      "hash": "52d690ca"
+    },
+    {
+      "filename": "Imaging of Ductal Carcinoma in Situ (DCIS)_320.pdf",
+      "size_bytes": 268738,
+      "hash": "42b1c3c4"
+    },
+    {
+      "filename": "Imaging of Facial Trauma Following Primary Survey_307.pdf",
+      "size_bytes": 238137,
+      "hash": "29db2b45"
+    },
+    {
+      "filename": "Imaging of Invasive Breast Cancer_310.pdf",
+      "size_bytes": 313526,
+      "hash": "572cec81"
+    },
+    {
+      "filename": "Imaging of Mediastinal Masses_285.pdf",
+      "size_bytes": 216700,
+      "hash": "a6f6d081"
+    },
+    {
+      "filename": "Imaging of Mesenteric Ischemia_178.pdf",
+      "size_bytes": 210566,
+      "hash": "4d11129e"
+    },
+    {
+      "filename": "Imaging of Possible Tuberculosis_234.pdf",
+      "size_bytes": 151129,
+      "hash": "dfdc1454"
+    },
+    {
+      "filename": "Imaging of Suspected Intracranial Hypotension_340.pdf",
+      "size_bytes": 217069,
+      "hash": "5860eeb4"
+    },
+    {
+      "filename": "Imaging of the Axilla_286.pdf",
+      "size_bytes": 270335,
+      "hash": "1b003507"
+    },
+    {
+      "filename": "Incidentally Detected Indeterminate Pulmonary Nodule_113.pdf",
+      "size_bytes": 226168,
+      "hash": "d314543c"
+    },
+    {
+      "filename": "Indeterminate Renal Mass_31.pdf",
+      "size_bytes": 210057,
+      "hash": "639a2ee7"
+    },
+    {
+      "filename": "Infective Endocarditis_67.pdf",
+      "size_bytes": 195598,
+      "hash": "ea237120"
+    },
+    {
+      "filename": "Inflammatory Back Pain_ Known or Suspected Axial Spondyloarthropathy_212.pdf",
+      "size_bytes": 222697,
+      "hash": "3b763d8a"
+    },
+    {
+      "filename": "Inflammatory Ear Disease_338.pdf",
+      "size_bytes": 227153,
+      "hash": "9dcf5a8e"
+    },
+    {
+      "filename": "Ingested or Aspirated Foreign Body-Child_384.pdf",
+      "size_bytes": 200435,
+      "hash": "bb03330f"
+    },
+    {
+      "filename": "Intensive Care Unit Patients_110.pdf",
+      "size_bytes": 198029,
+      "hash": "62bae5ac"
+    },
+    {
+      "filename": "Jaundice_155.pdf",
+      "size_bytes": 238950,
+      "hash": "d94b59c3"
+    },
+    {
+      "filename": "Joint Pain_ Idiopathic Arthritis-Child_346.pdf",
+      "size_bytes": 201396,
+      "hash": "2500ea25"
+    },
+    {
+      "filename": "Left Lower Quadrant Pain_20.pdf",
+      "size_bytes": 190849,
+      "hash": "9be31acc"
+    },
+    {
+      "filename": "Liver Lesion-Initial Characterization_130.pdf",
+      "size_bytes": 231275,
+      "hash": "4718f9d8"
+    },
+    {
+      "filename": "Low Back Pain_141.pdf",
+      "size_bytes": 225913,
+      "hash": "153d8860"
+    },
+    {
+      "filename": "Lower Extremity Arterial Claudication-Imaging Assessment for Revascularization_70.pdf",
+      "size_bytes": 173727,
+      "hash": "0137d9e8"
+    },
+    {
+      "filename": "Lower Extremity Arterial Revascularization-Post-Therapy Imaging_245.pdf",
+      "size_bytes": 188042,
+      "hash": "30eab455"
+    },
+    {
+      "filename": "Lower Extremity Chronic Venous Disease_165.pdf",
+      "size_bytes": 219798,
+      "hash": "f1c76766"
+    },
+    {
+      "filename": "Lower Urinary Tract Symptoms_ Suspicion of Benign Prostatic Hyperplasia_32.pdf",
+      "size_bytes": 195521,
+      "hash": "fffb58ce"
+    },
+    {
+      "filename": "Lung Cancer Screening_256.pdf",
+      "size_bytes": 164558,
+      "hash": "104c4e36"
+    },
+    {
+      "filename": "Lung Cancer_ Surveillance After Therapy_343.pdf",
+      "size_bytes": 254540,
+      "hash": "03d87321"
+    },
+    {
+      "filename": "Major Blunt Trauma_270.pdf",
+      "size_bytes": 224152,
+      "hash": "c2bf48ea"
+    },
+    {
+      "filename": "Male Breast Cancer Screening_357.pdf",
+      "size_bytes": 160353,
+      "hash": "31d19fac"
+    },
+    {
+      "filename": "Malignant or Aggressive Primary Musculoskeletal Tumor-Staging And Surveillance_87.pdf",
+      "size_bytes": 224745,
+      "hash": "953bf8df"
+    },
+    {
+      "filename": "Management of Acute Pulmonary Embolism_360.pdf",
+      "size_bytes": 160625,
+      "hash": "cb737a4e"
+    },
+    {
+      "filename": "Management of Chylothorax_355.pdf",
+      "size_bytes": 140567,
+      "hash": "64523c5e"
+    },
+    {
+      "filename": "Management of Iliac Artery Occlusive Disease_5.pdf",
+      "size_bytes": 189356,
+      "hash": "3ce6426a"
+    },
+    {
+      "filename": "Management of Liver Cancer_43.pdf",
+      "size_bytes": 204443,
+      "hash": "11105412"
+    },
+    {
+      "filename": "Management of Uterine Fibroids_166.pdf",
+      "size_bytes": 170081,
+      "hash": "391d6103"
+    },
+    {
+      "filename": "Management of Vertebral Compression Fractures_171.pdf",
+      "size_bytes": 294455,
+      "hash": "17137a24"
+    },
+    {
+      "filename": "Minor Blunt Trauma_334.pdf",
+      "size_bytes": 234754,
+      "hash": "036986b8"
+    },
+    {
+      "filename": "Monitoring Response to Neoadjuvant Systemic Therapy for Breast Cancer_235.pdf",
+      "size_bytes": 242999,
+      "hash": "4b9e64af"
+    },
+    {
+      "filename": "Movement Disorders and Neurodegenerative Diseases_275.pdf",
+      "size_bytes": 187073,
+      "hash": "db0a38b3"
+    },
+    {
+      "filename": "Multiple Gestations_120.pdf",
+      "size_bytes": 242993,
+      "hash": "c878ce30"
+    },
+    {
+      "filename": "Myelopathy_142.pdf",
+      "size_bytes": 180146,
+      "hash": "168f2a3c"
+    },
+    {
+      "filename": "Neck Mass_Adenopathy_162.pdf",
+      "size_bytes": 199076,
+      "hash": "a71e6a2d"
+    },
+    {
+      "filename": "Neuroendocrine Imaging_143.pdf",
+      "size_bytes": 212054,
+      "hash": "2999b1f3"
+    },
+    {
+      "filename": "Newly Diagnosed Palpable Scrotal Abnormality_304.pdf",
+      "size_bytes": 162535,
+      "hash": "a55dc9ca"
+    },
+    {
+      "filename": "Noncerebral Vasculitis_301.pdf",
+      "size_bytes": 253460,
+      "hash": "2e7f0648"
+    },
+    {
+      "filename": "Noninvasive Clinical Staging of Primary Lung Cancer_114.pdf",
+      "size_bytes": 201183,
+      "hash": "2b8a2df0"
+    },
+    {
+      "filename": "Nonischemic Myocardial Disease with Clinical Manifestations (Ischemic Cardiomyopathy Already Excluded)_188.pdf",
+      "size_bytes": 262178,
+      "hash": "6873cc4d"
+    },
+    {
+      "filename": "Nonthrombotic Iliac Vein Lesion_376.pdf",
+      "size_bytes": 223374,
+      "hash": "8ea48bb6"
+    },
+    {
+      "filename": "Nontraumatic Aortic Disease_192.pdf",
+      "size_bytes": 248235,
+      "hash": "3cf913d8"
+    },
+    {
+      "filename": "Nontraumatic Chest Wall Pain_297.pdf",
+      "size_bytes": 187630,
+      "hash": "8ac62582"
+    },
+    {
+      "filename": "Nonvariceal Upper Gastrointestinal Bleeding_72.pdf",
+      "size_bytes": 197719,
+      "hash": "23ec6f3a"
+    },
+    {
+      "filename": "Nuchal Translucency Evaluation at 11 to 14 Weeks Gestational Age_263.pdf",
+      "size_bytes": 180419,
+      "hash": "9e592d27"
+    },
+    {
+      "filename": "Occupational Lung Diseases_209.pdf",
+      "size_bytes": 193410,
+      "hash": "55385c96"
+    },
+    {
+      "filename": "Orbital Imaging and Vision Loss-Child_294.pdf",
+      "size_bytes": 194253,
+      "hash": "103f6b19"
+    },
+    {
+      "filename": "Osteomyelitis or Septic Arthritis-Child (Excluding Axial Skeleton)_296.pdf",
+      "size_bytes": 220715,
+      "hash": "eec79163"
+    },
+    {
+      "filename": "Osteonecrosis_79.pdf",
+      "size_bytes": 164212,
+      "hash": "6cb11b02"
+    },
+    {
+      "filename": "Osteoporosis and Bone Mineral Density_22.pdf",
+      "size_bytes": 206135,
+      "hash": "071e75eb"
+    },
+    {
+      "filename": "Ovarian Cancer Screening_121.pdf",
+      "size_bytes": 196058,
+      "hash": "53270593"
+    },
+    {
+      "filename": "Palpable Abdominal Mass-Suspected Neoplasm_131.pdf",
+      "size_bytes": 173400,
+      "hash": "2e2bc535"
+    },
+    {
+      "filename": "Palpable Breast Masses_153.pdf",
+      "size_bytes": 195994,
+      "hash": "6ae33397"
+    },
+    {
+      "filename": "Pancreatic Cyst_277.pdf",
+      "size_bytes": 164835,
+      "hash": "560735c0"
+    },
+    {
+      "filename": "Parathyroid Adenoma_292.pdf",
+      "size_bytes": 205096,
+      "hash": "eddf6332"
+    },
+    {
+      "filename": "Pelvic Floor Dysfunction in Females_201.pdf",
+      "size_bytes": 240256,
+      "hash": "63f938d3"
+    },
+    {
+      "filename": "Penetrating Neck Injury_233.pdf",
+      "size_bytes": 154746,
+      "hash": "8e97c223"
+    },
+    {
+      "filename": "Penetrating Torso Trauma_333.pdf",
+      "size_bytes": 197051,
+      "hash": "ff0d5437"
+    },
+    {
+      "filename": "Penetrating Trauma-Abdomen and Pelvis_40.pdf",
+      "size_bytes": 183951,
+      "hash": "5c22d043"
+    },
+    {
+      "filename": "Placenta Accreta Spectrum Disorder_269.pdf",
+      "size_bytes": 183032,
+      "hash": "97bcd928"
+    },
+    {
+      "filename": "Plexopathy_145.pdf",
+      "size_bytes": 231124,
+      "hash": "5bf46b71"
+    },
+    {
+      "filename": "Pneumonia in the Immunocompetent Child_253.pdf",
+      "size_bytes": 196180,
+      "hash": "8d9a06a6"
+    },
+    {
+      "filename": "Post Treatment Follow-up and Active Surveillance of Renal Cell Carcinoma_29.pdf",
+      "size_bytes": 213899,
+      "hash": "b384e8b0"
+    },
+    {
+      "filename": "Post-Treatment Follow-up of Prostate Cancer_33.pdf",
+      "size_bytes": 394282,
+      "hash": "b6b4dc98"
+    },
+    {
+      "filename": "Post-Treatment Surveillance of Bladder Cancer_28.pdf",
+      "size_bytes": 183511,
+      "hash": "c879e0b9"
+    },
+    {
+      "filename": "Postmenopausal Acute Pelvic Pain_264.pdf",
+      "size_bytes": 157710,
+      "hash": "a5df5b8f"
+    },
+    {
+      "filename": "Postmenopausal Subacute or Chronic Pelvic Pain_265.pdf",
+      "size_bytes": 158430,
+      "hash": "9de942a2"
+    },
+    {
+      "filename": "Postpartum Hemorrhage_276.pdf",
+      "size_bytes": 250014,
+      "hash": "68ef15a3"
+    },
+    {
+      "filename": "Preoperative and Postoperative Imaging for Bariatric Procedures_330.pdf",
+      "size_bytes": 178336,
+      "hash": "d946657c"
+    },
+    {
+      "filename": "Preprocedural Chest or Cardiac Imaging for Cardiothoracic Surgery_321.pdf",
+      "size_bytes": 257801,
+      "hash": "868e22da"
+    },
+    {
+      "filename": "Preprocedural Planning for Left Atrial Procedures in Atrial Fibrillation_319.pdf",
+      "size_bytes": 204533,
+      "hash": "77072afd"
+    },
+    {
+      "filename": "Preprocedural Planning for Transcatheter Aortic Valve Replacement_191.pdf",
+      "size_bytes": 202608,
+      "hash": "fa553b7b"
+    },
+    {
+      "filename": "Pretreatment Detection, Surveillance, and Staging of Prostate Cancer_35.pdf",
+      "size_bytes": 230097,
+      "hash": "63f29a9c"
+    },
+    {
+      "filename": "Pretreatment Evaluation and Follow-Up of Endometrial Cancer_117.pdf",
+      "size_bytes": 212220,
+      "hash": "22200bf3"
+    },
+    {
+      "filename": "Pretreatment Evaluation and Follow-up of Invasive Cancer of the Cervix_119.pdf",
+      "size_bytes": 226203,
+      "hash": "9f2d1b6f"
+    },
+    {
+      "filename": "Pretreatment Staging of Urothelial Cancer_34.pdf",
+      "size_bytes": 285811,
+      "hash": "3e2abd2b"
+    },
+    {
+      "filename": "Pulmonary Arteriovenous Malformation (PAVM)_218.pdf",
+      "size_bytes": 281232,
+      "hash": "81d2ee8c"
+    },
+    {
+      "filename": "Pulsatile Abdominal Mass, Suspected Abdominal Aortic Aneurysm_73.pdf",
+      "size_bytes": 185833,
+      "hash": "12b3a46e"
+    },
+    {
+      "filename": "Radiologic Management of Biliary Obstruction_8.pdf",
+      "size_bytes": 242107,
+      "hash": "6c564b4f"
+    },
+    {
+      "filename": "Radiologic Management of Gastric Varices_180.pdf",
+      "size_bytes": 229896,
+      "hash": "34caf2b9"
+    },
+    {
+      "filename": "Radiologic Management of Iliofemoral Venous Thrombosis_193.pdf",
+      "size_bytes": 157151,
+      "hash": "07262b52"
+    },
+    {
+      "filename": "Radiologic Management of Infected Fluid Collections_9.pdf",
+      "size_bytes": 199906,
+      "hash": "b08689a7"
+    },
+    {
+      "filename": "Radiologic Management of Lower Gastrointestinal Tract Bleeding_115.pdf",
+      "size_bytes": 173065,
+      "hash": "c17d8c48"
+    },
+    {
+      "filename": "Radiologic Management of Mesenteric Ischemia_159.pdf",
+      "size_bytes": 166965,
+      "hash": "fafb2c40"
+    },
+    {
+      "filename": "Radiologic Management of Portal Hypertension_251.pdf",
+      "size_bytes": 261457,
+      "hash": "e0cb1aa6"
+    },
+    {
+      "filename": "Radiologic Management of Pulmonary Nodules and Masses_7.pdf",
+      "size_bytes": 157879,
+      "hash": "148c774f"
+    },
+    {
+      "filename": "Radiologic Management of Urinary Tract Obstruction_17.pdf",
+      "size_bytes": 156668,
+      "hash": "73cef1de"
+    },
+    {
+      "filename": "Radiologic Management of Venous Thromboembolism-Inferior Vena Cava Filters_6.pdf",
+      "size_bytes": 198607,
+      "hash": "8f87dc70"
+    },
+    {
+      "filename": "Recurrent Lower Urinary Tract Infections in Females_149.pdf",
+      "size_bytes": 213516,
+      "hash": "24191bb7"
+    },
+    {
+      "filename": "Renal Failure_150.pdf",
+      "size_bytes": 243579,
+      "hash": "f67cff94"
+    },
+    {
+      "filename": "Renal Transplant Dysfunction_183.pdf",
+      "size_bytes": 226714,
+      "hash": "2a0dbdc0"
+    },
+    {
+      "filename": "Renovascular Hypertension_38.pdf",
+      "size_bytes": 224509,
+      "hash": "e074499b"
+    },
+    {
+      "filename": "Rib Fractures_108.pdf",
+      "size_bytes": 190836,
+      "hash": "11c0d07a"
+    },
+    {
+      "filename": "Right Lower Quadrant Pain_21.pdf",
+      "size_bytes": 228444,
+      "hash": "fe28489e"
+    },
+    {
+      "filename": "Right Upper Quadrant Pain_132.pdf",
+      "size_bytes": 198761,
+      "hash": "c8ca173b"
+    },
+    {
+      "filename": "Routine Chest Imaging_109.pdf",
+      "size_bytes": 192256,
+      "hash": "aa4adf40"
+    },
+    {
+      "filename": "Scoliosis-Child_242.pdf",
+      "size_bytes": 168527,
+      "hash": "62a0afb0"
+    },
+    {
+      "filename": "Screening for Abdominal Aortic Aneurysm_316.pdf",
+      "size_bytes": 194009,
+      "hash": "1dd78c57"
+    },
+    {
+      "filename": "Screening, Locoregional Assessment, and Surveillance of Pancreatic Ductal Adenocarcinoma_238.pdf",
+      "size_bytes": 199383,
+      "hash": "cb3f59d3"
+    },
+    {
+      "filename": "Second and Third Trimester Screening for Fetal Anomaly_266.pdf",
+      "size_bytes": 180088,
+      "hash": "00c98838"
+    },
+    {
+      "filename": "Second and Third Trimester Vaginal Bleeding_123.pdf",
+      "size_bytes": 164984,
+      "hash": "4c059c5b"
+    },
+    {
+      "filename": "Seizures and Epilepsy_137.pdf",
+      "size_bytes": 248550,
+      "hash": "f1e8287a"
+    },
+    {
+      "filename": "Seizures-Child_99.pdf",
+      "size_bytes": 227256,
+      "hash": "ffe3dc80"
+    },
+    {
+      "filename": "Sepsis_311.pdf",
+      "size_bytes": 216110,
+      "hash": "f9f84043"
+    },
+    {
+      "filename": "Sinonasal Disease_160.pdf",
+      "size_bytes": 224328,
+      "hash": "87939340"
+    },
+    {
+      "filename": "Sinusitis\u2013Child_100.pdf",
+      "size_bytes": 191206,
+      "hash": "44a56dcb"
+    },
+    {
+      "filename": "Soft Tissue Masses_92.pdf",
+      "size_bytes": 181276,
+      "hash": "ccfdccb7"
+    },
+    {
+      "filename": "Soft Tissue Vascular Anomalies_ Vascular Malformations  and Infantile Vascular Tumors (Non-CNS)-Child_309.pdf",
+      "size_bytes": 190612,
+      "hash": "51d7247a"
+    },
+    {
+      "filename": "Staging and Disease Monitoring of Colon Cancer and Appendiceal Cancer_349.pdf",
+      "size_bytes": 207369,
+      "hash": "47fe6916"
+    },
+    {
+      "filename": "Staging and Disease Monitoring of Rectal Cancer_348.pdf",
+      "size_bytes": 249599,
+      "hash": "5693b26c"
+    },
+    {
+      "filename": "Staging and Follow-Up of Leukemia_317.pdf",
+      "size_bytes": 253298,
+      "hash": "a60fef4d"
+    },
+    {
+      "filename": "Staging and Follow-up of Adrenal Cancer_358.pdf",
+      "size_bytes": 175423,
+      "hash": "a45fd446"
+    },
+    {
+      "filename": "Staging and Follow-up of Anal Cancer_329.pdf",
+      "size_bytes": 169350,
+      "hash": "a7eb6b38"
+    },
+    {
+      "filename": "Staging and Follow-up of Esophageal Cancer_305.pdf",
+      "size_bytes": 169982,
+      "hash": "f6d43099"
+    },
+    {
+      "filename": "Staging and Follow-up of Gastric Cancer_353.pdf",
+      "size_bytes": 225446,
+      "hash": "c3e0f5fe"
+    },
+    {
+      "filename": "Staging and Follow-up of Melanoma_341.pdf",
+      "size_bytes": 244900,
+      "hash": "3a089314"
+    },
+    {
+      "filename": "Staging and Follow-up of Ovarian Cancer_42.pdf",
+      "size_bytes": 187271,
+      "hash": "c33c2afd"
+    },
+    {
+      "filename": "Staging and Follow-up of Pancreatic Neuroendocrine Tumors_328.pdf",
+      "size_bytes": 194232,
+      "hash": "1a6e2c4e"
+    },
+    {
+      "filename": "Staging and Follow-up of Primary Liver Cancer_327.pdf",
+      "size_bytes": 199234,
+      "hash": "598c65e2"
+    },
+    {
+      "filename": "Staging and Follow-up of Primary Vaginal Cancer_267.pdf",
+      "size_bytes": 206984,
+      "hash": "d758a8ae"
+    },
+    {
+      "filename": "Staging and Follow-up of Vulvar Cancer_268.pdf",
+      "size_bytes": 219087,
+      "hash": "184e00d8"
+    },
+    {
+      "filename": "Staging and Post-Therapy Assessment of Head and Neck Cancer_314.pdf",
+      "size_bytes": 336904,
+      "hash": "f0125947"
+    },
+    {
+      "filename": "Staging and Surveillance of Testicular Cancer_39.pdf",
+      "size_bytes": 206173,
+      "hash": "7d766d3a"
+    },
+    {
+      "filename": "Staging of Colorectal Cancer_3.pdf",
+      "size_bytes": 218742,
+      "hash": "2d70e26f"
+    },
+    {
+      "filename": "Staging of Renal Cell Carcinoma_36.pdf",
+      "size_bytes": 208967,
+      "hash": "94167d0a"
+    },
+    {
+      "filename": "Stress (Fatigue_Insufficiency) Fracture, Including Sacrum, Excluding Other Vertebrae_93.pdf",
+      "size_bytes": 192420,
+      "hash": "5c60c5d7"
+    },
+    {
+      "filename": "Sudden Onset of Cold, Painful Leg_2.pdf",
+      "size_bytes": 257783,
+      "hash": "1f5236fc"
+    },
+    {
+      "filename": "Supplemental Breast Cancer Screening Based on Breast Density_287.pdf",
+      "size_bytes": 214813,
+      "hash": "c46b57ab"
+    },
+    {
+      "filename": "Suspected Abdominal Neoplasm-Child_345.pdf",
+      "size_bytes": 213735,
+      "hash": "48a4497f"
+    },
+    {
+      "filename": "Suspected Acute Aortic Syndrome_62.pdf",
+      "size_bytes": 230223,
+      "hash": "8b836ea7"
+    },
+    {
+      "filename": "Suspected Appendicitis-Child_273.pdf",
+      "size_bytes": 243555,
+      "hash": "37f3f486"
+    },
+    {
+      "filename": "Suspected Lower Extremity Deep Vein Thrombosis_75.pdf",
+      "size_bytes": 150150,
+      "hash": "39b84f25"
+    },
+    {
+      "filename": "Suspected Osteomyelitis of the Foot in Patients with Diabetes Mellitus_4.pdf",
+      "size_bytes": 239047,
+      "hash": "fd9620f9"
+    },
+    {
+      "filename": "Suspected Osteomyelitis, Septic Arthritis, or Soft Tissue Infection (Excluding Spine and Diabetic Foot)_221.pdf",
+      "size_bytes": 212795,
+      "hash": "672bf1e0"
+    },
+    {
+      "filename": "Suspected Physical Abuse-Child_101.pdf",
+      "size_bytes": 282048,
+      "hash": "2ec02a47"
+    },
+    {
+      "filename": "Suspected Primary Bone Tumors_80.pdf",
+      "size_bytes": 211806,
+      "hash": "50a7a668"
+    },
+    {
+      "filename": "Suspected Pulmonary Embolism_64.pdf",
+      "size_bytes": 237469,
+      "hash": "10f31659"
+    },
+    {
+      "filename": "Suspected Pulmonary Hypertension_182.pdf",
+      "size_bytes": 203979,
+      "hash": "94ab7a64"
+    },
+    {
+      "filename": "Suspected Retroperitoneal Bleed_302.pdf",
+      "size_bytes": 221238,
+      "hash": "2a5bad39"
+    },
+    {
+      "filename": "Suspected Small-Bowel Obstruction_134.pdf",
+      "size_bytes": 175651,
+      "hash": "1a6e966a"
+    },
+    {
+      "filename": "Suspected Spine Infection_279.pdf",
+      "size_bytes": 193954,
+      "hash": "64f50ac4"
+    },
+    {
+      "filename": "Suspected Spine Trauma-Child_240.pdf",
+      "size_bytes": 248258,
+      "hash": "e3d3b7cb"
+    },
+    {
+      "filename": "Suspected Upper-Extremity Deep Vein Thrombosis_76.pdf",
+      "size_bytes": 165642,
+      "hash": "adf475fd"
+    },
+    {
+      "filename": "Suspected and Known Heart Failure_249.pdf",
+      "size_bytes": 223046,
+      "hash": "5c834b83"
+    },
+    {
+      "filename": "Suspected and Known Renal or Splanchnic Artery Aneurysm_380.pdf",
+      "size_bytes": 275900,
+      "hash": "b4beba0c"
+    },
+    {
+      "filename": "Syncope_278.pdf",
+      "size_bytes": 201601,
+      "hash": "ad5f005b"
+    },
+    {
+      "filename": "Thoracic Aortic Aneurysm or Dissection-Treatment Planning and Follow-Up_237.pdf",
+      "size_bytes": 242725,
+      "hash": "0832e875"
+    },
+    {
+      "filename": "Thoracic Back Pain_339.pdf",
+      "size_bytes": 184733,
+      "hash": "a8aa4f98"
+    },
+    {
+      "filename": "Thoracic Outlet Syndrome_200.pdf",
+      "size_bytes": 200394,
+      "hash": "0dfa3ed0"
+    },
+    {
+      "filename": "Thoracic Venous Occlusions-Suspected Superior Vena Cava Syndrome_356.pdf",
+      "size_bytes": 169165,
+      "hash": "11febdee"
+    },
+    {
+      "filename": "Thoracoabdominal Aortic Aneurysm or Dissection_ Treatment Planning and Follow-Up_308.pdf",
+      "size_bytes": 215509,
+      "hash": "62e76ed3"
+    },
+    {
+      "filename": "Thyroid Disease_252.pdf",
+      "size_bytes": 217870,
+      "hash": "e5aced37"
+    },
+    {
+      "filename": "Tinnitus_219.pdf",
+      "size_bytes": 209512,
+      "hash": "ce59079c"
+    },
+    {
+      "filename": "Tracheobronchial Disease_342.pdf",
+      "size_bytes": 194675,
+      "hash": "c1620fc8"
+    },
+    {
+      "filename": "Transgender Breast Cancer Screening_283.pdf",
+      "size_bytes": 198797,
+      "hash": "f29d3c1c"
+    },
+    {
+      "filename": "Urinary Tract Infection\u2013Child_102.pdf",
+      "size_bytes": 219347,
+      "hash": "b2303c5e"
+    },
+    {
+      "filename": "Vision Loss_361.pdf",
+      "size_bytes": 238537,
+      "hash": "743c6f25"
+    },
+    {
+      "filename": "Vomiting in Infants_103.pdf",
+      "size_bytes": 179771,
+      "hash": "9cd38337"
+    },
+    {
+      "filename": "Workup of Noncerebral Systemic Arterial Embolic Source_303.pdf",
+      "size_bytes": 196363,
+      "hash": "5932cd6c"
+    },
+    {
+      "filename": "Workup of Pleural Effusion or Pleural Disease_300.pdf",
+      "size_bytes": 196289,
+      "hash": "8e8377f7"
+    }
+  ],
+  "variant_table": {
+    "filename": "acr_variant_tables.json",
+    "size_bytes": 19055824,
+    "hash": "d4427405"
+  },
+  "total_vectors": 62751,
+  "vector_dimensions": 768,
+  "embedding_model": "models/gemini-embedding-2"
+}

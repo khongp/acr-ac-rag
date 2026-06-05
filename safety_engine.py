@@ -862,13 +862,18 @@ def evaluate_safety(
             profile.safety_flags.append(flag)
     
     # 5. IR lab thresholds
-    ir_details = protocol_data.get("ir_details", {})
-    lab_thresholds = ir_details.get("lab_thresholds", [])
+    ir_details = protocol_data.get("ir_details")
+    if isinstance(ir_details, dict):
+        lab_thresholds = ir_details.get("lab_thresholds", [])
+        med_holds = ir_details.get("med_holds", [])
+    else:
+        lab_thresholds = protocol_data.get("lab_thresholds", [])
+        med_holds = protocol_data.get("med_holds", [])
+        
     if lab_thresholds:
         profile.lab_checks = evaluate_ir_lab_thresholds(lab_thresholds, patient_data)
     
     # 6. IR medication holds
-    med_holds = ir_details.get("med_holds", [])
     if med_holds:
         profile.med_holds = evaluate_ir_med_holds(med_holds, patient_data)
     

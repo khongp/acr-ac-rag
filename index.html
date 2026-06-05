@@ -4,20 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:;">
-    <meta name="description" content="ACR-AC RAG Clinical Decision Support Hub - Clinical Appropriateness Criteria & Intelligent Radiology Protocoling.">
+    <meta name="description" content="Advanced Imaging Decision Support & Protocol Intelligence - Transform clinical indications into evidence-based imaging recommendations, patient-specific safety assessments, and protocol guidance.">
     <meta name="theme-color" content="#0f172a">
     <!-- PWA primary tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="ACR-AC Hub">
+    <meta name="apple-mobile-web-app-title" content="[AC]R Co-Pilot">
     <!-- Open Graph tags for premium sharing presentation -->
-    <meta property="og:title" content="ACR-AC RAG Clinical Decision Support Hub">
-    <meta property="og:description" content="Intelligent Radiology Protocoling and Appropriateness Criteria lookup powered by RAG.">
+    <meta property="og:title" content="Advanced Imaging Decision Support & Protocol Intelligence">
+    <meta property="og:description" content="Transform clinical indications into evidence-based imaging recommendations, patient-specific safety assessments, and protocol guidance.">
     <meta property="og:type" content="website">
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
-    <title>ACR Appropriateness Criteria - Clinical Decision Support Hub</title>
+    <title>Advanced Imaging Decision Support & Protocol Intelligence</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -1610,11 +1610,14 @@
         <div class="logo-section" onclick="window.location.reload()" title="Click to refresh page" style="display: flex; align-items: center; gap: 12px;">
             <img src="/logo.png" alt="ACR logo" style="height: 38px; width: 38px; border-radius: var(--radius-md); object-fit: cover;">
             <div>
-                <h1 style="margin: 0; line-height: 1.2;">ACR-AC RAG Clinical Hub</h1>
-                <p style="margin: 2px 0 0 0; line-height: 1.2;">Appropriateness Criteria &amp; Intelligent Radiology Protocoling</p>
+                <h1 style="margin: 0; line-height: 1.2;">Advanced Imaging Decision Support & Protocol Intelligence</h1>
+                <p style="margin: 2px 0 0 0; line-height: 1.2;">Transform clinical indications into evidence-based imaging recommendations, patient-specific safety assessments, and protocol guidance.</p>
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
+            <div id="db-version-badge" class="status-badge" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.15); color: var(--color-info);">
+                <span>Guidelines: Loading...</span>
+            </div>
             <div class="status-badge">
                 <span class="status-indicator"></span>
                 <span>FHIR Connected</span>
@@ -1636,7 +1639,7 @@
         <div id="welcome-banner" class="welcome-banner" style="display: none;">
             <div class="welcome-banner-icon">👋</div>
             <div class="welcome-banner-content">
-                <h3>Welcome to ACR-AC RAG Clinical Hub</h3>
+                <h3>Welcome to Advanced Imaging Decision Support & Protocol Intelligence</h3>
                 <p>This portal matches patient presentations directly with the <strong>ACR Appropriateness Criteria®</strong>. Type a clinical scenario to extract age, gender, and comorbidities, then click <strong>Run CDS Engine</strong> to retrieve appropriateness ratings and draft a local protocol. Collapse the patient simulator for a "type-and-go" workflow, or toggle Advanced View for RAG logs, FHIR resources, and CDS Hooks responses.</p>
             </div>
             <button class="welcome-banner-close" onclick="dismissWelcomeBanner()" aria-label="Dismiss welcome banner">&times;</button>
@@ -1847,7 +1850,7 @@
             <!-- Placeholder State -->
             <div id="placeholder" class="panel active">
                 <div class="placeholder-state">
-                    <div style="font-size: 32px; font-weight: 300; margin-bottom: 15px; color: var(--color-info); letter-spacing: 3px;">ACR-AC CDS</div>
+                    <div style="font-size: 32px; font-weight: 300; margin-bottom: 15px; color: var(--color-info); letter-spacing: 3px;">[AC]R CO-PILOT</div>
                     <h2>Awaiting Clinical Scenario</h2>
                     <p style="max-width: 500px; margin-top: 12px; line-height: 1.6;">Welcome to the clinical decision support dashboard! Click one of the <strong>Presets</strong> above to load a test scenario, or type a custom scenario. Demographics (age, gender) and comorbidities (contrast allergy, implants) will be extracted automatically.</p>
                 </div>
@@ -2320,8 +2323,27 @@
                 }
             }
         });
-        // Initial health check on page load
-        window.addEventListener('load', checkBackendHealth);
+        async function loadGuidelineManifest() {
+            try {
+                const res = await fetch(`${API_BASE}/v1/guidelines/manifest`, { method: "GET" });
+                if (res.ok) {
+                    const data = await res.json();
+                    const badge = document.getElementById('db-version-badge');
+                    if (badge && data.release_date) {
+                        badge.innerHTML = `<span>Guidelines: ${data.release_date}</span>`;
+                        badge.title = `Database version: ${data.version}\nTotal PDFs: ${data.total_pdfs}\nTotal vectors: ${data.total_vectors}`;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load guideline manifest:", err);
+            }
+        }
+
+        // Initial health check and manifest loading on page load
+        window.addEventListener('load', () => {
+            checkBackendHealth();
+            loadGuidelineManifest();
+        });
 
         // ==========================================
         // UX Enhancement Helper Functions & Constants

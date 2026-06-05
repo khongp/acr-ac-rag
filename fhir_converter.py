@@ -10,6 +10,7 @@ load_dotenv()
 
 from fhir.resources.bundle import Bundle
 import sqlite3
+from security_utils import redact_phi
 
 FHIR_CACHE_DB_PATH = os.getenv("FHIR_CACHE_DB_PATH", "data/fhir_bundle_cache.db").strip()
 
@@ -144,6 +145,7 @@ def fallback_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     """
     A regex-based backup parser that generates a standard FHIR bundle when the LLM is rate-limited or offline.
     """
+    clinical_scenario = redact_phi(clinical_scenario)
     import re
     from datetime import date
     
@@ -441,6 +443,7 @@ def convert_text_to_fhir_bundle(clinical_scenario: str) -> Bundle:
     - AllergyIntolerance resources (contrast agent allergies)
     - MedicationStatement resources (anticoagulants, antiplatelets)
     """
+    clinical_scenario = redact_phi(clinical_scenario)
     # Check SQLite cache first
     cached_bundle = get_cached_fhir_bundle(clinical_scenario)
     if cached_bundle:

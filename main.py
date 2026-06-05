@@ -29,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger("acr-ac-rag")
 
 from fhir_converter import convert_text_to_fhir_bundle, extract_scenario_from_bundle, fallback_text_to_fhir_bundle, is_generic_query
-from rag_engine import query_acr_guidelines, init_rag, add_clinician_override, get_clinician_overrides
+from rag_engine import query_acr_guidelines, init_rag, add_clinician_override, get_clinician_overrides, sync_cache_to_gcs
 import hashlib
 import uuid
 from datetime import datetime
@@ -39,24 +39,34 @@ from datetime import datetime
 rag_initialized = False
 rag_error = None
 
-# DSN and Review Queue Database helpers
-def generate_dsn(session_data: dict) -> str:
-    """Generate a tamper-evident Decision Support Number. Format: ACR-[DATE]-[HASH]"""
+# Internal Audit Token and Review Queue Database helpers
+def generate_audit_token(session_data: dict) -> str:
+    """Generate a tamper-evident Internal Audit Token. Format: AUDIT-[DATE]-[HASH]"""
     content = f"{session_data.get('timestamp','')}{session_data.get('scenario','')}{session_data.get('recommendation','')}"
     content_hash = hashlib.sha256(content.encode()).hexdigest()[:12].upper()
     date_str = datetime.now().strftime("%Y%m%d")
-    return f"ACR-{date_str}-{content_hash}"
+    return f"AUDIT-{date_str}-{content_hash}"
 
 
-def log_dsn_transaction(scenario: str, recommendation: str, sources: list, confidence: float = 0.0, abstained: bool = False) -> str:
-    """Append DSN record to immutable JSONL audit log."""
+def get_audit_log_path() -> str:
+    """Resolve the active audit log path. Saves directly to GCS mount if configured."""
+    gcs_cache_path = os.getenv("CACHE_SOURCE_PATH", "").strip()
+    if gcs_cache_path:
+        gcs_dir = os.path.dirname(gcs_cache_path)
+        return os.path.join(gcs_dir, "logs", "audit_transaction_log.jsonl")
+    return "data/logs/audit_transaction_log.jsonl"
+
+
+def log_audit_transaction(scenario: str, recommendation: str, sources: list, confidence: float = 0.0, abstained: bool = False) -> str:
+    """Append Audit Token record to immutable JSONL audit log."""
     import json as json_mod
-    os.makedirs("data/logs", exist_ok=True)
+    log_path = get_audit_log_path()
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
     timestamp = datetime.now().isoformat()
     session_data = {"timestamp": timestamp, "scenario": scenario, "recommendation": recommendation or ""}
-    dsn = generate_dsn(session_data)
+    audit_token = generate_audit_token(session_data)
     record = {
-        "dsn": dsn,
+        "audit_token": audit_token,
         "timestamp": timestamp,
         "scenario_hash": hashlib.sha256(scenario.encode()).hexdigest()[:16],
         "recommendation_summary": (recommendation or "")[:500],
@@ -66,12 +76,12 @@ def log_dsn_transaction(scenario: str, recommendation: str, sources: list, confi
         "api_version": "3.0.0",
     }
     try:
-        with open("data/logs/dsn_audit_log.jsonl", "a", encoding="utf-8") as f:
+        with open(log_path, "a", encoding="utf-8") as f:
             f.write(json_mod.dumps(record) + "\n")
-        logger.info(f"[DSN] Logged transaction {dsn}")
+        logger.info(f"[AUDIT] Logged transaction {audit_token}")
     except Exception as e:
-        logger.error(f"[DSN] Failed to log transaction: {e}")
-    return dsn
+        logger.error(f"[AUDIT] Failed to log transaction: {e}")
+    return audit_token
 
 
 def init_review_queue_db():
@@ -297,6 +307,28 @@ async def get_manifest():
 
 
 
+@app.get("/v1/guidelines/manifest")
+async def get_guidelines_manifest():
+    """Retrieve the manifest of ingested guidelines."""
+    import json as json_mod
+    manifest_path = "data/guideline_manifest.json"
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                return json_mod.load(f)
+        except Exception as e:
+            logger.error(f"Failed to read manifest file: {e}")
+            raise HTTPException(status_code=500, detail="Failed to read manifest file.")
+    return {
+        "version": "ACR-AC-DB-LOCAL",
+        "release_date": datetime.now().strftime("%Y-%m-%d"),
+        "total_pdfs": 0,
+        "total_vectors": 0,
+        "message": "Manifest not found. Run ingest.py to generate."
+    }
+
+
+
 AMBIGUITY_THRESHOLD = 0.55
 
 def _route_to_manual_review(scenario_text: str, confidence: float):
@@ -309,6 +341,7 @@ def _route_to_manual_review(scenario_text: str, confidence: float):
             (str(uuid.uuid4()), scenario_text[:2000], confidence, datetime.now().isoformat())
         )
         conn.commit()
+        sync_cache_to_gcs()
     except Exception as e:
         logger.error(f"Failed to route to manual review: {e}")
     finally:
@@ -317,7 +350,7 @@ def _route_to_manual_review(scenario_text: str, confidence: float):
 @app.post("/v1/analyze")
 @limiter.limit("30/minute")
 async def analyze_scenario(request: Request, req: AnalyzeRequest):
-    """Analyzes a clinical scenario with abstention gate, confidence routing, and DSN audit."""
+    """Analyzes a clinical scenario with abstention gate, confidence routing, and audit token logging."""
     logger.info("Received request on /v1/analyze")
     await ensure_rag_ready()
     if not req.text and not req.bundle:
@@ -345,11 +378,11 @@ async def analyze_scenario(request: Request, req: AnalyzeRequest):
 
     # Abstention gate
     if result.get("abstained"):
-        dsn = log_dsn_transaction(scenario_str, None, [], abstained=True)
-        logger.info(f"Abstained on scenario — DSN: {dsn}")
+        audit_token = log_audit_transaction(scenario_str, None, [], abstained=True)
+        logger.info(f"Abstained on scenario — Token: {audit_token}")
         return {
             "status": "abstained",
-            "dsn": dsn,
+            "audit_token": audit_token,
             "abstained": True,
             "abstention_reason": result.get("abstention_reason", ""),
             "extracted_scenario": scenario_str,
@@ -362,12 +395,12 @@ async def analyze_scenario(request: Request, req: AnalyzeRequest):
 
     # Ambiguity routing
     if confidence < AMBIGUITY_THRESHOLD:
-        dsn = log_dsn_transaction(scenario_str, result.get("recommendation"), result.get("sources", []), confidence=confidence)
+        audit_token = log_audit_transaction(scenario_str, result.get("recommendation"), result.get("sources", []), confidence=confidence)
         _route_to_manual_review(scenario_str, confidence)
-        logger.info(f"Low-confidence case routed to review — DSN: {dsn}")
+        logger.info(f"Low-confidence case routed to review — Token: {audit_token}")
         return {
             "status": "routed_to_review",
-            "dsn": dsn,
+            "audit_token": audit_token,
             "abstained": False,
             "confidence_score": confidence,
             "extracted_scenario": scenario_str,
@@ -376,11 +409,11 @@ async def analyze_scenario(request: Request, req: AnalyzeRequest):
             "review_note": "This case has been flagged as potentially complex or ambiguous. A senior radiologist review has been requested.",
         }
 
-    dsn = log_dsn_transaction(scenario_str, result["recommendation"], result.get("sources", []), confidence=confidence)
-    logger.info(f"Successfully analyzed clinical scenario — DSN: {dsn}")
+    audit_token = log_audit_transaction(scenario_str, result["recommendation"], result.get("sources", []), confidence=confidence)
+    logger.info(f"Successfully analyzed clinical scenario — Token: {audit_token}")
     return {
         "status": "success",
-        "dsn": dsn,
+        "audit_token": audit_token,
         "abstained": False,
         "confidence_score": confidence,
         "mock_bundle_used": bundle_dict if req.text else None,
@@ -449,10 +482,10 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
     except Exception as e:
         logger.error("Protocol mapping failed — falling back to partial success", exc_info=True)
         # Protocol mapping is additive — return ACR result even if mapping fails
-        dsn = log_dsn_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
+        audit_token = log_audit_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
         return {
             "status": "partial_success",
-            "dsn": dsn,
+            "audit_token": audit_token,
             "extracted_scenario": scenario_str,
             "fhir_bundle": bundle_dict,
             "acr_recommendation": acr_result["recommendation"],
@@ -479,15 +512,15 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
                 logger.info(f"[SAFETY LOOP] Hard contraindication detected — re-querying for alternatives")
                 try:
                     alt_result = await asyncio.to_thread(query_acr_guidelines, alt_query, bundle_dict)
-                    dsn = log_dsn_transaction(scenario_str, alt_result.get("recommendation"), alt_result.get("sources", []), confidence=alt_result.get("confidence_score", 1.0))
+                    audit_token = log_audit_transaction(scenario_str, alt_result.get("recommendation"), alt_result.get("sources", []), confidence=alt_result.get("confidence_score", 1.0))
                 except Exception as e:
                     logger.error(f"Alternative re-query failed: {e}")
                     alt_result = None
-                    dsn = log_dsn_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
+                    audit_token = log_audit_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
 
                 return {
                     "status": "success_with_safety_requery",
-                    "dsn": dsn,
+                    "audit_token": audit_token,
                     "extracted_scenario": scenario_str,
                     "fhir_bundle": bundle_dict,
                     "original_recommendation_contraindicated": True,
@@ -501,11 +534,11 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
         except Exception as e:
             logger.error(f"Safety loop processing error: {e}", exc_info=True)
 
-    dsn = log_dsn_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
-    logger.info(f"Successfully protocoled clinical scenario — DSN: {dsn}")
+    audit_token = log_audit_transaction(scenario_str, acr_result.get("recommendation"), acr_result.get("sources", []), confidence=acr_result.get("confidence_score", 1.0))
+    logger.info(f"Successfully protocoled clinical scenario — Token: {audit_token}")
     return {
         "status": "success",
-        "dsn": dsn,
+        "audit_token": audit_token,
         "extracted_scenario": scenario_str,
         "fhir_bundle": bundle_dict,
         "acr_recommendation": acr_result["recommendation"],
@@ -639,6 +672,7 @@ async def claim_review_case(req: ClaimReviewRequest):
             (req.reviewer_id, req.session_id)
         )
         conn.commit()
+        sync_cache_to_gcs()
         return {"status": "success", "message": f"Case claimed successfully by {req.reviewer_id}."}
     except HTTPException:
         raise
@@ -675,6 +709,7 @@ async def resolve_review_case(req: ResolveReviewRequest):
             (req.reviewer_id, reviewed_at, req.final_recommendation, req.session_id)
         )
         conn.commit()
+        sync_cache_to_gcs()
         return {
             "status": "success", 
             "message": "Case resolved successfully.",

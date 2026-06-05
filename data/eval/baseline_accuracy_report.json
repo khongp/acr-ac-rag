@@ -1,0 +1,454 @@
+{
+  "pass_rate": 100.0,
+  "total_count": 35,
+  "passed_count": 35,
+  "details": [
+    {
+      "id": 1,
+      "topic_expected": "Low Back Pain",
+      "topic_matched": "low back pain, acute, no red flags, no prior management, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 2,
+      "topic_expected": "Low Back Pain",
+      "topic_matched": "low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 3,
+      "topic_expected": "Low Back Pain",
+      "topic_matched": "low back pain, osteoporosis, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 4,
+      "topic_expected": "Suspected Pulmonary Embolism",
+      "topic_matched": "pulmonary embolism suspected, low pretest probability, negative d-dimer, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 5,
+      "topic_expected": "Suspected Pulmonary Embolism",
+      "topic_matched": "pulmonary embolism suspected, high pretest probability, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [
+        "egfr_alert"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [
+        "V/Q scan",
+        "US duplex Doppler legs"
+      ],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 6,
+      "topic_expected": "Suspected Pulmonary Embolism",
+      "topic_matched": "residual embolic disease suspected, hx of acute pulmonary embolism, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [
+        "contrast_allergy"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [
+        "V/Q scan"
+      ],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 7,
+      "topic_expected": "Suspected Intracranial Hypotension",
+      "topic_matched": "headache, orthostatic, intracranial hypotension suspected, within 72 hrs of dural puncture that could cause csf leakage, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [
+        "med_hold"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 8,
+      "topic_expected": "Liver Lesion-Initial Characterization",
+      "topic_matched": "liver lesion, <1cm, indeterminate on noncontrast mri, hx of extrahepatic malignancy",
+      "topic_pass": true,
+      "flags_expected": [
+        "inr_alert",
+        "med_hold"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 9,
+      "topic_expected": "Seizures",
+      "topic_matched": "seizure, new, no trauma, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [
+        "pacemaker_stop"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [
+        "CT head without IV contrast",
+        "CT head with IV contrast"
+      ],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 10,
+      "topic_expected": "Imaging After Total Knee Arthroplasty",
+      "topic_matched": "knee replaced, pain, patellar tendon tears suspected, radiography performed, next imaging study",
+      "topic_pass": true,
+      "flags_expected": [
+        "pacemaker_stop"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 11,
+      "topic_expected": "Right Lower Quadrant Pain",
+      "topic_matched": "rlq pain, fever, leukocytosis, appendicitis suspected, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 12,
+      "topic_expected": "Acute Nonlocalized Abdominal Pain",
+      "topic_matched": "abd pain, acute, nonlocalized, fever, initial exam",
+      "topic_pass": true,
+      "flags_expected": [
+        "pediatric_dosing"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 13,
+      "topic_expected": "Headache",
+      "topic_matched": "headache, severe, sudden onset, maximal severity within an hour, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 14,
+      "topic_expected": "Headache",
+      "topic_matched": "headache, no red flags, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 15,
+      "topic_expected": "Headache",
+      "topic_matched": "headache, new onset, peripartum period, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 16,
+      "topic_expected": "Radiologic Management of Mesenteric Ischemia",
+      "topic_matched": "recent onset abdominal pain, peritoneal signs, and known atrial fibrillation. cta shows filling defect in the proximal sma consistent with embolus and evidence of bowel infarction. initial therapy.",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 17,
+      "topic_expected": "Acute Pancreatitis",
+      "topic_matched": "pancreatitis suspected, atypical presentation",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 18,
+      "topic_expected": "Suspected Lower Extremity Deep Vein Thrombosis",
+      "topic_matched": "dvt suspected, initial exam",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 19,
+      "topic_expected": "Suspected Pulmonary Embolism",
+      "topic_matched": "pulmonary embolism suspected, low pretest probability, negative d-dimer, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 20,
+      "topic_expected": "Head Trauma",
+      "topic_matched": "Head trauma, minor, acute, blunt, GCS=15, scalp hematoma,, not abuse, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 21,
+      "topic_expected": "Lung Cancer Screening",
+      "topic_matched": "lung cancer screening, >=20 pack yrs smoking history, quit in past 15 yrs, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 22,
+      "topic_expected": "Right Lower Quadrant Pain",
+      "topic_matched": "rlq pain, fever, leukocytosis, appendicitis suspected, pregnant, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [
+        "pregnancy_alert"
+      ],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [
+        "MRI abdomen and pelvis without IV contrast"
+      ],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 23,
+      "topic_expected": "Suspected Acute Aortic Syndrome",
+      "topic_matched": "chest trauma, blunt, cardiac injury suspected, hemodynamically unstable",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 24,
+      "topic_expected": "Chronic Hip Pain",
+      "topic_matched": "hip pain, chronic, noninfectious extraarticular abnormality suspected, radiography nondiagnostic, next imaging study",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 25,
+      "topic_expected": "Thoracic Back Pain",
+      "topic_matched": "thoracic back pain, with or without myelopathy, osteoporosis, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 26,
+      "topic_expected": "Hematuria",
+      "topic_matched": "minor blunt trauma, motor vehicle collision, gross hematuria, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 27,
+      "topic_expected": "Chronic Pelvic Pain",
+      "topic_matched": "pelvic pain chronic, postmenopausal, gynecologic etiologies suspected, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 28,
+      "topic_expected": "Vision Loss",
+      "topic_matched": "vision loss, chronic, optic nerve abnormality suspected, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 29,
+      "topic_expected": "Chronic Dyspnea",
+      "topic_matched": "occupational exposure, interstitial lung disease suspected, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 30,
+      "topic_expected": "Demyelinating Diseases",
+      "topic_matched": "transverse myelitis suspected, acute sensorimotor symptoms below a spinal cord level, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 31,
+      "topic_expected": "Left Lower Quadrant Pain",
+      "topic_matched": "llq pain, diverticulitis suspected, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 32,
+      "topic_expected": "Acute Onset of Scrotal Pain-Without Trauma, Without Antecedent Mass",
+      "topic_matched": "scrotal pain, acute, nontraumatic, no antecedent mass, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 33,
+      "topic_expected": "Thyroid Nodule",
+      "topic_matched": "thyroid nodule, palpable, euthyroid",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 34,
+      "topic_expected": "Low Back Pain",
+      "topic_matched": "low back pain, subacute, intervention candidate, persistent symptoms after 6 wks medical management, initial imaging",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    },
+    {
+      "id": 35,
+      "topic_expected": "Knee Pain",
+      "topic_matched": "knee pain, chronic, osteochondritis or loose bodies or prev surgery on radiography",
+      "topic_pass": true,
+      "flags_expected": [],
+      "flags_missing": [],
+      "flags_pass": true,
+      "alts_expected": [],
+      "alts_pass": true,
+      "overall_pass": true
+    }
+  ]
+}

@@ -2,13 +2,17 @@ import os
 import sys
 import json
 from datetime import date, timedelta
-from fastapi.testclient import TestClient
-from main import app
+import requests
 
-# Configure UTF-8 encoding for stdout on Windows
-sys.stdout.reconfigure(encoding='utf-8')
+class LocalHttpClient:
+    def __init__(self, base_url="http://127.0.0.1:8000"):
+        self.base_url = base_url
+    def post(self, url, json=None, headers=None):
+        return requests.post(f"{self.base_url}{url}", json=json, headers=headers)
+    def get(self, url, params=None, headers=None):
+        return requests.get(f"{self.base_url}{url}", params=params, headers=headers)
 
-client = TestClient(app)
+client = LocalHttpClient()
 
 def test_multi_institution_protocol():
     """Verify that different hospitals yield different scanners and protocols."""

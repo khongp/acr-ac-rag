@@ -322,13 +322,8 @@ def _llm_fuzzy_match(
     if not acr_procedure:
         return None
     
-    # Get all available protocols for this institution
-    search_term = acr_procedure.split()[0] if acr_procedure else ""
-    candidates = search_protocols_fulltext(institution_id, search_term, db_path)
-    
-    if not candidates:
-        # Try broader search
-        candidates = search_protocols_fulltext(institution_id, "", db_path)
+    # Get all available protocols for this institution to let LLM see the complete catalog
+    candidates = search_protocols_fulltext(institution_id, "", db_path)
     
     if not candidates:
         return None

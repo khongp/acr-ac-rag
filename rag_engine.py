@@ -18,7 +18,7 @@ from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from dotenv import load_dotenv
 from ingest import CachedGoogleGenerativeAIEmbeddings
-from security_utils import INJECTION_PATTERNS as _INJECTION_PATTERNS
+from security_utils import INJECTION_PATTERNS as _INJECTION_PATTERNS, redact_phi
 
 load_dotenv()
 
@@ -59,41 +59,7 @@ def sync_cache_to_gcs():
 
 
 
-def redact_phi(text: str) -> str:
-    """
-    Scans and redacts common patient identifiers (MRNs, SSNs, DOBs, phone numbers) 
-    from clinical texts to ensure HIPAA compliance before writing to cache or logs.
-    """
-    if not text:
-        return ""
-    
-    # 1. Phone numbers
-    phone_pattern = r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
-    text = re.sub(phone_pattern, "[REDACTED_PHONE]", text)
-    
-    # 2. SSN
-    ssn_pattern = r"\b\d{3}-\d{2}-\d{4}\b"
-    text = re.sub(ssn_pattern, "[REDACTED_SSN]", text)
-    
-    # 3. DOB
-    dob_pattern = r"\b(?:dob|birthdate|birth\s+date)\s*[:-]?\s*(?:\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{4}[-/]\d{1,2}[-/]\d{1,2})\b"
-    text = re.sub(dob_pattern, "DOB: [REDACTED_DOB]", text, flags=re.IGNORECASE)
-    
-    # 4. MRN
-    mrn_pattern = r"\b(?:mrn|medical\s+record\s+number)\s*[:-]?\s*\d{4,12}\b"
-    text = re.sub(mrn_pattern, "MRN: [REDACTED_MRN]", text, flags=re.IGNORECASE)
-    
-    # 5. Names: Common clinical patterns like "patient John Doe", "Mr. Smith"
-    # Note: We match case-sensitively for capitalized names [A-Z][a-z]+ to avoid matching
-    # clinical words (e.g. 'patient with chylothorax' or 'patient presents').
-    name_patterns = [
-        (r"\b[Pp]atient\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b", "patient [REDACTED_NAME]"),
-        (r"\b(?:[Mm]r|[Mm]s|[Mm]rs|[Dd]r|[Mm]r[Ss]|[Dd]R)\.\s*([A-Z][a-z]+)\b", "[REDACTED_TITLE] [REDACTED_LASTNAME]"),
-    ]
-    for pattern, repl in name_patterns:
-        text = re.sub(pattern, repl, text)
-        
-    return text
+# redact_phi is imported from security_utils
 
 
 

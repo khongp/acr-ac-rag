@@ -158,6 +158,35 @@ INSERT OR IGNORE INTO imaging_protocol (
     20, 'System Seed v1'
 );
 
+-- US Duplex Doppler Lower Extremity — DVT Protocol
+INSERT OR IGNORE INTO imaging_protocol (
+    id, institution_id, name, modality, body_region,
+    clinical_indication, contrast_type, requires_iv_access,
+    special_instructions, estimated_time_min, updated_by
+) VALUES (
+    'sr_us_dvt', 'skyridge',
+    'US Duplex Doppler Lower Extremity — DVT Protocol',
+    'US', 'lower_extremity',
+    'Suspected DVT, leg pain, swelling', 'none', 0,
+    'Scan bilateral lower extremities from common femoral vein to calf veins.',
+    30, 'System Seed v1'
+);
+
+-- MRI Knee Without Contrast
+INSERT OR IGNORE INTO imaging_protocol (
+    id, institution_id, name, modality, body_region,
+    clinical_indication, contrast_type, requires_iv_access,
+    special_instructions, estimated_time_min, updated_by
+) VALUES (
+    'sr_mri_knee_noncon', 'skyridge',
+    'MRI Knee Without Contrast',
+    'MRI', 'knee',
+    'Knee pain, suspected meniscus or ligament tear', 'none', 0,
+    '3T preferred. Standard non-contrast knee sequences.',
+    30, 'System Seed v1'
+);
+
+
 
 -- ─────────────────────────────────────────────
 -- Contrast / Safety Rules
@@ -187,6 +216,11 @@ VALUES
      'require_premedication',
      'Prednisone 50mg PO at 13h, 7h, and 1h prior to exam. Diphenhydramine 50mg PO/IV 1h prior.',
      '⚠️ Iodinated contrast allergy documented — Pre-medication protocol required.', 'warning'),
+    ('sr_ct_chest_pe', 'allergy_check',
+     '{"agents": ["Omnipaque","Isovue","iodinated contrast","iodine","contrast dye"]}',
+     'hard_stop',
+     'Prednisone 50mg PO at 13h, 7h, and 1h prior to exam. Diphenhydramine 50mg PO/IV 1h prior.',
+     '⚠️ Iodinated contrast allergy documented — Severe contrast allergy: high risk of anaphylaxis. Use V/Q scan alternative.', 'hard_stop'),
     ('sr_cta_head_neck_lvo', 'allergy_check',
      '{"agents": ["Omnipaque","Isovue","iodinated contrast","iodine","contrast dye"]}',
      'flag',
@@ -271,6 +305,24 @@ INSERT OR IGNORE INTO ir_protocol (
     'System Seed v1'
 );
 
+-- Fluoroscopic Guided Lumbar Puncture
+INSERT OR IGNORE INTO ir_protocol (
+    id, institution_id, name, procedure_category, body_region,
+    sir_bleeding_risk, imaging_guidance, sedation_type,
+    estimated_time_min,
+    pre_procedure_instructions, post_procedure_instructions,
+    special_equipment, updated_by
+) VALUES (
+    'sr_ir_lumbar_puncture', 'skyridge',
+    'Fluoroscopic Guided Lumbar Puncture',
+    'drainage', 'spine', 'low', 'FLUORO', 'local_only',
+    30,
+    'Consent signed. Confirm patient is not on anticoagulants (or hold per protocol).',
+    'Flat bed rest for 1-2 hours to prevent post-dural puncture headache.',
+    '["lp_tray","spinal_needle_22g","manometer"]',
+    'System Seed v1'
+);
+
 
 -- ─────────────────────────────────────────────
 -- IR Lab Thresholds (SIR 2019 Consensus)
@@ -328,40 +380,57 @@ INSERT OR IGNORE INTO ir_med_hold (ir_protocol_id, medication_name, medication_c
 VALUES
     ('sr_ir_tunneled_hd_cath', 'Heparin IV', 'heparin', '5224', 4, 0, 'SIR 2019 Consensus, Table 4');
 
+-- Lumbar Puncture — Low risk hold
+INSERT OR IGNORE INTO ir_med_hold (ir_protocol_id, medication_name, medication_class, rxnorm_code, hold_hours_before, resume_hours_after, sir_reference)
+VALUES
+    ('sr_ir_lumbar_puncture', 'Apixaban (Eliquis)', 'doac', '1364430', 24, 24, 'SIR 2019 Consensus');
+
 
 -- ─────────────────────────────────────────────
 -- ACR ↔ Protocol Bridge Mappings
 -- ─────────────────────────────────────────────
 
-INSERT OR IGNORE INTO acr_protocol_map (institution_id, acr_scenario_text, acr_procedure_text, acr_appropriateness, imaging_protocol_id, match_confidence, mapping_method, mapped_by)
+INSERT OR IGNORE INTO acr_protocol_map (institution_id, acr_scenario_text, acr_procedure_text, acr_appropriateness, imaging_protocol_id, ir_protocol_id, match_confidence, mapping_method, mapped_by)
 VALUES
     -- RLQ Pain → CT Appendix
     ('skyridge', 'Right lower quadrant pain', 'CT abdomen and pelvis with IV contrast',
-     'Usually appropriate', 'sr_ct_abd_pelvis_appendix', 0.95, 'manual_review', 'Dr. Khong'),
+     'Usually appropriate', 'sr_ct_abd_pelvis_appendix', NULL, 0.95, 'manual_review', 'Dr. Khong'),
 
     -- Headache → CT Head Non-con
     ('skyridge', 'Headache', 'CT head without IV contrast',
-     'Usually appropriate', 'sr_ct_head_noncon', 0.90, 'manual_review', 'Dr. Khong'),
+     'Usually appropriate', 'sr_ct_head_noncon', NULL, 0.90, 'manual_review', 'Dr. Khong'),
     
     -- Acute stroke → CTA Head/Neck
     ('skyridge', 'New focal neurological deficit', 'CTA head and neck with IV contrast',
-     'Usually appropriate', 'sr_cta_head_neck_lvo', 0.95, 'manual_review', 'Dr. Khong'),
+     'Usually appropriate', 'sr_cta_head_neck_lvo', NULL, 0.95, 'manual_review', 'Dr. Khong'),
     
     -- Suspected PE → CT PE
     ('skyridge', 'Suspected pulmonary embolism', 'CTA chest with IV contrast',
-     'Usually appropriate', 'sr_ct_chest_pe', 0.95, 'manual_review', 'Dr. Khong'),
+     'Usually appropriate', 'sr_ct_chest_pe', NULL, 0.95, 'manual_review', 'Dr. Khong'),
     ('skyridge', 'Acute dyspnea', 'CTA chest with IV contrast',
-     'Usually appropriate', 'sr_ct_chest_pe', 0.80, 'manual_review', 'Dr. Khong'),
+     'Usually appropriate', 'sr_ct_chest_pe', NULL, 0.80, 'manual_review', 'Dr. Khong'),
     
     -- Brain mass/infection → MRI Brain W/WO
     ('skyridge', 'Headache', 'MRI head without and with IV contrast',
-     'Usually appropriate', 'sr_mri_brain_wwoc', 0.90, 'manual_review', 'Dr. Khong'),
+     'Usually appropriate', 'sr_mri_brain_wwoc', NULL, 0.90, 'manual_review', 'Dr. Khong'),
     ('skyridge', 'New intracranial lesion', 'MRI head without and with IV contrast',
-     'Usually appropriate', 'sr_mri_brain_wwoc', 0.95, 'manual_review', 'Dr. Khong'),
+     'Usually appropriate', 'sr_mri_brain_wwoc', NULL, 0.95, 'manual_review', 'Dr. Khong'),
     
     -- RUQ Pain → US
     ('skyridge', 'Right upper quadrant pain', 'US abdomen',
-     'Usually appropriate', 'sr_us_ruq', 0.90, 'manual_review', 'Dr. Khong');
+     'Usually appropriate', 'sr_us_ruq', NULL, 0.90, 'manual_review', 'Dr. Khong'),
+     
+    -- Suspected DVT → US DVT
+    ('skyridge', 'Suspected lower extremity deep vein thrombosis', 'US duplex Doppler legs',
+     'Usually appropriate', 'sr_us_dvt', NULL, 0.95, 'manual_review', 'Dr. Khong'),
+
+    -- Low Back Pain LP → Lumbar Puncture
+    ('skyridge', 'Low back pain', 'Lumbar puncture',
+     'Usually appropriate', NULL, 'sr_ir_lumbar_puncture', 0.90, 'manual_review', 'Dr. Khong'),
+
+    -- Knee Pain → MRI Knee
+    ('skyridge', 'Knee pain', 'MRI knee without contrast',
+     'Usually appropriate', 'sr_mri_knee_noncon', NULL, 0.90, 'manual_review', 'Dr. Khong');
 
 
 -- =============================================

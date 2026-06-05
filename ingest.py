@@ -539,6 +539,49 @@ def ingest_documents():
     print(f"  ChromaDB path:   {CHROMA_PATH}")
     print(f"{'=' * 60}")
 
+    # Generate Manifest
+    try:
+        manifest_path = "data/guideline_manifest.json"
+        os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
+        pdf_files = []
+        if os.path.exists(RAW_DIR):
+            for f in sorted(os.listdir(RAW_DIR)):
+                if f.endswith(".pdf"):
+                    full_path = os.path.join(RAW_DIR, f)
+                    pdf_files.append({
+                        "filename": f,
+                        "size_bytes": os.path.getsize(full_path),
+                        "hash": get_guideline_version(full_path)
+                    })
+        json_metadata = None
+        if os.path.exists(JSON_PATH):
+            json_metadata = {
+                "filename": os.path.basename(JSON_PATH),
+                "size_bytes": os.path.getsize(JSON_PATH),
+                "hash": get_guideline_version(JSON_PATH)
+            }
+        master_hash_input = "".join(f["hash"] for f in pdf_files)
+        if json_metadata:
+            master_hash_input += json_metadata["hash"]
+        master_version = hashlib.md5(master_hash_input.encode()).hexdigest()[:12].upper()
+        
+        manifest = {
+            "version": f"ACR-AC-DB-{master_version}",
+            "release_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "ingested_at": datetime.now(timezone.utc).isoformat(),
+            "total_pdfs": len(pdf_files),
+            "pdf_files": pdf_files,
+            "variant_table": json_metadata,
+            "total_vectors": count,
+            "vector_dimensions": vector_dims,
+            "embedding_model": EMBEDDING_MODEL
+        }
+        with open(manifest_path, "w", encoding="utf-8") as mf:
+            json.dump(manifest, mf, indent=2)
+        print(f"  Generated guideline manifest: {manifest_path}")
+    except Exception as me:
+        print(f"[WARN] Failed to generate manifest: {me}")
+
 
 if __name__ == "__main__":
     ingest_documents()
