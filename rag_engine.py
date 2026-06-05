@@ -360,10 +360,14 @@ def _is_therapeutic_candidate(procedures: list) -> bool:
 def get_cross_encoder():
     global _cross_encoder
     if _cross_encoder is None:
-        from sentence_transformers import CrossEncoder
-        print("[RERANK] Loading local CrossEncoder: cross-encoder/ms-marco-MiniLM-L-6-v2 on CPU...")
-        _cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device="cpu")
-    return _cross_encoder
+        try:
+            from sentence_transformers import CrossEncoder
+            print("[RERANK] Loading local CrossEncoder: cross-encoder/ms-marco-MiniLM-L-6-v2 on CPU...")
+            _cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device="cpu")
+        except ImportError:
+            print("[RERANK WARNING] sentence_transformers is not installed. Skipping local CrossEncoder reranking.")
+            _cross_encoder = "unavailable"
+    return _cross_encoder if _cross_encoder != "unavailable" else None
 
 
 def init_procedures_db():
@@ -807,6 +811,8 @@ class CombinedTypeRetriever(BaseRetriever):
             if unique_candidates:
                 try:
                     ce = get_cross_encoder()
+                    if ce is None:
+                        raise ValueError("sentence_transformers is not installed")
                     pairs = []
                     query_is_therapeutic = _is_therapeutic_query(query)
                     candidate_attributes = []
@@ -911,6 +917,8 @@ class CombinedTypeRetriever(BaseRetriever):
             if fused_narratives:
                 try:
                     ce = get_cross_encoder()
+                    if ce is None:
+                        raise ValueError("sentence_transformers is not installed")
                     # Rerank the top 10 fused candidates to save computation
                     candidates_to_rerank = fused_narratives[:10]
                     pairs = [(query, doc.page_content) for doc in candidates_to_rerank]
