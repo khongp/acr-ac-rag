@@ -65,7 +65,7 @@ jobs:
             --project ${{ env.PROJECT_ID }} \
             --region ${{ env.REGION }} \
             --update-env-vars CHROMA_PATH="/tmp/chroma_db_gemini",PROCEDURES_DB_PATH="/tmp/acr_procedures.db",CACHE_DB_PATH="/tmp/query_cache.db",CHROMA_SOURCE_PATH="/mnt/gcs/chroma_db_gemini",PROCEDURES_SOURCE_PATH="/mnt/gcs/data/acr_procedures.db",CACHE_SOURCE_PATH="/mnt/gcs/data/query_cache.db",BM25_RETRIEVER_SOURCE_PATH="/mnt/gcs/data/bm25_retriever.pkl",BM25_CHUNKS_SOURCE_PATH="/mnt/gcs/data/bm25_chunks.pkl",EMBEDDING_MODE="gemini",ENABLE_NLP_EXPANSION="false",ENABLE_LLM_RERANK="true",ENABLE_LLM_FUZZY_MATCH="false",MAX_CANDIDATES="3",BYPASS_FHIR_LLM="false" \
-            --memory 4Gi \
+            --memory 2Gi \
             --add-volume name=acr-data,type=cloud-storage,bucket=${{ env.BUCKET_NAME }} \
             --add-volume-mount volume=acr-data,mount-path=/mnt/gcs \
             --allow-unauthenticated

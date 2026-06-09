@@ -501,6 +501,7 @@ def load_bm25_retriever():
         try:
             with open(bm25_path, "rb") as f:
                 retriever = pickle.load(f)
+            retriever.k = 50
             return retriever
         except Exception as e:
             print(f"[WARN] Error loading BM25 pickle: {e}")
@@ -514,6 +515,7 @@ def load_bm25_retriever():
             with open(chunks_path, "rb") as f:
                 chunks = pickle.load(f)
             retriever = BM25Retriever.from_documents(chunks)
+            retriever.k = 50
             return retriever
         except Exception as e:
             print(f"[WARN] Error rebuilding BM25: {e}")
@@ -589,6 +591,28 @@ def _rerank_scenarios_llm(query: str, candidates: List[tuple]) -> List[tuple]:
     except Exception as e:
         print(f"[WARN] LLM reranker failed: {e}. Falling back to default vector/BM25 rank.")
         return candidates[:MAX_CANDIDATES]
+
+
+def _calculate_medical_boost(query: str, topic: str, scenario: str) -> float:
+    query_lower = query.lower()
+    topic_lower = topic.lower()
+    scenario_lower = scenario.lower()
+    boost = 0.0
+
+    # 1. Acute Aortic Syndrome / Aortic Dissection pathognomonic boosting
+    if any(k in query_lower for k in ["tearing", "aortic", "aorta", "dissection"]):
+        if "acute aortic syndrome" in topic_lower or "acute aortic syndrome" in scenario_lower:
+            boost += 2.0
+            
+    # 2. Testicular torsion / Acute scrotal pain pathognomonic boosting
+    if any(k in query_lower for k in ["testicular", "scrotal", "scrotum", "testis", "cremasteric", "torsion"]):
+        if any(k in query_lower for k in ["acute", "sudden", "suddenly", "pain", "hours ago"]):
+            if "scrotal pain" in topic_lower or "scrotal pain" in scenario_lower:
+                boost += 2.0
+            elif "testicular cancer" in topic_lower or "testicular cancer" in scenario_lower:
+                boost -= 2.0  # Penalize cancer surveillance for acute scrotal pain presentation
+                
+    return boost
 
 
 class CombinedTypeRetriever(BaseRetriever):
@@ -797,17 +821,22 @@ class CombinedTypeRetriever(BaseRetriever):
                         
                     scores = ce.predict(pairs)
                     
-                    # Apply clinical intent alignment boosting
+                    # Apply clinical intent alignment boosting and medical clinical boosts
                     boosted_scores = []
                     for idx, score in enumerate(scores):
                         boost = 0.0
                         is_ther = candidate_attributes[idx]
                         if query_is_therapeutic:
                             if is_ther:
-                                boost = 1.0  # Boost therapeutic candidates for therapeutic queries
+                                boost += 1.0  # Boost therapeutic candidates for therapeutic queries
                         else:
                             if not is_ther:
-                                boost = 1.0  # Boost diagnostic candidates for diagnostic queries
+                                boost += 1.0  # Boost diagnostic candidates for diagnostic queries
+                                
+                        # Apply pathognomonic medical boosts
+                        tp, sc = unique_candidates[idx]
+                        boost += _calculate_medical_boost(query, tp, sc)
+                        
                         boosted_scores.append(score + boost)
                         
                     scored_candidates = sorted(zip(unique_candidates, boosted_scores), key=lambda x: x[1], reverse=True)

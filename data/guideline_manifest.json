@@ -1,7 +1,7 @@
 {
   "version": "ACR-AC-DB-959856EF600C",
-  "release_date": "2026-06-05",
-  "ingested_at": "2026-06-05T23:06:08.703313+00:00",
+  "release_date": "2026-06-09",
+  "ingested_at": "2026-06-09T18:26:59.671171+00:00",
   "total_pdfs": 275,
   "pdf_files": [
     {
@@ -1385,7 +1385,7 @@
     "size_bytes": 19055824,
     "hash": "d4427405"
   },
-  "total_vectors": 62751,
-  "vector_dimensions": 768,
+  "total_vectors": 10095,
+  "vector_dimensions": 3072,
   "embedding_model": "models/gemini-embedding-2"
 }

@@ -18,7 +18,7 @@
     {
       "id": 2,
       "topic_expected": "Low Back Pain",
-      "topic_matched": "low back pain, hx of prior lumbar surgery, progressive symptoms, initial imaging",
+      "topic_matched": "spine infection suspected, thoracic and lumbar, neck or back pain, with or without fever, cancer, initial imaging",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -42,7 +42,7 @@
     {
       "id": 4,
       "topic_expected": "Suspected Pulmonary Embolism",
-      "topic_matched": "pulmonary embolism suspected, low pretest probability, negative d-dimer, initial imaging",
+      "topic_matched": "pleural effusion suspected, noninfectious, dyspnea, initial imaging",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -197,7 +197,7 @@
     {
       "id": 15,
       "topic_expected": "Headache",
-      "topic_matched": "headache, new onset, peripartum period, initial imaging",
+      "topic_matched": "headache, severe, sudden onset, maximal severity within an hour, initial imaging",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -257,7 +257,7 @@
     {
       "id": 20,
       "topic_expected": "Head Trauma",
-      "topic_matched": "Head trauma, minor, acute, blunt, GCS=15, scalp hematoma,, not abuse, initial imaging",
+      "topic_matched": "frontal bone edema, frontal bone fracture suspected, initial imaging following primary survey",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -297,7 +297,7 @@
     {
       "id": 23,
       "topic_expected": "Suspected Acute Aortic Syndrome",
-      "topic_matched": "chest trauma, blunt, cardiac injury suspected, hemodynamically unstable",
+      "topic_matched": "chest pain, acute aortic syndrome suspected",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -309,7 +309,7 @@
     {
       "id": 24,
       "topic_expected": "Chronic Hip Pain",
-      "topic_matched": "hip pain, chronic, noninfectious extraarticular abnormality suspected, radiography nondiagnostic, next imaging study",
+      "topic_matched": "hip pain, chronic, dysplasia suspected, radiography nondiagnostic, next imaging study",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -321,7 +321,7 @@
     {
       "id": 25,
       "topic_expected": "Thoracic Back Pain",
-      "topic_matched": "thoracic back pain, with or without myelopathy, osteoporosis, initial imaging",
+      "topic_matched": "thoracic back pain, with or without radiculopathy, osteoporosis, initial imaging",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -381,7 +381,7 @@
     {
       "id": 30,
       "topic_expected": "Demyelinating Diseases",
-      "topic_matched": "transverse myelitis suspected, acute sensorimotor symptoms below a spinal cord level, initial imaging",
+      "topic_matched": "inflammatory back pain, thoracic and lumbar spine symptoms, axial spondyloarthritis suspected, radiography and mri sacroiliac joints negative, next imaging study",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
@@ -393,7 +393,7 @@
     {
       "id": 31,
       "topic_expected": "Left Lower Quadrant Pain",
-      "topic_matched": "llq pain, diverticulitis suspected, initial imaging",
+      "topic_matched": "rlq pain, fever, leukocytosis, appendicitis suspected, initial imaging",
       "topic_pass": true,
       "flags_expected": [],
       "flags_missing": [],
