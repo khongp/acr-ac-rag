@@ -1,4 +1,11 @@
 import os
+# Limit PyTorch CPU threads to prevent high virtual memory allocation and OOM (Signal 9) on container startup/requests
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import re
 import json
 import sqlite3
