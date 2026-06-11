@@ -9,14 +9,14 @@ google-genai==1.75.0
 python-dotenv==1.2.2
 fhir.resources==8.2.0
 requests==2.34.0
-pypdf==6.11.0
+# pypdf==6.11.0  # Required only for offline PDF ingestion (ingest.py)
 chromadb==1.5.9
 slowapi==0.1.9
 tenacity==9.0.0
 langchain-community==0.4.1
 langchain-text-splitters==1.1.2
 rank-bm25==0.2.2
-beautifulsoup4==4.14.3
+# beautifulsoup4==4.14.3  # Required only for offline scraping scripts
 # Optional:
 # langchain-huggingface==0.1.2  # Required only for local embedding mode
 # langchain-ollama==0.1.0       # Required only for local LLM mode

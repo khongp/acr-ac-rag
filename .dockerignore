@@ -19,11 +19,27 @@ data/pdf_narratives/
 chroma_db_local/
 chroma_db_gemini/
 chroma_db/
+chroma_db_backup/
+chroma_db_gemini_backup/
+chroma_db_local_backup/
 data/*.db
 data/query_cache.db
 data/acr_procedures.db
 *.log
 out.txt
+
+# Large data files loaded from GCS mount at runtime (not needed in image)
+data/*.pkl
+data/*_backup*
+data/embedding_cache_*
+
+# Documentation and non-production files
+evaluation_report.md
+*.md
+!requirements.txt
+feedback/
+metrics/
+markdown-roadmaps/
 
 # Scratch and test files
 scratch/

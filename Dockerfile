@@ -29,7 +29,7 @@ RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /
 USER appuser
 
 # Health check configuration
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Run the app with Uvicorn, binding to the port set by Cloud Run ($PORT)

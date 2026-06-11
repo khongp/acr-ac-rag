@@ -369,7 +369,12 @@ def init_procedures_db():
             if os.path.exists(json_path):
                 with open(json_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                json_variants_count = sum(len(topic.get("variantData", [])) for topic in data)
+                # Count only variants with non-empty Scenario to match the INSERT filter below
+                json_variants_count = sum(
+                    1 for topic in data
+                    for variant in topic.get("variantData", [])
+                    if variant.get("Scenario", "").strip()
+                )
                 if count != json_variants_count:
                     print(f"[INIT] Procedures database count mismatch (SQLite: {count}, JSON: {json_variants_count}). Rebuilding...")
                     cursor.execute("DELETE FROM acr_procedures")
@@ -1112,8 +1117,9 @@ def init_rag():
     if _chain is None:
         _chain = prompt | _llm | StrOutputParser()
     
-    # Pre-load CrossEncoder to prevent first-query latency spike
-    get_cross_encoder()
+    # Pre-load CrossEncoder only if LLM reranking is disabled (otherwise it's unused)
+    if not ENABLE_LLM_RERANK:
+        get_cross_encoder()
     
 
 
