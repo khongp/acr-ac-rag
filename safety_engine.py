@@ -19,6 +19,7 @@ from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 
+__all__ = ["extract_patient_safety_data", "evaluate_safety", "SafetyProfile"]
 
 class AlertSeverity(str, Enum):
     INFO = "info"
@@ -114,8 +115,12 @@ class SafetyProfile:
             self.overall_status = "hard_stop"
         elif any(not lc.is_met and lc.action_if_not_met == "hard_stop" for lc in self.lab_checks):
             self.overall_status = "hard_stop"
-        elif any(f.triggered for f in self.safety_flags) or any(not lc.is_met for lc in self.lab_checks):
+        elif any(not lc.is_met and lc.patient_value is None for lc in self.lab_checks):
+            self.overall_status = "insufficient_data"
+        elif any(f.triggered for f in self.safety_flags) or any(not lc.is_met for lc in self.lab_checks) or any(m.patient_is_taking for m in self.med_holds):
             self.overall_status = "warnings"
+        elif not self.safety_flags and not self.lab_checks and not self.med_holds:
+            self.overall_status = "not_evaluated"
         else:
             self.overall_status = "clear"
 
@@ -213,6 +218,14 @@ def _extract_observation(resource: dict, data: dict):
         value = value_quantity.get("value")
     elif resource.get("valueString"):
         value = resource.get("valueString")
+    elif resource.get("valueCodeableConcept"):
+        cc = resource["valueCodeableConcept"]
+        value = cc.get("text", "")
+        if not value:
+            for coding in cc.get("coding", []):
+                value = coding.get("display") or coding.get("code")
+                if value:
+                    break
     
     date = resource.get("effectiveDateTime", resource.get("issued", ""))
     if isinstance(date, str):
@@ -605,13 +618,16 @@ def evaluate_ir_lab_thresholds(
             
             # Check staleness
             max_hours = thresh.get("max_result_age_hours", 72)
-            if patient_date:
+            if patient_date and str(patient_date).strip() not in ("", "None"):
                 try:
                     rd = datetime.strptime(str(patient_date)[:10], "%Y-%m-%d")
                     age_hours = (datetime.now() - rd).total_seconds() / 3600
                     is_stale = age_hours > max_hours
                 except (ValueError, TypeError):
-                    pass
+                    is_stale = True
+            else:
+                is_stale = True
+                patient_date = "Undated (Requires manual verification)"
         
         # Evaluate threshold
         is_met = False
@@ -905,10 +921,11 @@ def get_hard_contraindication_triggers(safety_profile: SafetyProfile) -> list[di
     
     # Critical lab failures
     for lab in safety_profile.lab_checks:
-        if not lab.is_met and lab.action_if_not_met == "hard_stop" and lab.patient_value is not None:
+        if not lab.is_met and lab.action_if_not_met == "hard_stop":
+            val_str = f"value {lab.patient_value}" if lab.patient_value is not None else "is missing"
             triggers.append({
                 "rule_type": f"lab_{lab.lab_name}",
-                "message": f"{lab.lab_name} value {lab.patient_value} does not meet threshold ({lab.required_operator} {lab.required_value})",
+                "message": f"{lab.lab_name} {val_str} (required: {lab.required_operator} {lab.required_value})",
                 "severity": "hard_stop",
                 "action": "hard_stop",
                 "details": lab.to_dict() if hasattr(lab, "to_dict") else vars(lab),

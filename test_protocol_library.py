@@ -35,14 +35,14 @@ def test_db_queries():
     print(f"  Imaging protocols: {len(protocols)}")
     for p in protocols:
         print(f"    [{p['modality']}] {p['name']}")
-    assert len(protocols) == 6, f"Expected 6 imaging protocols, got {len(protocols)}"
+    assert len(protocols) == 8, f"Expected 8 imaging protocols, got {len(protocols)}"
     
     # List all IR protocols
     ir_protocols = list_ir_protocols("skyridge", db_path=DB_PATH)
     print(f"  IR protocols: {len(ir_protocols)}")
     for p in ir_protocols:
         print(f"    [{p['procedure_category']}] {p['name']} (SIR risk: {p['sir_bleeding_risk']})")
-    assert len(ir_protocols) == 3, f"Expected 3 IR protocols, got {len(ir_protocols)}"
+    assert len(ir_protocols) == 4, f"Expected 4 IR protocols, got {len(ir_protocols)}"
     
     # Test ACR bridge lookup
     matches = lookup_protocol_by_acr(

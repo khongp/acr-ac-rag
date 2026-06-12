@@ -14,9 +14,14 @@ Design:
 import os
 import json
 import sqlite3
+import logging
 from contextlib import contextmanager
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+
+__all__ = ["get_db_path", "get_connection", "initialize_db", "lookup_protocol_by_acr", "get_contrast_rules", "get_ir_protocol_details", "get_protocol_steps", "list_protocols", "list_ir_protocols", "search_protocols_fulltext", "log_mapping_acceptance"]
+
+logger = logging.getLogger("acr-ac-rag")
 
 # Default path — override via PROTOCOL_DB_PATH env var
 DEFAULT_DB_PATH = os.path.join("data", "protocols", "skyridge_protocols.db")
@@ -25,6 +30,17 @@ DEFAULT_DB_PATH = os.path.join("data", "protocols", "skyridge_protocols.db")
 def get_db_path() -> str:
     """Resolve the active protocol database file path."""
     return os.environ.get("PROTOCOL_DB_PATH", DEFAULT_DB_PATH)
+
+
+def _word_boundary_like(term: str) -> str:
+    """Wrap search term for SQL LIKE with word-boundary-aware padding.
+    For short terms (<=3 chars like 'CT', 'MR'), require a word boundary
+    (space or start/end) to avoid matching substrings like 'aCTive'.
+    For longer terms, standard substring match is fine."""
+    term = term.strip()
+    if len(term) <= 3:
+        return f"% {term} %"  # space-padded word boundary
+    return f"%{term}%"
 
 
 @contextmanager
@@ -251,7 +267,7 @@ def initialize_db(db_path: Optional[str] = None):
     """Create all tables if they don't exist."""
     with get_connection(db_path) as conn:
         conn.executescript(SCHEMA_SQL)
-    print(f"✅ Protocol database initialized at: {db_path or get_db_path()}")
+    logger.info(f"✅ Protocol database initialized at: {db_path or get_db_path()}")
 
 
 # ─────────────────────────────────────────────
@@ -305,11 +321,11 @@ def lookup_protocol_by_acr(
               AND apm.acr_procedure_text LIKE ?
               AND apm.is_active = 1
         """
-        params = [institution_id, f"%{acr_procedure_text}%"]
+        params = [institution_id, _word_boundary_like(acr_procedure_text)]
         
         if acr_scenario_text:
             query += " AND apm.acr_scenario_text LIKE ?"
-            params.append(f"%{acr_scenario_text}%")
+            params.append(_word_boundary_like(acr_scenario_text))
         
         query += " ORDER BY apm.match_confidence DESC"
         
@@ -450,7 +466,7 @@ def search_protocols_fulltext(
                WHERE institution_id = ? AND is_active = 1
                  AND (name LIKE ? OR clinical_indication LIKE ?)
                ORDER BY name""",
-            [institution_id, f"%{search_term}%", f"%{search_term}%"]
+            [institution_id, _word_boundary_like(search_term), _word_boundary_like(search_term)]
         ).fetchall()
         
         ir = conn.execute(
@@ -461,7 +477,7 @@ def search_protocols_fulltext(
                WHERE institution_id = ? AND is_active = 1
                  AND (name LIKE ? OR body_region LIKE ?)
                ORDER BY name""",
-            [institution_id, f"%{search_term}%", f"%{search_term}%"]
+            [institution_id, _word_boundary_like(search_term), _word_boundary_like(search_term)]
         ).fetchall()
         
         return [_row_to_dict(r) for r in imaging] + [_row_to_dict(r) for r in ir]
@@ -547,9 +563,9 @@ def log_mapping_acceptance(
                     SET writeback_status = 'completed' 
                     WHERE id = ?
                 """, (log_id,))
-                print(f"[SELF-LEARNING] Successfully wrote back high-confidence mapping for '{acr_procedure_text}'")
+                logger.info(f"[SELF-LEARNING] Successfully wrote back high-confidence mapping for '{acr_procedure_text}'")
             except Exception as e:
-                print(f"[SELF-LEARNING ERROR] Failed write-back: {e}")
+                logger.error(f"[SELF-LEARNING ERROR] Failed write-back: {e}")
                 cursor.execute("""
                     UPDATE mapping_acceptance_log 
                     SET writeback_status = 'failed' 

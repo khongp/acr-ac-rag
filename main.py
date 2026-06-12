@@ -1,10 +1,19 @@
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Header, Depends
+from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+
+async def verify_api_key(x_api_key: Optional[str] = Header(None)):
+    """Validate API key from request headers. Bypasses if ADMIN_API_KEY environment variable is not configured."""
+    admin_key = os.getenv("ADMIN_API_KEY", "").strip()
+    if not admin_key:
+        return
+    if x_api_key != admin_key:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key.")
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -39,11 +48,16 @@ from datetime import datetime
 rag_initialized = False
 rag_error = None
 
+import hmac
+
+AUDIT_LOG_SALT = os.getenv("AUDIT_LOG_SALT", "default_acr_audit_salt_2026").encode()
+
 # Internal Audit Token and Review Queue Database helpers
 def generate_audit_token(session_data: dict) -> str:
-    """Generate a tamper-evident Internal Audit Token. Format: AUDIT-[DATE]-[HASH]"""
+    """Generate a tamper-evident Internal Audit Token using HMAC-SHA256. Format: AUDIT-[DATE]-[HMAC]"""
     content = f"{session_data.get('timestamp','')}{session_data.get('scenario','')}{session_data.get('recommendation','')}"
-    content_hash = hashlib.sha256(content.encode()).hexdigest()[:12].upper()
+    h = hmac.new(AUDIT_LOG_SALT, content.encode(), hashlib.sha256)
+    content_hash = h.hexdigest()[:12].upper()
     date_str = datetime.now().strftime("%Y%m%d")
     return f"AUDIT-{date_str}-{content_hash}"
 
@@ -109,19 +123,24 @@ def init_review_queue_db():
         conn.close()
 
 
+rag_init_lock = asyncio.Lock()
+
 async def ensure_rag_ready():
     global rag_initialized, rag_error
     if not rag_initialized:
-        logger.info("Initializing RAG synchronously on demand...")
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, init_rag)
-        rag_initialized = True
-        init_review_queue_db()
+        async with rag_init_lock:
+            if not rag_initialized:
+                logger.info("Initializing RAG synchronously on demand...")
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(None, init_rag)
+                rag_initialized = True
+                init_review_queue_db()
             
     if rag_error:
+        logger.error(f"RAG engine init error detail: {rag_error}")
         raise HTTPException(
             status_code=503,
-            detail=f"RAG engine failed to initialize: {rag_error}"
+            detail="RAG engine failed to initialize. Check server logs for details."
         )
 
 
@@ -159,6 +178,15 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch-all handler to prevent stack trace leakage in responses."""
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}", exc_info=exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred. Please try again later."}
+    )
+
 # CORS origins setup
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
 if allowed_origins_env:
@@ -167,8 +195,8 @@ if allowed_origins_env:
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-API-Key"],
     )
 else:
     # Restrict to standard local development origins for safety when not configured
@@ -184,8 +212,8 @@ else:
         CORSMiddleware,
         allow_origins=default_dev_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-API-Key"],
     )
 
 @app.middleware("http")
@@ -203,6 +231,22 @@ async def add_request_id_and_latency_tracking(request: Request, call_next):
     logger.info(f"[{request_id}] {request.method} {request.url.path} completed in {latency:.4f}s with status {response.status_code}")
     return response
 
+from fastapi.responses import JSONResponse
+
+@app.middleware("http")
+async def limit_body_size(request: Request, call_next):
+    content_length = request.headers.get("Content-Length")
+    if content_length:
+        try:
+            if int(content_length) > 5 * 1024 * 1024:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Request payload too large. Max allowed size is 5MB."}
+                )
+        except ValueError:
+            pass
+    return await call_next(request)
+
 class AnalyzeRequest(BaseModel):
     text: Optional[str] = Field(None, max_length=4000)
     bundle: Optional[Dict[str, Any]] = None
@@ -213,30 +257,30 @@ class ProtocolRequest(BaseModel):
     institution_id: Optional[str] = None   # Override default institution
 
 class OverrideRequest(BaseModel):
-    query_key: str
-    original_recommendation: str
-    overridden_recommendation: str
-    override_reason: str
-    clinician_notes: str = ""
+    query_key: str = Field(..., max_length=4000)
+    original_recommendation: str = Field(..., max_length=4000)
+    overridden_recommendation: str = Field(..., max_length=4000)
+    override_reason: str = Field(..., max_length=4000)
+    clinician_notes: str = Field("", max_length=4000)
 
 class AcceptMappingRequest(BaseModel):
-    institution_id: str
-    acr_scenario_text: str
-    acr_procedure_text: str
-    imaging_protocol_id: Optional[str] = None
-    ir_protocol_id: Optional[str] = None
-    confidence_score: float
-    mapping_method: str
-    accepted_by: str
+    institution_id: str = Field(..., max_length=100)
+    acr_scenario_text: str = Field(..., max_length=4000)
+    acr_procedure_text: str = Field(..., max_length=4000)
+    imaging_protocol_id: Optional[str] = Field(None, max_length=100)
+    ir_protocol_id: Optional[str] = Field(None, max_length=100)
+    confidence_score: float = Field(..., ge=0.0, le=1.0)
+    mapping_method: str = Field(..., max_length=100)
+    accepted_by: str = Field(..., max_length=100)
 
 class ClaimReviewRequest(BaseModel):
-    session_id: str
-    reviewer_id: str
+    session_id: str = Field(..., max_length=100)
+    reviewer_id: str = Field(..., max_length=100)
 
 class ResolveReviewRequest(BaseModel):
-    session_id: str
-    reviewer_id: str
-    final_recommendation: str
+    session_id: str = Field(..., max_length=100)
+    reviewer_id: str = Field(..., max_length=100)
+    final_recommendation: str = Field(..., max_length=4000)
 
 
 
@@ -361,20 +405,48 @@ async def analyze_scenario(request: Request, req: AnalyzeRequest):
         try:
             bundle_obj = convert_text_to_fhir_bundle(req.text)
             bundle_dict = bundle_obj.model_dump()
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
             logger.error("Error in Text-to-FHIR conversion", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error in Text-to-FHIR conversion: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error converting text to clinical resources.")
     else:
         bundle_dict = req.bundle
+        try:
+            from fhir.resources.bundle import Bundle
+            import importlib
+            # 1. Validate overall bundle schema
+            Bundle.parse_obj(bundle_dict)
+            # 2. Deeply validate individual resources using raw dicts
+            if isinstance(bundle_dict, dict) and bundle_dict.get("entry"):
+                for entry in bundle_dict["entry"]:
+                    if isinstance(entry, dict) and entry.get("resource"):
+                        res_dict = entry["resource"]
+                        if isinstance(res_dict, dict):
+                            rtype = res_dict.get("resourceType")
+                            if rtype:
+                                try:
+                                    module = importlib.import_module(f"fhir.resources.{rtype.lower()}")
+                                    resource_cls = getattr(module, rtype)
+                                    resource_cls.parse_obj(res_dict)
+                                except (ImportError, AttributeError):
+                                    raise ValueError(f"Unknown FHIR resourceType: {rtype}")
+                                except Exception as parse_err:
+                                    raise ValueError(f"Invalid {rtype} resource: {parse_err}")
+        except Exception as e:
+            logger.warning(f"Invalid FHIR Bundle in analyze request: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid FHIR Bundle schema: {str(e)}")
 
     scenario_str = extract_scenario_from_bundle(bundle_dict)
     rag_query = req.text if req.text else scenario_str
 
     try:
         result = await asyncio.to_thread(query_acr_guidelines, rag_query, bundle_dict)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error retrieving ACR appropriateness guidelines.")
 
     # Abstention gate
     if result.get("abstained"):
@@ -452,11 +524,37 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
             else:
                 bundle_obj = convert_text_to_fhir_bundle(req.text)
             bundle_dict = bundle_obj.model_dump()
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
             logger.error("Error in Text-to-FHIR conversion", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error in Text-to-FHIR conversion: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error converting text to clinical resources.")
     else:
         bundle_dict = req.bundle
+        try:
+            from fhir.resources.bundle import Bundle
+            import importlib
+            # 1. Validate overall bundle schema
+            Bundle.parse_obj(bundle_dict)
+            # 2. Deeply validate individual resources using raw dicts
+            if isinstance(bundle_dict, dict) and bundle_dict.get("entry"):
+                for entry in bundle_dict["entry"]:
+                    if isinstance(entry, dict) and entry.get("resource"):
+                        res_dict = entry["resource"]
+                        if isinstance(res_dict, dict):
+                            rtype = res_dict.get("resourceType")
+                            if rtype:
+                                try:
+                                    module = importlib.import_module(f"fhir.resources.{rtype.lower()}")
+                                    resource_cls = getattr(module, rtype)
+                                    resource_cls.parse_obj(res_dict)
+                                except (ImportError, AttributeError):
+                                    raise ValueError(f"Unknown FHIR resourceType: {rtype}")
+                                except Exception as parse_err:
+                                    raise ValueError(f"Invalid {rtype} resource: {parse_err}")
+        except Exception as e:
+            logger.warning(f"Invalid FHIR Bundle in protocol request: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid FHIR Bundle schema: {str(e)}")
 
     # 2. Extract scenario for RAG
     scenario_str = extract_scenario_from_bundle(bundle_dict)
@@ -466,9 +564,11 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
     rag_query = req.text if req.text else scenario_str
     try:
         acr_result = await asyncio.to_thread(query_acr_guidelines, rag_query, bundle_dict)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error in RAG retrieval", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error in RAG retrieval: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error retrieving ACR appropriateness guidelines.")
 
     # 4. Run Protocol Mapper (Service C)
     try:
@@ -550,7 +650,7 @@ async def get_draft_protocol_endpoint(request: Request, req: ProtocolRequest):
 
 
 
-@app.post("/v1/override")
+@app.post("/v1/override", dependencies=[Depends(verify_api_key)])
 async def save_override(req: OverrideRequest):
     """Log a clinician override to the audit database."""
     logger.info("Received request to log override")
@@ -565,10 +665,10 @@ async def save_override(req: OverrideRequest):
         return {"status": "success", "message": "Override logged successfully."}
     except Exception as e:
         logger.error("Error logging override", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error logging override: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error logging override. Check server logs for details.")
 
 
-@app.post("/v1/accept-mapping")
+@app.post("/v1/accept-mapping", dependencies=[Depends(verify_api_key)])
 async def accept_mapping(req: AcceptMappingRequest):
     """Log user acceptance of a protocol mapping and perform writeback if confidence is high."""
     logger.info(f"Received request to log mapping acceptance for '{req.acr_procedure_text}'")
@@ -587,11 +687,11 @@ async def accept_mapping(req: AcceptMappingRequest):
         return {"status": "success", "message": "Mapping acceptance logged and processed."}
     except Exception as e:
         logger.error("Error logging mapping acceptance", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error logging mapping acceptance: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error logging mapping acceptance. Check server logs for details.")
 
 
 
-@app.get("/v1/overrides")
+@app.get("/v1/overrides", dependencies=[Depends(verify_api_key)])
 async def list_overrides():
     """Retrieve audit history of overrides."""
     logger.info("Received request to list overrides")
@@ -600,10 +700,10 @@ async def list_overrides():
         return {"status": "success", "overrides": overrides}
     except Exception as e:
         logger.error("Error retrieving overrides", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving overrides: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error retrieving overrides. Check server logs for details.")
 
 
-@app.get("/v1/review/queue")
+@app.get("/v1/review/queue", dependencies=[Depends(verify_api_key)])
 async def get_review_queue(status: Optional[str] = None):
     """Retrieve cases in the manual review queue."""
     logger.info(f"Received request to retrieve review queue (status={status})")
@@ -639,12 +739,12 @@ async def get_review_queue(status: Optional[str] = None):
         return {"status": "success", "queue": queue}
     except Exception as e:
         logger.error("Error retrieving review queue", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving review queue: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error retrieving review queue. Check server logs for details.")
     finally:
         conn.close()
 
 
-@app.post("/v1/review/claim")
+@app.post("/v1/review/claim", dependencies=[Depends(verify_api_key)])
 async def claim_review_case(req: ClaimReviewRequest):
     """Claim a case in the manual review queue."""
     logger.info(f"Reviewer {req.reviewer_id} claiming session {req.session_id}")
@@ -678,12 +778,12 @@ async def claim_review_case(req: ClaimReviewRequest):
         raise
     except Exception as e:
         logger.error("Error claiming review case", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error claiming review case: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error claiming review case. Check server logs for details.")
     finally:
         conn.close()
 
 
-@app.post("/v1/review/resolve")
+@app.post("/v1/review/resolve", dependencies=[Depends(verify_api_key)])
 async def resolve_review_case(req: ResolveReviewRequest):
     """Resolve a case in the manual review queue."""
     logger.info(f"Reviewer {req.reviewer_id} resolving session {req.session_id}")
@@ -720,15 +820,15 @@ async def resolve_review_case(req: ResolveReviewRequest):
         raise
     except Exception as e:
         logger.error("Error resolving review case", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error resolving review case: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error resolving review case. Check server logs for details.")
     finally:
         conn.close()
 
 
 class CoPilotChatRequest(BaseModel):
-    scenario_text: str
-    chat_history: list = []
-    message: str
+    scenario_text: str = Field(..., max_length=4000)
+    chat_history: list = Field(default_factory=list, max_length=20)
+    message: str = Field(..., max_length=4000)
 
 
 @app.post("/v1/copilot/chat")
@@ -759,7 +859,7 @@ async def copilot_chat(request: Request, req: CoPilotChatRequest):
         return {"status": "success", "response": response_text}
     except Exception as e:
         logger.error("Error generating co-pilot response", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error generating co-pilot response: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error generating co-pilot response. Check server logs for details.")
 
 
 def fhir_bundle_from_cds_hook_payload(payload: dict) -> dict:
@@ -807,9 +907,23 @@ def fhir_bundle_from_cds_hook_payload(payload: dict) -> dict:
     }
 
 
+class CDSHookContext(BaseModel):
+    """CDS Hooks context object."""
+    userId: str = Field(..., max_length=200, description="User placing the order (e.g. Practitioner/123)")
+    patientId: str = Field(..., max_length=200, description="Patient ID")
+    selections: Optional[List[str]] = Field(default=None, description="Selected order references")
+
+class CDSHookRequest(BaseModel):
+    """CDS Hooks request payload validation model."""
+    hook: str = Field(..., max_length=100, description="Hook type (e.g. order-select, order-sign)")
+    hookInstance: Optional[str] = Field(default=None, max_length=200, description="Unique hook instance UUID")
+    context: CDSHookContext
+    prefetch: Optional[Dict[str, Any]] = Field(default=None, description="Prefetched FHIR resources")
+
+
 @app.post("/v1/cds-hook")
 @limiter.limit("30/minute")
-async def cds_hook(request: Request):
+async def cds_hook(request: Request, req: CDSHookRequest):
     """
     Dynamic CDS Hooks implementation (order-select / order-sign).
     Parses full EHR CDS Hook payload, runs RAG + Safety, and returns dynamic Cards.
@@ -845,7 +959,7 @@ async def cds_hook(request: Request):
                 {
                     "summary": "ACR Guidelines Retrieval Error",
                     "indicator": "warning",
-                    "detail": f"Failed to retrieve ACR appropriateness criteria: {str(e)}",
+                    "detail": "Failed to retrieve ACR appropriateness criteria. Please try again.",
                     "source": {"label": "ACR-AC-RAG Hub"}
                 }
             ]

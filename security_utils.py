@@ -1,4 +1,7 @@
 import re
+import unicodedata
+
+__all__ = ["check_prompt_injection", "redact_phi", "INJECTION_PATTERNS"]
 
 # Prompt-injection patterns to filter threat inputs from clinical texts
 INJECTION_PATTERNS = [
@@ -10,6 +13,38 @@ INJECTION_PATTERNS = [
     re.compile(r"act\s+as\s+(a\s+|an\s+)?(different|new|unrestricted)", re.IGNORECASE),
     re.compile(r"<\s*(script|iframe|object|embed)", re.IGNORECASE),
 ]
+
+_SIMPLIFIED_PATTERNS = [
+    re.compile(r"ignore(previous|all|prior|above)instructions"),
+    re.compile(r"disregard(your|all|the)(system|previous|prior)"),
+    re.compile(r"youarenow"),
+    re.compile(r"newinstruction"),
+    re.compile(r"forget(everything|all|yourinstructions)"),
+    re.compile(r"actas(a|an)?(different|new|unrestricted)"),
+]
+
+def check_prompt_injection(text: str) -> bool:
+    """
+    Checks if the text contains a prompt-injection attempt.
+    Normalizes Unicode homoglyphs and catches character insertion tricks (e.g. i.g.n.o.r.e).
+    """
+    if not text:
+        return False
+    # Unicode normalization (NFKC) to resolve Cyrillic homoglyphs, etc.
+    normalized = unicodedata.normalize("NFKC", text)
+    
+    # 1. Search normalized text with standard patterns
+    for pattern in INJECTION_PATTERNS:
+        if pattern.search(normalized):
+            return True
+            
+    # 2. Strip punctuation and spaces to catch spacing bypasses
+    simplified = re.sub(r"[._\-\s]", "", normalized).lower()
+    for pattern in _SIMPLIFIED_PATTERNS:
+        if pattern.search(simplified):
+            return True
+            
+    return False
 
 def redact_phi(text: str) -> str:
     """

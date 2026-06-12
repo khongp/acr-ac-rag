@@ -11,6 +11,8 @@ __pycache__/
 chroma_db/
 chroma_db_local/
 chroma_db_gemini/
+chroma_db*_backup/
+*backup/
 data/*.db
 data/query_cache.db
 data/acr_procedures.db

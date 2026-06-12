@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from google import genai
@@ -8,12 +9,59 @@ from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from rag_engine import query_acr_guidelines, redact_phi
-from security_utils import INJECTION_PATTERNS as _INJECTION_PATTERNS
+from security_utils import check_prompt_injection
+
+import time
+import threading
+
+__all__ = ["generate_copilot_response", "CoPilotChatRequest", "ChatMessage"]
+
+logger = logging.getLogger("acr-ac-rag")
 
 load_dotenv()
 
-# In-memory cache for RAG results per scenario text to optimize conversational performance
-_rag_cache = {}
+class SimpleTTLCache:
+    def __init__(self, ttl_seconds=3600, max_size=512):
+        self.ttl = ttl_seconds
+        self.max_size = max_size
+        self.cache = {}
+        self.lock = threading.Lock()
+
+    def get(self, key):
+        with self.lock:
+            if key not in self.cache:
+                return None
+            val, expiry = self.cache[key]
+            if time.time() > expiry:
+                del self.cache[key]
+                return None
+            return val
+
+    def set(self, key, value):
+        with self.lock:
+            now = time.time()
+            expired_keys = [k for k, v in self.cache.items() if now > v[1]]
+            for k in expired_keys:
+                del self.cache[k]
+            if len(self.cache) >= self.max_size:
+                first_key = next(iter(self.cache))
+                del self.cache[first_key]
+            self.cache[key] = (value, now + self.ttl)
+
+    def __contains__(self, key):
+        return self.get(key) is not None
+
+    def __getitem__(self, key):
+        val = self.get(key)
+        if val is None:
+            raise KeyError(key)
+        return val
+
+    def __setitem__(self, key, value):
+        self.set(key, value)
+
+# Thread-safe TTL cache for RAG results per scenario text (1 hour expiration, max 512 entries)
+_rag_cache = SimpleTTLCache(ttl_seconds=3600, max_size=512)
 
 _MAX_INPUT_LENGTH = 4000
 
@@ -42,14 +90,12 @@ def sanitize_clinical_input(text: str) -> str:
     ValueError
         If the input matches a known prompt-injection pattern.
     """
-    for pattern in _INJECTION_PATTERNS:
-        if pattern.search(text):
-            raise ValueError(
-                "Input rejected: the clinical scenario text contains language "
-                "that resembles a prompt-injection attempt "
-                f"(matched pattern: {pattern.pattern!r}). "
-                "Please provide genuine clinical information only."
-            )
+    if check_prompt_injection(text):
+        raise ValueError(
+            "Input rejected: the clinical scenario text contains language "
+            "that resembles a prompt-injection attempt. "
+            "Please provide genuine clinical information only."
+        )
 
     # Truncate overly long inputs
     text = text[:_MAX_INPUT_LENGTH]
@@ -71,11 +117,16 @@ class CoPilotChatRequest(BaseModel):
     chat_history: List[ChatMessage] = Field(default_factory=list)
     message: str                # Current user message/question
 
+_gemini_client = None
+
 def get_gemini_client():
-    api_key = os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError("GOOGLE_API_KEY environment variable is not set.")
-    return genai.Client(api_key=api_key)
+    global _gemini_client
+    if _gemini_client is None:
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY environment variable is not set.")
+        _gemini_client = genai.Client(api_key=api_key)
+    return _gemini_client
 
 def generate_copilot_response(req: CoPilotChatRequest) -> str:
     """
@@ -92,14 +143,15 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
     
     # 1. Retrieve the ACR Guidelines for the current patient context (reusing cache if present)
     try:
-        cache_key = req.scenario_text.strip().lower()
+        # Redact PHI from the cache key to protect patient privacy
+        cache_key = redact_phi(req.scenario_text).strip().lower()
         if cache_key in _rag_cache:
             acr_result = _rag_cache[cache_key]
-            print(f"[COPILOT CACHE HIT] Reusing guidelines context for conversation.")
+            logger.info("[COPILOT CACHE HIT] Reusing guidelines context for conversation.")
         else:
             acr_result = query_acr_guidelines(req.scenario_text)
             _rag_cache[cache_key] = acr_result
-            print(f"[COPILOT CACHE MISS] Querying RAG and caching guidelines context for conversation.")
+            logger.info("[COPILOT CACHE MISS] Querying RAG and caching guidelines context for conversation.")
             
         acr_recommendation = acr_result.get("recommendation", "No specific recommendation retrieved.")
         sources = acr_result.get("sources", [])
@@ -113,7 +165,7 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
             source_excerpts.append(f"--- Excerpt {i+1} (Source: {source_name}) ---\n{content}")
         guidelines_context = "\n\n".join(source_excerpts)
     except Exception as e:
-        print(f"[COPILOT WARNING] Failed to query ACR guidelines in co-pilot: {e}")
+        logger.warning(f"[COPILOT WARNING] Failed to query ACR guidelines in co-pilot: {e}")
         acr_recommendation = "Unavailable due to retrieval error."
         guidelines_context = "No context retrieved."
 
@@ -165,5 +217,5 @@ def generate_copilot_response(req: CoPilotChatRequest) -> str:
         )
         return response.text.strip() + disclaimer
     except Exception as e:
-        print(f"[COPILOT ERROR] Gemini generation failed: {e}")
+        logger.error(f"[COPILOT ERROR] Gemini generation failed: {e}")
         return f"I apologize, but I am unable to consult on this case right now. (Error: {str(e)})"

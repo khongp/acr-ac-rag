@@ -16,10 +16,15 @@ This is the core "protocoling assistant" — the Holy Grail.
 
 import os
 import json
+import logging
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from dotenv import load_dotenv
+
+__all__ = ["map_acr_to_institution_protocols", "batch_map_protocols"]
+
+logger = logging.getLogger("acr-ac-rag")
 
 from protocol_db import (
     lookup_protocol_by_acr,
@@ -57,6 +62,8 @@ class DraftProtocol:
     acr_procedure: Optional[str] = None
     acr_appropriateness: Optional[str] = None
     acr_recommendation_text: Optional[str] = None
+    ordered_procedure: Optional[str] = None
+    recommended_procedure: Optional[str] = None
     
     # Protocol details (the recipe)
     protocol_id: Optional[str] = None
@@ -103,23 +110,25 @@ def get_draft_protocol(
     
     # Step 1: Extract ACR procedure and scenario from RAG output
     acr_procedure, acr_scenario = _extract_acr_identifiers(acr_result)
+    recommended_procedure = acr_procedure
     
-    # Prioritize ordered procedure from FHIR bundle for mapping and safety evaluation
+    # Extract ordered procedure from FHIR bundle
+    ordered_procedure = None
     if fhir_bundle:
         for entry in fhir_bundle.get("entry", []):
             resource = entry.get("resource", {})
             if resource.get("resourceType") == "ServiceRequest":
                 code_obj = resource.get("code", {})
-                ordered_procedure = code_obj.get("text")
-                if not ordered_procedure:
+                ordered_proc = code_obj.get("text")
+                if not ordered_proc:
                     concept_obj = code_obj.get("concept", {})
-                    ordered_procedure = concept_obj.get("text")
-                    if not ordered_procedure:
+                    ordered_proc = concept_obj.get("text")
+                    if not ordered_proc:
                         codings = concept_obj.get("coding", []) or code_obj.get("coding", [])
                         if codings:
-                            ordered_procedure = codings[0].get("display")
-                if ordered_procedure:
-                    acr_procedure = ordered_procedure
+                            ordered_proc = codings[0].get("display")
+                if ordered_proc:
+                    ordered_procedure = ordered_proc
                     break
     
     # Step 2: Look up protocol in the bridge table
@@ -175,6 +184,8 @@ def get_draft_protocol(
             mapping_method=best.get("mapping_method"),
             scanner_id=best.get("scanner_id"),
             scanner_type=best.get("scanner_type"),
+            ordered_procedure=ordered_procedure,
+            recommended_procedure=recommended_procedure,
         )
         return draft
     
@@ -188,7 +199,7 @@ def get_draft_protocol(
             db_path=db_path,
         )
     else:
-        print("[FUZZY MATCH] LLM-assisted fuzzy matching is disabled.")
+        logger.info("[FUZZY MATCH] LLM-assisted fuzzy matching is disabled.")
     
     if fuzzy_result:
         protocol_id = fuzzy_result.get("protocol_id")
@@ -228,11 +239,20 @@ def get_draft_protocol(
             mapping_method="llm_assisted",
             scanner_id=protocol_details.get("scanner_id"),
             scanner_type=protocol_details.get("scanner_type"),
+            ordered_procedure=ordered_procedure,
+            recommended_procedure=recommended_procedure,
         )
         return draft
     
     # Step 6: No match at all
-    safety = evaluate_safety({}, patient_data, data_source="synthetic")
+    modality = None
+    proc_text = (ordered_procedure or acr_procedure or "").lower()
+    if "mri" in proc_text:
+        modality = "MRI"
+    elif "ct" in proc_text:
+        modality = "CT"
+        
+    safety = evaluate_safety({"modality": modality}, patient_data, data_source="synthetic")
     return DraftProtocol(
         status="no_match",
         institution_id=institution,
@@ -241,6 +261,8 @@ def get_draft_protocol(
         acr_procedure=acr_procedure,
         acr_recommendation_text=recommendation_text,
         safety_profile=safety.to_dict(),
+        ordered_procedure=ordered_procedure,
+        recommended_procedure=recommended_procedure,
     )
 
 
@@ -406,7 +428,7 @@ Rules:
         return None
         
     except Exception as e:
-        print(f"⚠️ LLM fuzzy matching failed: {e}")
+        logger.warning(f"⚠️ LLM fuzzy matching failed: {e}")
         return None
 
 
@@ -449,7 +471,7 @@ def batch_map_acr_to_protocols(
             if proc and "Usually appropriate" in appropriateness:
                 unique_procedures.add((scenario, proc))
     
-    print(f"Found {len(unique_procedures)} unique 'Usually Appropriate' ACR procedures")
+    logger.info(f"Found {len(unique_procedures)} unique 'Usually Appropriate' ACR procedures")
     
     if limit:
         unique_procedures = list(unique_procedures)[:limit]
@@ -474,7 +496,7 @@ def batch_map_acr_to_protocols(
         proposals.append(proposal)
         
         status = "✅" if proposal["confidence"] >= 0.7 else "⚠️" if proposal["confidence"] >= 0.4 else "❌"
-        print(f"  {status} {procedure} → {proposal['matched_protocol_name'] or 'NO MATCH'} ({proposal['confidence']:.0%})")
+        logger.info(f"  {status} {procedure} → {proposal['matched_protocol_name'] or 'NO MATCH'} ({proposal['confidence']:.0%})")
     
     if not dry_run:
         from protocol_db import get_connection
@@ -504,7 +526,7 @@ def batch_map_acr_to_protocols(
                         """, [institution_id, p["acr_scenario"], p["acr_procedure"],
                               p["matched_protocol_id"], p["confidence"]])
         
-        print(f"\n✅ Inserted {sum(1 for p in proposals if p['confidence'] >= 0.7)} high-confidence mappings")
+        logger.info(f"\n✅ Inserted {sum(1 for p in proposals if p['confidence'] >= 0.7)} high-confidence mappings")
     
     return proposals
 

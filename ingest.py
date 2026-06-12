@@ -107,6 +107,24 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
         except Exception as e:
             print(f"Cache write error: {e}")
 
+    def _set_cached_embeddings_batch(self, items: List[tuple]):
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("BEGIN TRANSACTION;")
+            for text, embedding in items:
+                h = self._get_hash(text)
+                cursor.execute(
+                    "INSERT OR REPLACE INTO embeddings (text_hash, text_content, embedding) VALUES (?, ?, ?)",
+                    (h, text, json.dumps(embedding))
+                )
+            self.conn.commit()
+        except Exception as e:
+            try:
+                self.conn.rollback()
+            except Exception:
+                pass
+            print(f"Batch cache write error: {e}")
+
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         results = [None] * len(texts)
         missing_indices = []
@@ -157,9 +175,11 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
                     raise Exception("Failed to embed documents due to persistent errors.")
                 
                 # Cache immediately to save progress if subsequent batches fail
+                cache_items = []
                 for idx, text, emb in zip(batch_indices, batch, batch_embs):
-                    self._set_cached_embedding(text, emb)
+                    cache_items.append((text, emb))
                     results[idx] = emb
+                self._set_cached_embeddings_batch(cache_items)
                 
                 completed = len(texts) - len(missing_texts) + i + len(batch)
                 print(f"    Processed {completed}/{len(texts)} chunks...")
@@ -173,23 +193,41 @@ class CachedGoogleGenerativeAIEmbeddings(Embeddings):
         cached = self._get_cached_embedding(text)
         if cached is not None:
             return cached
+            
         wrapped = [types.Content(parts=[types.Part.from_text(text=text)])]
-        response = self.client.models.embed_content(
-            model=self.model,
-            contents=wrapped
-        )
-        emb = response.embeddings[0].values
-        self._set_cached_embedding(text, emb)
-        return emb
+        attempt = 0
+        max_retries = 7
+        delay = 5.0
+        while attempt < max_retries:
+            try:
+                response = self.client.models.embed_content(
+                    model=self.model,
+                    contents=wrapped
+                )
+                emb = response.embeddings[0].values
+                self._set_cached_embedding(text, emb)
+                return emb
+            except Exception as e:
+                print(f"    API Error on query embedding (attempt {attempt + 1}/{max_retries}): {e}")
+                err_str = str(e).lower()
+                is_transient = any(x in err_str for x in ["429", "500", "502", "503", "504", "resourceexhausted", "quota", "unavailable", "timeout", "connection"])
+                if is_transient:
+                    print(f"    Transient error detected. Sleeping {delay}s...")
+                    time.sleep(delay)
+                    delay *= 2
+                    attempt += 1
+                else:
+                    raise e
+        raise Exception("Failed to embed query due to persistent errors.")
 
 
 def get_guideline_version(source_path: str) -> str:
-    """Compute a content-based MD5 hash (first 8 chars) of a file for version tracking."""
-    h = hashlib.md5()
+    """Compute a content-based SHA-256 hash (first 12 chars) of a file for version tracking."""
+    h = hashlib.sha256()
     with open(source_path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
-    return h.hexdigest()[:8]
+    return h.hexdigest()[:12]
 
 
 def load_variants_from_json(json_path):
@@ -478,24 +516,24 @@ def ingest_documents():
         print(f"  Ingesting batch {i // batch_size + 1}/{(len(chunks) - 1) // batch_size + 1} ({len(batch)} chunks)...")
         db.add_documents(batch)
     
-    # ── Build and Save BM25 Retriever ──
-    print("\nBuilding and saving BM25 Retriever index...")
-    from langchain_community.retrievers import BM25Retriever
-    import pickle
+    # ── Save BM25 Chunks ──
+    print("\nSaving BM25 Chunks to JSON...")
+    import json
     
     os.makedirs("data", exist_ok=True)
-    chunks_path = "data/bm25_chunks.pkl"
-    retriever_path = "data/bm25_retriever.pkl"
+    chunks_path = "data/bm25_chunks.json"
     
-    with open(chunks_path, "wb") as f:
-        pickle.dump(chunks, f)
+    chunks_data = []
+    for chunk in chunks:
+        chunks_data.append({
+            "page_content": chunk.page_content,
+            "metadata": chunk.metadata
+        })
         
-    bm25_retriever = BM25Retriever.from_documents(chunks)
-    with open(retriever_path, "wb") as f:
-        pickle.dump(bm25_retriever, f)
+    with open(chunks_path, "w", encoding="utf-8") as f:
+        json.dump(chunks_data, f, indent=2, ensure_ascii=False)
         
-    print(f"  Saved BM25 Chunks:     {chunks_path}")
-    print(f"  Saved BM25 Retriever:  {retriever_path}")
+    print(f"  Saved BM25 Chunks (JSON): {chunks_path}")
 
     # Verify
     count = db._collection.count()

@@ -20,8 +20,13 @@ Configuration via environment variables:
 
 import os
 import warnings
+import logging
 from dotenv import load_dotenv
 from functools import lru_cache
+
+__all__ = ["get_llm", "get_llm_fast", "get_embeddings"]
+
+logger = logging.getLogger("acr-ac-rag")
 
 load_dotenv()
 
@@ -84,7 +89,7 @@ def get_llm(temperature: float = 0.0, tier: str = "primary"):
         else:
             model_name = os.getenv("LOCAL_MODEL", _DEFAULT_LOCAL_MODEL).strip()
             ollama_host = os.getenv("OLLAMA_HOST", _DEFAULT_OLLAMA_HOST).strip()
-            print(f"[LLM Router] Using LOCAL model via Ollama: {model_name} @ {ollama_host}")
+            logger.info(f"[LLM Router] Using LOCAL model via Ollama: {model_name} @ {ollama_host}")
             return ChatOllama(
                 model=model_name,
                 base_url=ollama_host,
@@ -99,7 +104,7 @@ def get_llm(temperature: float = 0.0, tier: str = "primary"):
     else:
         model_name = os.getenv("LLM_PRIMARY_MODEL", _DEFAULT_PRIMARY_MODEL).strip()
 
-    print(f"[LLM Router] Initializing cloud model: {model_name} (tier: '{tier}', temp: {temperature})")
+    logger.info(f"[LLM Router] Initializing cloud model: {model_name} (tier: '{tier}', temp: {temperature})")
     return ChatGoogleGenerativeAI(
         model=model_name,
         temperature=temperature,
@@ -111,6 +116,7 @@ def get_llm_fast(temperature: float = 0.0):
     return get_llm(temperature=temperature, tier="fast")
 
 
+@lru_cache()
 def get_embeddings():
     """Return a LangChain ``Embeddings`` instance for the active deployment mode.
 
@@ -138,11 +144,11 @@ def get_embeddings():
             )
             mode = "cloud"  # fall through to cloud block below
         else:
-            print("[LLM Router] Using LOCAL embeddings: all-MiniLM-L6-v2")
+            logger.info("[LLM Router] Using LOCAL embeddings: all-MiniLM-L6-v2")
             return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
     # Cloud mode (default)
     from ingest import CachedGoogleGenerativeAIEmbeddings  # type: ignore[import-untyped]
 
-    print("[LLM Router] Using CLOUD embeddings: CachedGoogleGenerativeAIEmbeddings (gemini-embedding-2)")
+    logger.info("[LLM Router] Using CLOUD embeddings: CachedGoogleGenerativeAIEmbeddings (gemini-embedding-2)")
     return CachedGoogleGenerativeAIEmbeddings()

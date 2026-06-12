@@ -15,6 +15,7 @@
     <meta property="og:description" content="Transform clinical indications into evidence-based imaging recommendations, patient-specific safety assessments, and protocol guidance.">
     <meta property="og:type" content="website">
     <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="preload" href="/logo.png" as="image">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <title>Advanced Imaging Decision Support & Protocol Intelligence</title>
@@ -516,6 +517,18 @@
             background: rgba(239, 68, 68, 0.08);
             border: 1px solid rgba(239, 68, 68, 0.2);
             color: var(--color-danger);
+        }
+
+        .safety-summary-box.insufficient_data {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: var(--color-warning);
+        }
+
+        .safety-summary-box.not_evaluated {
+            background: rgba(148, 163, 184, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #64748b;
         }
 
         .safety-summary-dot {
@@ -1608,7 +1621,7 @@
 
     <header>
         <div class="logo-section" onclick="window.location.reload()" title="Click to refresh page" style="display: flex; align-items: center; gap: 12px;">
-            <img src="/logo.png" alt="ACR logo" style="height: 38px; width: 38px; border-radius: var(--radius-md); object-fit: cover;">
+            <img src="/logo.png" alt="ACR logo" loading="lazy" style="height: 38px; width: 38px; border-radius: var(--radius-md); object-fit: cover;">
             <div>
                 <h1 style="margin: 0; line-height: 1.2;">Advanced Imaging Decision Support & Protocol Intelligence</h1>
                 <p style="margin: 2px 0 0 0; line-height: 1.2;">Transform clinical indications into evidence-based imaging recommendations, patient-specific safety assessments, and protocol guidance.</p>
@@ -1946,6 +1959,15 @@
                     <p style="color: var(--text-muted); font-size: 14.5px;">Customized scan configuration based on local hospital rules.</p>
                 </div>
 
+                <!-- Mismatch Warning Box -->
+                <div id="protocol-mismatch-alert" class="safety-alert-card warning" style="display: none; margin-bottom: 20px;">
+                    <div style="font-size: 20px; line-height: 1;">⚠️</div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: var(--color-warning);">Modality Order Mismatch Detected</div>
+                        <div id="protocol-mismatch-text" style="font-size: 13.5px; line-height: 1.5;"></div>
+                    </div>
+                </div>
+
                 <div class="protocol-metadata-grid">
                     <div class="metadata-tile">
                         <div class="metadata-tile-label">Matched Protocol</div>
@@ -2243,7 +2265,28 @@
             if (apiParam === "clear" || apiParam === "reset") {
                 localStorage.removeItem('API_BASE');
             } else {
-                localStorage.setItem('API_BASE', apiParam);
+                try {
+                    let isLocal = false;
+                    let isSameOrigin = false;
+                    if (apiParam.startsWith("http://") || apiParam.startsWith("https://")) {
+                        const parsedUrl = new URL(apiParam);
+                        isLocal = parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1";
+                        isSameOrigin = parsedUrl.origin === window.location.origin;
+                    } else {
+                        isSameOrigin = true; // Relative paths
+                    }
+
+                    if (isLocal || isSameOrigin) {
+                        localStorage.setItem('API_BASE', apiParam);
+                    } else {
+                        const confirmed = confirm(`WARNING: You are redirecting the clinical decision support hub API base to an untrusted external endpoint:\n\n${apiParam}\n\nDo you trust this endpoint? Click OK to confirm.`);
+                        if (confirmed) {
+                            localStorage.setItem('API_BASE', apiParam);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Invalid api base URL format", e);
+                }
             }
         }
 
@@ -2948,6 +2991,16 @@
             return doseText.replace(/[☢]/g, '').replace(/\[ped\]/gi, '').replace(/\s+O$/i, '').trim();
         }
 
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function parseMarkdown(text) {
             if (!text) return "";
             
@@ -3243,16 +3296,19 @@
                 const rowsHtml = [];
                 matchedRows.forEach(row => {
                     const pct = (row.score / 9) * 100;
+                    const escName = escapeHtml(row.name);
+                    const escCategory = escapeHtml(row.category.replace('Appropriateness', '').trim());
+                    const escDose = escapeHtml(row.dose);
                     rowsHtml.push(`
                         <div class="procedure-card">
-                            <div class="procedure-name">${row.name}</div>
+                            <div class="procedure-name">${escName}</div>
                             <div class="procedure-rating">
-                                <span class="rating-number ${row.colorClass}">${row.category.replace('Appropriateness', '').trim()}</span>
+                                <span class="rating-number ${row.colorClass}">${escCategory}</span>
                                 <div class="rating-bar-container">
                                     <div class="rating-bar ${row.colorClass}" style="width: ${pct}%"></div>
                                 </div>
                             </div>
-                            <div class="procedure-dose">${row.dose}</div>
+                            <div class="procedure-dose">${escDose}</div>
                         </div>`);
                 });
                 container.innerHTML = rowsHtml.join('');
@@ -3286,11 +3342,12 @@
                     const snippetId = `snippet-idx-${idx}`;
                     const highlightedContent = highlightKeywords(src.content || "", query);
                     
+                    const escCleanName = escapeHtml(cleanName);
                     evidenceHtml.push(`
                         <div class="evidence-card">
                             <div class="evidence-card-header" onclick="toggleSnippet('${snippetId}')">
                                 <div class="evidence-card-info">
-                                    <span class="evidence-card-title">${cleanName}</span>
+                                    <span class="evidence-card-title">${escCleanName}</span>
                                     <span class="evidence-card-meta">
                                         ${type} ${(src.metadata && src.metadata.score !== undefined) ? `&bull; Score: ${parseFloat(src.metadata.score).toFixed(3)}` : ''}
                                     </span>
@@ -3348,9 +3405,18 @@
             } else if (overall === "warnings") {
                 sTitle.innerText = "CLINICAL WARNINGS DETECTED";
                 sSubtitle.innerText = "Requires active review and medication adjustments.";
-            } else {
+            } else if (overall === "insufficient_data") {
+                sTitle.innerText = "INSUFFICIENT SAFETY DATA";
+                sSubtitle.innerText = "Required safety labs or clinical metrics are missing.";
+            } else if (overall === "not_evaluated") {
+                sTitle.innerText = "SAFETY CHECKS NOT EVALUATED";
+                sSubtitle.innerText = "No matching safety rules were run for this protocol.";
+            } else if (overall === "hard_stop") {
                 sTitle.innerText = "HARD CONTRAINDICATION STOP";
                 sSubtitle.innerText = "Severe risk detected. Modify order immediately.";
+            } else {
+                sTitle.innerText = "UNKNOWN SAFETY STATUS";
+                sSubtitle.innerText = "Please verify patient clinical records manually.";
             }
 
             const flags = safety.safety_flags || [];
@@ -3365,13 +3431,16 @@
             flags.forEach(flag => {
                 if (flag.triggered) {
                     triggerCount++;
+                    const escRuleType = escapeHtml(flag.rule_type.replace('_', ' ').toUpperCase());
+                    const escMessage = escapeHtml(flag.message);
+                    const escAction = flag.action ? escapeHtml(flag.action.replace('_', ' ').toUpperCase()) : '';
                     safetyCardsHtml.push(`
                         <div class="safety-alert-card ${flag.severity}">
                             <span class="alert-badge ${flag.severity}">${flag.severity}</span>
                             <div class="alert-content">
-                                <h4>Trigger: ${flag.rule_type.replace('_', ' ').toUpperCase()}</h4>
-                                <p>${flag.message}</p>
-                                ${flag.action ? `<p style="margin-top: 6px; font-weight: 600; color: var(--text-main);">Clinical Action: ${flag.action.replace('_', ' ').toUpperCase()}</p>` : ''}
+                                <h4>Trigger: ${escRuleType}</h4>
+                                <p>${escMessage}</p>
+                                ${escAction ? `<p style="margin-top: 6px; font-weight: 600; color: var(--text-main);">Clinical Action: ${escAction}</p>` : ''}
                             </div>
                         </div>`);
                 }
@@ -3381,13 +3450,15 @@
             holds.forEach(hold => {
                 if (hold.patient_is_taking) {
                     triggerCount++;
+                    const escMedName = escapeHtml(hold.medication_name);
+                    const escSirRef = hold.sir_reference ? escapeHtml(hold.sir_reference) : '';
                     safetyCardsHtml.push(`
                         <div class="safety-alert-card warning">
                             <span class="alert-badge warning">Medication Hold</span>
                             <div class="alert-content">
-                                <h4>Hold Required: ${hold.medication_name}</h4>
+                                <h4>Hold Required: ${escMedName}</h4>
                                 <p>Anticoagulant medication detected in history. <strong>Hold: ${hold.hold_hours_before} hours before</strong> the procedure. <strong>Resume: ${hold.resume_hours_after || 24} hours after</strong> post-hemostasis validation.</p>
-                                ${hold.sir_reference ? `<p style="margin-top:4px; font-size:12px; color:var(--text-muted);">Source: ${hold.sir_reference}</p>` : ''}
+                                ${escSirRef ? `<p style="margin-top:4px; font-size:12px; color:var(--text-muted);">Source: ${escSirRef}</p>` : ''}
                             </div>
                         </div>`);
                 }
@@ -3397,13 +3468,17 @@
             labs.forEach(lab => {
                 if (!lab.is_met) {
                     triggerCount++;
+                    const escLabName = escapeHtml(lab.lab_name);
+                    const escOperator = escapeHtml(lab.required_operator);
+                    const escPatientVal = escapeHtml(lab.patient_value || 'None Found');
+                    const escGuidance = lab.correction_guidance ? escapeHtml(lab.correction_guidance) : '';
                     safetyCardsHtml.push(`
                         <div class="safety-alert-card hard_stop">
                             <span class="alert-badge hard_stop">Lab Contraindication</span>
                             <div class="alert-content">
-                                <h4>Inadequate Lab Value: ${lab.lab_name}</h4>
-                                <p>Required threshold is <strong>${lab.required_operator} ${lab.required_value}</strong>. Patient value was <strong>${lab.patient_value || 'None Found'}</strong>.</p>
-                                ${lab.correction_guidance ? `<p style="margin-top:6px; font-weight:600; color:var(--text-main);">Correction Protocol: ${lab.correction_guidance}</p>` : ''}
+                                <h4>Inadequate Lab Value: ${escLabName}</h4>
+                                <p>Required threshold is <strong>${escOperator} ${lab.required_value}</strong>. Patient value was <strong>${escPatientVal}</strong>.</p>
+                                ${escGuidance ? `<p style="margin-top:6px; font-weight:600; color:var(--text-main);">Correction Protocol: ${escGuidance}</p>` : ''}
                             </div>
                         </div>`);
                 }
@@ -3428,10 +3503,24 @@
             const tableBody = document.getElementById('protocol-table-body');
             const mriSection = document.getElementById('mri-sequences-section');
             const mriContainer = document.getElementById('mri-sequences-container');
+            const mismatchAlert = document.getElementById('protocol-mismatch-alert');
+            const mismatchText = document.getElementById('protocol-mismatch-text');
             
             tableBody.innerHTML = "";
             mriContainer.innerHTML = "";
             mriSection.style.display = "none";
+            if (mismatchAlert) mismatchAlert.style.display = "none";
+
+            if (draft && draft.ordered_procedure && draft.recommended_procedure) {
+                const orderedClean = draft.ordered_procedure.trim().toLowerCase();
+                const recommendedClean = draft.recommended_procedure.trim().toLowerCase();
+                if (orderedClean !== recommendedClean) {
+                    if (mismatchAlert && mismatchText) {
+                        mismatchText.innerHTML = `The ordered modality/procedure <strong>"${escapeHtml(draft.ordered_procedure)}"</strong> does not match the ACR-recommended guideline procedure <strong>"${escapeHtml(draft.recommended_procedure)}"</strong>. Please verify before proceeding.`;
+                        mismatchAlert.style.display = "flex";
+                    }
+                }
+            }
 
             if (!draft || draft.status === "no_match") {
                 protocolNameVal.innerText = "No Matching Protocol Found";
@@ -3628,21 +3717,25 @@
                     const overridesHtml = [];
                     data.overrides.slice(0, 5).forEach(o => {
                         const dateStr = new Date(o.timestamp).toLocaleString();
+                        const reason = escapeHtml(o.override_reason);
+                        const query = escapeHtml(o.query_key);
+                        const recommendation = escapeHtml(o.overridden_recommendation);
+                        const notes = escapeHtml(o.clinician_notes);
                         overridesHtml.push(`
                             <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; font-size: 13px; line-height: 1.4;">
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span style="font-weight: 700; color: var(--color-warning);">🔄 ${o.override_reason}</span>
+                                    <span style="font-weight: 700; color: var(--color-warning);">🔄 ${reason}</span>
                                     <span style="font-size: 11px; color: var(--text-muted);">${dateStr}</span>
                                 </div>
                                 <div style="margin-bottom: 4px;">
-                                    <span style="font-weight: 500; color: var(--text-muted);">Query:</span> "${o.query_key}"
+                                    <span style="font-weight: 500; color: var(--text-muted);">Query:</span> "${query}"
                                 </div>
                                 <div style="margin-bottom: 4px;">
-                                    <span style="font-weight: 500; color: var(--text-muted);">Selected Alternate:</span> <strong>${o.overridden_recommendation}</strong>
+                                    <span style="font-weight: 500; color: var(--text-muted);">Selected Alternate:</span> <strong>${recommendation}</strong>
                                 </div>
-                                ${o.clinician_notes ? `
+                                ${notes ? `
                                 <div style="background: var(--bg-card); border-left: 3px solid var(--border-color); padding: 4px 8px; margin-top: 6px; font-style: italic; color: var(--text-muted); font-size: 12px;">
-                                    "${o.clinician_notes}"
+                                    "${notes}"
                                 </div>` : ''}
                             </div>
                         `);
