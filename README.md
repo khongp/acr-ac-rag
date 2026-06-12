@@ -45,6 +45,23 @@ graph TD
 
 ---
 
+## 🛡️ Security, Validation & Robustness Hardening
+
+*   **Zero-Pickle Secure Serialization:** Completely eliminated Python's native `pickle` dependency from the RAG search pipeline. The BM25 lexical retriever document chunks are serialized to clean JSON format (`bm25_chunks.json`) and reconstituted dynamically in memory at startup, mitigating Remote Code Execution (RCE) vulnerabilities.
+*   **Deep FHIR Bundle Validation:** Implemented overall envelope validation and deep nested resource schema validation inside the `/v1/analyze` and `/v1/protocol` endpoints using `fhir.resources.bundle.Bundle` and dynamic `importlib` class imports, blocking invalid or malformed data early.
+*   **Stored & DOM XSS Defenses:** Hardened the clinician dashboard UI against cross-site scripting (XSS) by HTML-escaping patient notes, clinician justifications, and override history data before rendering, and replacing raw `innerHTML` assignments with safe text content bindings.
+*   **Frontend Origin Override Shield:** Integrated warning and confirmation modals in the client dashboard UI before applying custom external server API base overrides (`?api=`) to prevent silent clinician redirection to malicious endpoints.
+*   **Robust Exception Shield:** Configured a catch-all exception handler and input sanitization across all review, administration, and copilot endpoints to prevent runtime stack trace leakage to the client.
+*   **DOS Mitigation:** Enforced request body validation length constraints (via Pydantic `Field(..., max_length=4000)`) and implemented a payload size limiting middleware (max 5MB) to block denial-of-service attacks.
+*   **Unicode Homoglyph Protection:** Normalizes inputs using `unicodedata.normalize("NFKC")` before running regex checks to prevent lookalike character obfuscation from bypassing prompt-injection filters.
+*   **Optional API Middleware:** Provided a configurable optional API key validation check on sensitive admin endpoints. Fallback public beta testing mode is activated automatically if `ADMIN_API_KEY` is not present in `.env`, ensuring ongoing tester activities remain uninterrupted.
+*   **Core Logging Migration:** Replaced all pipeline console `print()` outputs with structured python logger statements (`logger.info/warning/error`) to support standard log collectors, while retaining stdout prints in script `__main__` entry blocks for CLI usage.
+*   **Explicit Module Exports:** Added explicit `__all__` boundaries to all 7 engine modules (`rag_engine.py`, `fhir_converter.py`, `copilot_engine.py`, `protocol_mapper.py`, `safety_engine.py`, `llm_router.py`, and `protocol_db.py`) to restrict public symbols and maintain API clarity.
+*   **SQLite Socket Leak Prevention:** Wrapped all database accesses in `contextlib.closing` context managers and transitioned WAL database operations to thread-local connection handlers.
+*   **Import-Time Side-Effects Removal:** Cleared all active database initialization side-effects from import-time, refactoring database initialization into lazy startup routines.
+
+---
+
 ## ⚡ Performance, Scaling & Cost Optimizations
 
 This system is optimized for serverless deployment on **Google Cloud Run** to ensure near-zero cold starts, high concurrency scaling, and minimal billing:
