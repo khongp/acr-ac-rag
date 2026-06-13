@@ -2741,6 +2741,7 @@
                             "resource": {
                                 "resourceType": "Condition",
                                 "id": "condition-simulated",
+                                "subject": { "reference": "Patient/patient-simulated" },
                                 "code": { "text": scenario },
                                 "clinicalStatus": {
                                     "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }]
@@ -2865,6 +2866,7 @@
                         "resource": {
                             "resourceType": "Condition",
                             "id": "cond-pacemaker",
+                            "subject": { "reference": "Patient/patient-simulated" },
                             "clinicalStatus": { "coding": [{ "code": "active" }] },
                             "code": {
                                 "coding": [{ "display": "Cardiac pacemaker" }],
@@ -2878,6 +2880,7 @@
                         "resource": {
                             "resourceType": "Condition",
                             "id": "cond-metal-implant",
+                            "subject": { "reference": "Patient/patient-simulated" },
                             "clinicalStatus": { "coding": [{ "code": "active" }] },
                             "code": {
                                 "coding": [{ "display": "Metallic implant" }],
@@ -2891,6 +2894,7 @@
                         "resource": {
                             "resourceType": "Condition",
                             "id": "cond-claustrophobia",
+                            "subject": { "reference": "Patient/patient-simulated" },
                             "clinicalStatus": { "coding": [{ "code": "active" }] },
                             "code": {
                                 "coding": [{ "display": "Claustrophobia" }],
@@ -4014,6 +4018,7 @@
                     "resource": {
                         "resourceType": "Condition",
                         "id": "cond-pacemaker",
+                        "subject": { "reference": "Patient/patient-simulated" },
                         "code": { "text": "Cardiac pacemaker implant" }
                     }
                 });
@@ -4023,6 +4028,7 @@
                     "resource": {
                         "resourceType": "Condition",
                         "id": "cond-metal",
+                        "subject": { "reference": "Patient/patient-simulated" },
                         "code": { "text": "Metallic implant" }
                     }
                 });
@@ -4032,6 +4038,7 @@
                     "resource": {
                         "resourceType": "Condition",
                         "id": "cond-claustrophobia",
+                        "subject": { "reference": "Patient/patient-simulated" },
                         "code": { "text": "Claustrophobia" }
                     }
                 });
