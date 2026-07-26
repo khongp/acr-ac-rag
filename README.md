@@ -13,16 +13,6 @@
 
 ---
 
-## Quick Links
-
-| | Link |
-|---|---|
-| **Live Demo** | *[Insert Cloud Run URL]* |
-| **Video Walkthrough** | *[Insert Loom/YouTube Link]* |
-| **Repository** | [github.com/khongp/acr-ac-rag](https://github.com/khongp/acr-ac-rag) |
-
----
-
 ## Why ACR-AC-RAG?
 
 A 68-year-old man with a GFR of 28, on warfarin for atrial fibrillation, presents with acute flank pain. The ordering clinician must simultaneously determine which imaging modality is appropriate per ACR guidelines, verify whether IV contrast is safe given the patient's renal function, identify warfarin hold requirements, and ensure the department can protocol the scan — **all before clicking "Order."**
@@ -92,38 +82,6 @@ graph TD
     API -->|Low Confidence < 0.55| RQ[("Manual Review Queue DB")]
     API -->|Audit Trail| AL[("DSN Audit Log JSONL")]
 ```
-
----
-
-## Validation & Retrieval Accuracy
-
-Offline batch validation across 11 clinical scenarios covering diverse ACR guideline topics:
-
-| Metric | Result |
-|---|---|
-| **Total Cases Evaluated** | 11 |
-| **Passed (Correct Topic in Top 3)** | 8 |
-| **Top-3 Retrieval Accuracy** | **72.73%** |
-| **Top-1 Retrieval Accuracy** | **63.6%** (7/11 matched at Rank 1) |
-
-<details>
-<summary>Validated Clinical Scenarios (click to expand)</summary>
-
-| # | Clinical Scenario | Result | Rank |
-|---|---|---|---|
-| 1 | Major Blunt Trauma — facial injury | FAIL | — |
-| 2 | Head Trauma — intracranial arterial injury | FAIL | — |
-| 3 | Low Back Pain — chronic, intervention candidate | PASS | 2 |
-| 4 | Acute Hip Pain — traumatic | PASS | 1 |
-| 5 | Rib Fractures — blunt chest trauma | PASS | 1 |
-| 6 | Acute Spinal Trauma — lumbar nerve root injury | PASS | 1 |
-| 7 | Suspected Spine Infection — cervical/thoracic | PASS | 1 |
-| 8 | Renovascular Hypertension — decreased renal function | PASS | 1 |
-| 9 | Jaundice — biliary obstruction suspected | PASS | 1 |
-| 10 | Hematuria — microscopic, risk factors | FAIL | — |
-| 11 | Dementia — suspected Alzheimer's | PASS | 1 |
-
-</details>
 
 ---
 
