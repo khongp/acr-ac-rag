@@ -226,6 +226,13 @@
             transform: translateY(-2px);
         }
 
+        .preset-btn.active {
+            background: rgba(56, 189, 248, 0.12);
+            color: var(--text-main);
+            border-color: var(--color-info);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+        }
+
         .preset-title {
             font-weight: 600;
             color: var(--text-main);
@@ -2421,6 +2428,7 @@
 
         function clearScenario() {
             document.getElementById('scenario-input').value = '';
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('override-patient-data').checked = false;
             togglePatientFields(false);
             latestCDSResult = null;
@@ -2540,9 +2548,19 @@
             const data = PRESETS[num];
             if (!data) return;
 
+            // Highlight selected preset button visually
+            document.querySelectorAll('.preset-btn').forEach((btn, idx) => {
+                if (idx + 1 === num) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
             const scenarioEl = document.getElementById('scenario-input');
             if (scenarioEl) {
                 scenarioEl.value = data.scenario || "";
+                scenarioEl.focus();
                 scenarioEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
 
