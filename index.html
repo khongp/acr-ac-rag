@@ -2316,15 +2316,19 @@
                     if (data.status === "healthy") {
                         setServerOnlineState(true);
                     } else if (data.status === "initializing") {
-                        setServerOnlineState(false, "System Initializing: The clinical backend is pre-loading RAG models. Please wait...");
+                        setServerOnlineState(false, "System Initializing: Pre-loading clinical guidelines models... Auto-connecting shortly.");
+                        setTimeout(checkBackendHealth, 2500);
                     } else {
                         setServerOnlineState(false, `System Degraded: ${data.error || "RAG engine failed to initialize."}`);
+                        setTimeout(checkBackendHealth, 3000);
                     }
                 } else {
-                    setServerOnlineState(false, "Connection Error: Cannot communicate with the clinical backend. Reconnecting...");
+                    setServerOnlineState(false, "Connecting to Clinical Backend... Reconnecting shortly.");
+                    setTimeout(checkBackendHealth, 3000);
                 }
             } catch (err) {
-                setServerOnlineState(false, "Connection Error: Cannot communicate with the clinical backend. Reconnecting...");
+                setServerOnlineState(false, "Connecting to Clinical Backend... Reconnecting shortly.");
+                setTimeout(checkBackendHealth, 3000);
             }
         }
 
@@ -2348,7 +2352,7 @@
                 }
                 if (submitBtn) {
                     submitBtn.disabled = true;
-                    submitBtn.querySelector('span').innerText = "System Offline";
+                    submitBtn.querySelector('span').innerText = "System Initializing...";
                 }
             }
         }
@@ -2540,6 +2544,8 @@
             
             // Expand simulator fields since presets manually configure patient safety context
             togglePatientFields(true);
+            showToast("Preset loaded into clinical simulator.", "info");
+            checkBackendHealth();
         }
 
         function switchTab(tabId) {
