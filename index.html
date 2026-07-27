@@ -3239,9 +3239,26 @@
             const seenProcs = new Set();
             const age = parseInt(document.getElementById('patient-age').value) || 30;
             
-            (data.acr_sources || []).forEach(src => {
-                if (src.metadata.type === "variant_table") {
-                    const content = (src.content || "").replace(/\r/g, "");
+            const rawVariantSources = (data.acr_sources || []).filter(src => src && src.metadata && src.metadata.type === "variant_table");
+            const topicCounts = {};
+            rawVariantSources.forEach(s => {
+                const t = s.metadata.topic;
+                if (t) topicCounts[t] = (topicCounts[t] || 0) + 1;
+            });
+            let primaryTopic = null;
+            let maxCount = 0;
+            for (const [t, c] of Object.entries(topicCounts)) {
+                if (c > maxCount) {
+                    maxCount = c;
+                    primaryTopic = t;
+                }
+            }
+            const activeVariantSources = primaryTopic
+                ? rawVariantSources.filter(src => src.metadata.topic === primaryTopic)
+                : rawVariantSources;
+
+            activeVariantSources.forEach(src => {
+                const content = (src.content || "").replace(/\r/g, "");
                     const procMatch = content.match(/Procedure:\s*(.+)/i);
                     const ratingMatch = content.match(/Appropriateness Category:\s*(.+)/i);
                     

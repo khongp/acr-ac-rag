@@ -646,7 +646,24 @@ def _calculate_medical_boost(query: str, topic: str, scenario: str) -> float:
                 boost += 2.0
             elif "testicular cancer" in topic_lower or "testicular cancer" in scenario_lower:
                 boost -= 2.0  # Penalize cancer surveillance for acute scrotal pain presentation
-                
+
+    # 3. Appendicitis pathognomonic boosting
+    if any(k in query_lower for k in ["appendicitis", "appendix", "rlq"]):
+        if "appendicitis" in topic_lower or "appendicitis" in scenario_lower:
+            boost += 3.0
+        elif "abdominal pain" in topic_lower and "appendicitis" not in topic_lower:
+            boost -= 2.0
+
+    # 4. Pulmonary Embolism pathognomonic boosting
+    if any(k in query_lower for k in ["pulmonary embolism", "pe", "d-dimer", "dvt"]):
+        if "pulmonary embolism" in topic_lower or "pulmonary embolism" in scenario_lower:
+            boost += 3.0
+
+    # 5. Headache pathognomonic boosting
+    if any(k in query_lower for k in ["headache", "aneurysm", "subarachnoid"]):
+        if "headache" in topic_lower or "headache" in scenario_lower:
+            boost += 2.0
+
     return boost
 
 
