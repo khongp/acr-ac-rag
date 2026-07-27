@@ -2451,7 +2451,6 @@
             `;
             
             switchTab('guidelines');
-            showToast("Clinical scenario cleared.", "info");
         }
 
         function togglePatientFields(show) {
@@ -2603,7 +2602,6 @@
             
             // Expand simulator fields since presets manually configure patient safety context
             togglePatientFields(true);
-            showToast(`Preset #${num} loaded into simulator.`, "info");
         }
 
         function switchTab(tabId) {
@@ -2822,6 +2820,7 @@
                             "resourceType": "Observation",
                             "id": "obs-egfr",
                             "status": "final",
+                            "subject": { "reference": "Patient/patient-simulated" },
                             "code": {
                                 "coding": [{ "system": "http://loinc.org", "code": "33914-3", "display": "eGFR" }]
                             },
@@ -2840,7 +2839,8 @@
                         "resource": {
                             "resourceType": "AllergyIntolerance",
                             "id": "allergy-contrast",
-                            "clinicalStatus": { "coding": [{ "code": "active" }] },
+                            "patient": { "reference": "Patient/patient-simulated" },
+                            "clinicalStatus": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical", "code": "active" }] },
                             "code": {
                                 "coding": [{ "display": allergy }],
                                 "text": allergy
@@ -2856,9 +2856,12 @@
                             "resourceType": "MedicationStatement",
                             "id": "med-anticoag",
                             "status": "active",
-                            "medicationCodeableConcept": {
-                                "coding": [{ "display": meds }],
-                                "text": meds
+                            "subject": { "reference": "Patient/patient-simulated" },
+                            "medication": {
+                                "concept": {
+                                    "coding": [{ "display": meds }],
+                                    "text": meds
+                                }
                             }
                         }
                     });
@@ -2871,6 +2874,7 @@
                             "resourceType": "Observation",
                             "id": "obs-preg",
                             "status": "final",
+                            "subject": { "reference": "Patient/patient-simulated" },
                             "code": {
                                 "coding": [{ "system": "http://loinc.org", "code": "11477-7", "display": "Urine Pregnancy Test" }]
                             },
@@ -2889,6 +2893,7 @@
                             "resourceType": "Observation",
                             "id": "obs-weight",
                             "status": "final",
+                            "subject": { "reference": "Patient/patient-simulated" },
                             "code": {
                                 "coding": [{ "system": "http://loinc.org", "code": "29463-7", "display": "Body weight" }],
                                 "text": "Body Weight"
@@ -2919,7 +2924,7 @@
                                 "text": `Computed Tomography (CT) scan ${daysAgo} days ago`
                             },
                             "subject": { "reference": "Patient/patient-simulated" },
-                            "performedDateTime": scanDate.toISOString().split('T')[0]
+                            "occurrenceDateTime": scanDate.toISOString().split('T')[0] + "T00:00:00Z"
                         }
                     });
                 }
