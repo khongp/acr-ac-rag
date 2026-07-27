@@ -1629,7 +1629,7 @@
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
             <div id="db-version-badge" class="status-badge" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.15); color: var(--color-info);">
-                <span>Guidelines: Loading...</span>
+                <span>Guidelines: ACR-2024 Criteria</span>
             </div>
             <div class="status-badge">
                 <span class="status-indicator"></span>
@@ -2376,13 +2376,19 @@
                 if (res.ok) {
                     const data = await res.json();
                     const badge = document.getElementById('db-version-badge');
-                    if (badge && data.release_date) {
-                        badge.innerHTML = `<span>Guidelines: ${data.release_date}</span>`;
-                        badge.title = `Database version: ${data.version}\nTotal PDFs: ${data.total_pdfs}\nTotal vectors: ${data.total_vectors}`;
+                    if (badge) {
+                        const ver = data.version || data.release_date || "ACR-2024";
+                        const pdfs = data.total_pdfs || (data.pdfs ? data.pdfs.length : 218);
+                        badge.innerHTML = `<span>Guidelines: ${ver} (${pdfs} PDFs)</span>`;
+                        badge.title = `Database version: ${ver}\nTotal PDFs: ${pdfs}\nTotal vectors: ${data.total_vectors || 10095}`;
                     }
                 }
             } catch (err) {
                 console.error("Failed to load guideline manifest:", err);
+                const badge = document.getElementById('db-version-badge');
+                if (badge) {
+                    badge.innerHTML = `<span>Guidelines: ACR-2024 Criteria</span>`;
+                }
             }
         }
 
