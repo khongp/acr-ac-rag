@@ -1642,7 +1642,7 @@
         
         <!-- Connection Error Banner -->
         <div id="connection-error-banner" class="info-banner" style="display: none; background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; color: #b91c1c; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 15px;">
-            <span style="font-size: 20px; color: #ef4444;">⚠️</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <div style="font-weight: 600; font-size: 13.5px;">
                 Connection Error: Cannot communicate with the clinical backend. Reconnecting...
             </div>
@@ -1650,7 +1650,7 @@
 
         <!-- Welcome Banner -->
         <div id="welcome-banner" class="welcome-banner" style="display: none;">
-            <div class="welcome-banner-icon">👋</div>
+            <div class="welcome-banner-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-info)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
             <div class="welcome-banner-content">
                 <h3>Welcome to Advanced Imaging Decision Support & Protocol Intelligence</h3>
                 <p>This portal matches patient presentations directly with the <strong>ACR Appropriateness Criteria®</strong>. Type a clinical scenario to extract age, gender, and comorbidities, then click <strong>Run CDS Engine</strong> to retrieve appropriateness ratings and draft a local protocol. Collapse the patient simulator for a "type-and-go" workflow, or toggle Advanced View for RAG logs, FHIR resources, and CDS Hooks responses.</p>
@@ -1891,7 +1891,7 @@
 
                 <details id="guidelines-details-accordion" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 25px; display: none;">
                     <summary style="font-weight: 600; font-size: 14.5px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; outline: none; list-style: none;">
-                        <span>🔬 View Clinical Reasoning (PEA Plan &amp; Rationale)</span>
+                        <span>View Clinical Reasoning (PEA Plan &amp; Rationale)</span>
                         <span id="accordion-toggle-icon" style="font-size: 12px; color: var(--text-muted);">▼</span>
                     </summary>
                     <div id="guidelines-details-content" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; line-height: 1.6;">
@@ -1913,7 +1913,7 @@
                 
                 <div class="btn-action-container" style="display: flex; gap: 12px; margin-top: 15px;">
                     <button class="btn-action" onclick="copyText('recommendation-text-raw')">Copy Raw Summary</button>
-                    <button class="btn-action" id="btn-override-recommendation" onclick="openOverrideModal()" style="border-color: var(--color-warning); color: var(--color-warning); font-weight: 600; display: none;">⚠️ Override Recommendation</button>
+                    <button class="btn-action" id="btn-override-recommendation" onclick="openOverrideModal()" style="border-color: var(--color-warning); color: var(--color-warning); font-weight: 600; display: none;">Override Recommendation</button>
                 </div>
                 
                 <div style="margin: 25px 0; padding: 16px; background: rgba(56, 189, 248, 0.05); border: 1px dashed rgba(56, 189, 248, 0.2); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px;">
@@ -1922,13 +1922,13 @@
                     </div>
                     <button class="copilot-cta-btn" onclick="openCopilotDrawer()">
                         <span>Ask Attending Co-pilot</span>
-                        <span style="font-size: 14px;">💬</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     </button>
                 </div>
                 
                 <div id="overrides-history-section" style="margin-top: 35px; border-top: 1px dashed var(--border-color); padding-top: 25px;">
                     <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--color-primary);">
-                        <span>📋</span> Clinical Overrides Audit Log
+                        Clinical Overrides Audit Log
                     </h3>
                     <div id="overrides-history-container" style="display: flex; flex-direction: column; gap: 10px;">
                         <div style="font-size: 13px; color: var(--text-muted); font-style: italic; padding: 12px; border: 1px dashed var(--border-color); border-radius: var(--radius-md); text-align: center;">No clinician overrides logged at this institution yet.</div>
@@ -1961,7 +1961,7 @@
 
                 <!-- Mismatch Warning Box -->
                 <div id="protocol-mismatch-alert" class="safety-alert-card warning" style="display: none; margin-bottom: 20px;">
-                    <div style="font-size: 20px; line-height: 1;">⚠️</div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-warning)" stroke-width="2" style="flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
                         <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: var(--color-warning);">Modality Order Mismatch Detected</div>
                         <div id="protocol-mismatch-text" style="font-size: 13.5px; line-height: 1.5;"></div>
@@ -2029,7 +2029,7 @@
                     <!-- Outgoing EHR Request Payload JSON -->
                     <div class="cds-hooks-column">
                         <h3 style="font-size: 15px; margin-bottom: 10px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                            <span>📤</span> Outgoing CDS Hooks JSON Request
+                            Outgoing CDS Hooks JSON Request
                         </h3>
                         <pre class="json-inspector" style="max-height: 500px; overflow-y: auto; font-size: 12px; margin: 0; background: var(--bg-main); border: 1px solid var(--border-color);"><code id="cds-json-request">No payload generated. Run CDS Engine first.</code></pre>
                     </div>
@@ -2037,7 +2037,7 @@
                     <!-- Rendered Cards from CDS Hooks Response -->
                     <div class="cds-hooks-column">
                         <h3 style="font-size: 15px; margin-bottom: 10px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                            <span>📥</span> Rendered Clinical Decision Cards
+                            Rendered Clinical Decision Cards
                         </h3>
                         <div id="cds-rendered-cards" style="display: flex; flex-direction: column; gap: 15px;">
                             <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
@@ -2058,7 +2058,7 @@
                 <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 20px;">
                     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 15px;">
                         <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 700; color: var(--color-info);">
-                            🔍 Clinical Query Expansion (NLP Processing)
+                            Clinical Query Expansion (NLP Processing)
                         </h3>
                         <div class="diag-query-grid">
                             <div style="background: var(--bg-main); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
@@ -2074,7 +2074,7 @@
                     
                     <div>
                         <h3 style="font-size: 15px; margin-bottom: 12px; font-weight: 700; color: var(--text-main);">
-                            📊 Retrieved Document Matching Scores (Hybrid RRF)
+                            Retrieved Document Matching Scores (Hybrid RRF)
                         </h3>
                         <div id="diag-retrieved-docs-container" style="display: flex; flex-direction: column; gap: 10px;">
                             <div style="padding: 20px; color: var(--text-muted); font-style: italic; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: var(--bg-card);">
@@ -3192,7 +3192,7 @@
                 finalBox.innerHTML = `
                     <div style="background: linear-gradient(135deg, var(--bg-surface), var(--bg-card)); border: 1px solid var(--border-color); border-left: 5px solid var(--color-info); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-premium);">
                         <h4 style="font-size: 13.5px; color: var(--color-primary); font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
-                            <span>🎯</span> ACR Appropriateness Recommendation
+                            ACR Appropriateness Recommendation
                         </h4>
                         <div style="font-size: 14.5px; color: var(--text-main); line-height: 1.6;">
                             ${parseMarkdown(pea.final)}
@@ -3728,7 +3728,7 @@
                         overridesHtml.push(`
                             <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; font-size: 13px; line-height: 1.4;">
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span style="font-weight: 700; color: var(--color-warning);">🔄 ${reason}</span>
+                                    <span style="font-weight: 700; color: var(--color-warning);">${reason}</span>
                                     <span style="font-size: 11px; color: var(--text-muted);">${dateStr}</span>
                                 </div>
                                 <div style="margin-bottom: 4px;">
@@ -4448,13 +4448,13 @@
 
     <!-- Attending Co-Pilot Chat Toggle Button -->
     <button id="copilot-toggle" class="copilot-toggle-trigger" onclick="toggleCopilot()" aria-label="Toggle Attending Radiology Co-Pilot" style="display: none;">
-        <span style="font-size: 24px; pointer-events: none;">💬</span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events: none;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </button>
 
     <!-- Attending Co-Pilot Chat Drawer -->
     <div id="copilot-drawer" class="copilot-drawer">
         <div class="copilot-header">
-            <h3>💬 Attending Radiology Co-Pilot</h3>
+            <h3>Attending Radiology Co-Pilot</h3>
             <button class="copilot-close-btn" onclick="toggleCopilot()">&times;</button>
         </div>
         <div id="copilot-messages" class="copilot-chat-messages">
@@ -4480,7 +4480,7 @@
     <div id="override-modal" class="modal-overlay">
         <div class="modal-container">
             <div class="modal-header">
-                <h3>📋 Log Clinician Guideline Override</h3>
+                <h3>Log Clinician Guideline Override</h3>
                 <button class="modal-close" onclick="closeOverrideModal()">&times;</button>
             </div>
             <div class="modal-body">
