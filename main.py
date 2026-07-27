@@ -308,7 +308,11 @@ async def get_index():
     html_path = os.path.join(os.path.dirname(__file__), "index.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read(), status_code=200)
+            return HTMLResponse(
+                content=f.read(),
+                status_code=200,
+                headers={"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"}
+            )
     return HTMLResponse(content="<h1>Frontend index.html not found</h1>", status_code=404)
 
 @app.get("/apple-touch-icon.png")

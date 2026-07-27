@@ -2299,14 +2299,17 @@
             }
         }
 
+        // Resolve API_BASE: use localhost:8000 for local dev, otherwise use saved value or current origin
         const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "8000"
             ? "http://localhost:8000"
-            : savedApiBase;
+            : (savedApiBase || window.location.origin);
+
+        console.log("[ACR-AC-RAG] API_BASE resolved to:", API_BASE);
 
         let currentActiveTab = 'guidelines';
         let latestCDSResult = null;
         let isLoading = false;
-        let serverOnline = true;
+        let serverOnline = false; // Start false until health check confirms
 
         async function checkBackendHealth() {
             try {
@@ -2963,14 +2966,18 @@
                 document.getElementById(`panel-${currentActiveTab}`).classList.add('active');
 
             } catch (err) {
-                console.error(err);
+                console.error("[ACR-AC-RAG] submitAnalysis error:", err);
+                console.error("[ACR-AC-RAG] API_BASE was:", API_BASE);
                 document.getElementById('loading').classList.remove('active');
                 document.getElementById('placeholder').classList.add('active');
-                showToast(`Error calling clinical backend: ${err.message}. Please check if the FastAPI server is running.`, "error");
+                showToast(`Error: ${err.message}. The backend may be cold-starting — please retry in a few seconds.`, "error");
             } finally {
                 isLoading = false;
-                submitBtn.disabled = false;
-                submitBtn.querySelector('span').innerText = "Run CDS Engine";
+                const submitBtn = document.querySelector('.btn-submit');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.querySelector('span').innerText = "Run CDS Engine";
+                }
             }
         }
 
