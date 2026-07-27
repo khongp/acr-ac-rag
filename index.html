@@ -2290,16 +2290,20 @@
             }
         }
 
-        let savedApiBase = localStorage.getItem('API_BASE') || "";
-        // Safety guard: if we are in production but the saved API base points to localhost, ignore/clear it
+        // Purge any stale legacy localStorage keys if in production
+        if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+            localStorage.removeItem('API_BASE');
+            localStorage.removeItem('apiBaseUrl');
+        }
+
+        let savedApiBase = localStorage.getItem('API_BASE') || localStorage.getItem('apiBaseUrl') || "";
         if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
             if (savedApiBase.includes("localhost") || savedApiBase.includes("127.0.0.1")) {
                 savedApiBase = "";
-                localStorage.removeItem('API_BASE');
             }
         }
 
-        // Resolve API_BASE: use localhost:8000 for local dev, otherwise use saved value or current origin
+        // Resolve API_BASE: use localhost:8000 for local dev, otherwise use current origin
         const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "8000"
             ? "http://localhost:8000"
             : (savedApiBase || window.location.origin);
@@ -2309,7 +2313,7 @@
         let currentActiveTab = 'guidelines';
         let latestCDSResult = null;
         let isLoading = false;
-        let serverOnline = false; // Start false until health check confirms
+        let serverOnline = true; // Default to true since FastAPI serves index.html
 
         async function checkBackendHealth() {
             try {
@@ -2330,8 +2334,8 @@
                     setTimeout(checkBackendHealth, 3000);
                 }
             } catch (err) {
-                setServerOnlineState(false, "Connecting to Clinical Backend... Reconnecting shortly.");
-                setTimeout(checkBackendHealth, 3000);
+                console.warn("[ACR-AC-RAG] Health check error:", err);
+                // Don't disable the submit button on intermittent network glitch
             }
         }
 
@@ -2353,7 +2357,7 @@
                         banner.querySelector('div').innerText = message;
                     }
                 }
-                if (submitBtn) {
+                if (submitBtn && !online && message.includes("Initializing")) {
                     submitBtn.disabled = true;
                     submitBtn.querySelector('span').innerText = "System Initializing...";
                 }
@@ -2534,27 +2538,53 @@
 
         function applyPreset(num) {
             const data = PRESETS[num];
-            document.getElementById('scenario-input').value = data.scenario;
-            document.getElementById('patient-age').value = data.age;
-            document.getElementById('patient-gender').value = data.gender;
-            document.getElementById('patient-egfr').value = data.egfr;
-            document.getElementById('patient-allergy').value = data.allergy;
-            document.getElementById('patient-meds').value = data.meds;
-            document.getElementById('patient-preg').value = data.preg;
-            
-            document.getElementById('patient-weight').value = data.weight !== undefined ? data.weight : 70;
-            document.getElementById('patient-recentscans').value = data.recentscans || "none";
-            document.getElementById('patient-pacemaker').checked = !!data.pacemaker;
-            document.getElementById('patient-metal').checked = !!data.metal;
-            document.getElementById('patient-claustro').checked = !!data.claustro;
-            if (data.proposedOrder) {
-                document.getElementById('proposed-order').value = data.proposedOrder;
+            if (!data) return;
+
+            const scenarioEl = document.getElementById('scenario-input');
+            if (scenarioEl) {
+                scenarioEl.value = data.scenario || "";
+                scenarioEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
+
+            const ageEl = document.getElementById('patient-age');
+            if (ageEl) ageEl.value = data.age;
+
+            const genderEl = document.getElementById('patient-gender');
+            if (genderEl) genderEl.value = data.gender;
+
+            const egfrEl = document.getElementById('patient-egfr');
+            if (egfrEl) egfrEl.value = data.egfr;
+
+            const allergyEl = document.getElementById('patient-allergy');
+            if (allergyEl) allergyEl.value = data.allergy;
+
+            const medsEl = document.getElementById('patient-meds');
+            if (medsEl) medsEl.value = data.meds;
+
+            const pregEl = document.getElementById('patient-preg');
+            if (pregEl) pregEl.value = data.preg;
+
+            const weightEl = document.getElementById('patient-weight');
+            if (weightEl) weightEl.value = data.weight !== undefined ? data.weight : 70;
+
+            const scanEl = document.getElementById('patient-recentscans');
+            if (scanEl) scanEl.value = data.recentscans || "none";
+
+            const paceEl = document.getElementById('patient-pacemaker');
+            if (paceEl) paceEl.checked = !!data.pacemaker;
+
+            const metalEl = document.getElementById('patient-metal');
+            if (metalEl) metalEl.checked = !!data.metal;
+
+            const claustroEl = document.getElementById('patient-claustro');
+            if (claustroEl) claustroEl.checked = !!data.claustro;
+
+            const orderEl = document.getElementById('proposed-order');
+            if (orderEl && data.proposedOrder) orderEl.value = data.proposedOrder;
             
             // Expand simulator fields since presets manually configure patient safety context
             togglePatientFields(true);
-            showToast("Preset loaded into clinical simulator.", "info");
-            checkBackendHealth();
+            showToast(`Preset #${num} loaded into simulator.`, "info");
         }
 
         function switchTab(tabId) {
