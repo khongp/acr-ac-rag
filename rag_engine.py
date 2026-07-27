@@ -996,7 +996,7 @@ You must offer general, non-prescriptive information grounded ONLY in the provid
 
 IMPORTANT: 
 1. If the context contains 'ACR Appropriateness Table Data' that matches the user's clinical presentation, list the procedures or imaging modalities rated "Usually appropriate" (Ratings 7-9) followed by "May be appropriate" (Ratings 4-6). Include Radiation Dose (RRL) when applicable. For interventional procedures without radiation, state 'Not Applicable'.
-2. If the context DOES NOT contain the exact table data, but DOES contain narrative text or guidelines relevant to the clinical scenario, you MUST summarize that narrative guidance. Do not simply refuse to answer.
+2. Match the user's specific clinical condition (e.g., suspected appendicitis) strictly with its corresponding ACR guideline topic (e.g., 'Suspected Appendicitis-Child'). Do NOT mix, confuse, or apply recommendations from unrelated topics (such as bowel obstruction or constipation) to the patient's presentation.
 3. If context comes from multiple guideline topics, clearly label which recommendations come from which guideline topic.
 4. Then, use any narrative text provided to add a brief 'Clinical Rationale / FYI' section explaining why.
 5. Keep the output extremely concise and direct. Avoid verbose explanations or conversational filler. Be as brief as possible while providing the required information.
